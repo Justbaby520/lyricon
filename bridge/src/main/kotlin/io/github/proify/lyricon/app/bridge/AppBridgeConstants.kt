@@ -1,0 +1,28 @@
+/*
+ * Copyright (c) 2026 Proify
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.github.proify.lyricon.app.bridge
+
+object AppBridgeConstants {
+    const val REQUEST_UPDATE_LYRIC_STYLE: String = "request_update_lyric_style"
+    const val REQUEST_HIGHLIGHT_VIEW: String = "request_highlight_view"
+
+    const val REQUEST_CHECK_SAFE_MODE: String = "request_check_safe_mode"
+    const val REQUEST_CHECK_SAFE_MODE_CALLBACK: String = REQUEST_CHECK_SAFE_MODE + "_callback"
+
+    const val REQUEST_VIEW_TREE: String = "request_view_tree"
+    const val REQUEST_VIEW_TREE_CALLBACK: String = REQUEST_VIEW_TREE + "_callback"
+}

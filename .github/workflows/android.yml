@@ -1,0 +1,119 @@
+name: Android CI
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: '构建类型'
+        required: true
+        default: 'debug'
+        type: choice
+        options:
+          - debug
+          - release
+          - both
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        build_type: ${{ github.event.inputs.build_type == 'both' && fromJSON('["debug", "release"]') || fromJSON(format('["{0}"]', github.event.inputs.build_type)) }}
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 设置 JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: 安装 NDK
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r25c
+          add-to-path: true
+
+      - name: 授予 Gradle 执行权限
+        run: chmod +x gradlew
+
+      - name: 缓存 Gradle 依赖
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: 构建 ${{ matrix.build_type }} APK
+        run: |
+          if [ "${{ matrix.build_type }}" == "debug" ]; then
+            ./gradlew assembleDebug
+          else
+            ./gradlew assembleRelease
+          fi
+
+      - name: 列出生成的 APK 文件
+        run: |
+          echo "================================"
+          echo "生成的 ${{ matrix.build_type }} APK 文件列表"
+          echo "================================"
+          BUILD_TYPE="${{ matrix.build_type }}"
+          APK_DIR="lyricon/build/outputs/apk/${BUILD_TYPE}"
+          
+          if [ -d "$APK_DIR" ]; then
+            ls -lh ${APK_DIR}/*.apk 2>/dev/null || echo "未找到 APK 文件"
+            echo ""
+            echo "文件大小统计:"
+            du -h ${APK_DIR}/*.apk 2>/dev/null | sort -h
+            echo ""
+          else
+            echo "APK 目录不存在: $APK_DIR"
+          fi
+
+      - name: 上传 arm64-v8a APK 文件
+        uses: actions/upload-artifact@v4
+        with:
+          name: lyricon-arm64-v8a-${{ matrix.build_type }}.apk
+          path: lyricon/build/outputs/apk/${{ matrix.build_type }}/lyricon-arm64-v8a-debug.apk
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: 上传 armeabi-v7a APK 文件
+        uses: actions/upload-artifact@v4
+        with:
+          name: lyricon-armeabi-v7a-${{ matrix.build_type }}.apk
+          path: lyricon/build/outputs/apk/${{ matrix.build_type }}/lyricon-armeabi-v7a-debug.apk
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: 上传 universal APK 文件
+        uses: actions/upload-artifact@v4
+        with:
+          name: lyricon-universal-${{ matrix.build_type }}.apk
+          path: lyricon/build/outputs/apk/${{ matrix.build_type }}/lyricon-universal-debug.apk
+          if-no-files-found: warn
+          retention-days: 30
+
+  summary:
+    runs-on: ubuntu-latest
+    needs: build
+    if: always()
+
+    steps:
+      - name: 构建结果摘要
+        run: |
+          echo "## 构建完成 ✅" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **分支**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **提交**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **构建类型**: ${{ github.event.inputs.build_type }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **构建编号**: ${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "APK 文件已上传到 Artifacts，可在 Actions 页面下载。" >> $GITHUB_STEP_SUMMARY
