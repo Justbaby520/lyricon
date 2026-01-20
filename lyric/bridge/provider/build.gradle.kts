@@ -8,12 +8,12 @@ plugins {
     id("com.vanniktech.maven.publish")
 }
 
-val version: String = "0.1.55"
+val version: String = "0.1.63"
 
 configure<LibraryExtension> {
     namespace = "io.github.proify.lyricon.provider"
     compileSdk {
-        version = release(rootProject.extra.get("compileSdkVersion") as Int){
+        version = release(rootProject.extra.get("compileSdkVersion") as Int) {
             minorApiLevel = 1
         }
     }

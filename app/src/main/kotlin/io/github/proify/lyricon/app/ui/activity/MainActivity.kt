@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2026 Proify
+ * Copyright 2026 Proify, Tomakino
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -43,7 +44,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.White
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -98,12 +98,14 @@ class MainActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            MainContent(
-                safeMode = model.safeMode,
-                showRestartFailDialog = model.showRestartFailDialog,
-                onRestartSysUi = { killSystemUI() },
-                onRestartApp = { restartApp() },
-            )
+            Box(modifier = Modifier.fillMaxSize()) {
+                MainContent(
+                    safeMode = model.safeMode,
+                    showRestartFailDialog = model.showRestartFailDialog,
+                    onRestartSysUi = { killSystemUI() },
+                    onRestartApp = { restartApp() },
+                )
+            }
         }
 
         collectEvent<SettingChangedEvent>(state = Lifecycle.State.CREATED) {
@@ -148,9 +150,9 @@ fun MainContent(
         scaffoldContent = {
             showRestartFailDialog?.let { RestartFailDialog(it) }
         },
-    ) { scope ->
+    ) {
 
-        scope.item("state") {
+        item("state") {
             val isModuleActive = safeMode?.value == false && AppBridge.isModuleActive()
             Card(
                 modifier =
@@ -202,7 +204,9 @@ fun MainContent(
                                 else -> R.string.module_status_not_activated
                             },
                         ).trim()
-                        Row {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Text(
                                 text = title,
                                 fontSize = 16.sp,
@@ -226,7 +230,7 @@ fun MainContent(
                 )
             }
         }
-        scope.item("style") {
+        item("style") {
             Card(
                 modifier =
                     Modifier
@@ -240,7 +244,12 @@ fun MainContent(
                     title = stringResource(id = R.string.item_base_lyric_style),
                     summary = stringResource(id = R.string.item_summary_base_lyric_style),
                     onClick = {
-                        context.startActivity(Intent(context, BasicLyricStyleActivity::class.java))
+                        context.startActivity(
+                            Intent(
+                                context,
+                                BasicLyricStyleActivity::class.java
+                            )
+                        )
                     },
                 )
                 SuperArrow(
@@ -259,7 +268,7 @@ fun MainContent(
                 )
             }
         }
-        scope.item("provider") {
+        item("provider") {
             Card(
                 modifier =
                     Modifier
@@ -273,12 +282,17 @@ fun MainContent(
                     title = stringResource(id = R.string.item_provider_manager),
                     summary = stringResource(id = R.string.item_summary_provider_manager),
                     onClick = {
-                        context.startActivity(Intent(context, LyricProviderActivity::class.java))
+                        context.startActivity(
+                            Intent(
+                                context,
+                                LyricProviderActivity::class.java
+                            )
+                        )
                     },
                 )
             }
         }
-        scope.item("other") {
+        item("other") {
             Card(
                 modifier =
                     Modifier
@@ -326,7 +340,7 @@ fun LottieInfiniteQueuePlayer() {
         if (currentComposition != null) {
             animatable.animate(
                 composition = currentComposition,
-                iterations = 6,
+                iterations = 10,
                 initialProgress = 0f
             )
             currentIndex = (currentIndex + 1) % resList.size
@@ -344,9 +358,6 @@ fun LottieInfiniteQueuePlayer() {
                 progress = { animatable.progress },
                 modifier = Modifier
                     .size(19.dp)
-                    .graphicsLayer {
-                        renderEffect = null
-                    }
             )
         } else {
             Spacer(modifier = Modifier.size(19.dp))

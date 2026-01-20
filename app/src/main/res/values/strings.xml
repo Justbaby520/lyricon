@@ -1,3 +1,19 @@
+<!--
+  ~ Copyright 2026 Proify, Tomakino
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
 <!--suppress ALL -->
 <resources>
     <string name="app_name">词幕</string>
@@ -121,6 +137,7 @@
 
     <string name="item_logo_section_style">样式</string>
     <string name="item_logo_style_default">默认</string>
+    <string name="item_logo_style_app_logo">应用图标</string>
     <string name="item_logo_style_cover_square">音乐封面（方形）</string>
     <string name="item_logo_style_cover_circle">音乐封面（圆形）</string>
 
@@ -141,8 +158,6 @@
 
     <!-- Visibility rule -->
     <string name="option_visibility_default">默认</string>
-    <!--    <string name="option_visibility_always_visible">总是显示</string>-->
-    <!--    <string name="option_visibility_always_hidden">总是隐藏</string>-->
     <string name="option_visibility_hide_when_playing">播放时隐藏</string>
 
     <string name="rect_left">左边距</string>
@@ -164,5 +179,11 @@
     <string name="option_logo_color_follow_text">跟随文字颜色</string>
 
     <string name="lyric_provider_info_secondary" formatted="true" translatable="false">%s, %s %s</string>
+    <string name="item_text_syllable">动态歌词</string>
+    <string name="item_text_relative_progress">启用相对进度歌词</string>
+    <string name="item_text_relative_progress_summary">当歌词行仅有整体时间信息而无单词数据时，将其文本作为单一单词处理，时间范围与歌词行一致</string>
+    <string name="item_text_relative_progress_highlight">显示相对进度歌词高亮进度</string>
+    <string name="module_tag_syllable">动态歌词</string>
+    <string name="module_tag_translation">翻译</string>
 
 </resources>

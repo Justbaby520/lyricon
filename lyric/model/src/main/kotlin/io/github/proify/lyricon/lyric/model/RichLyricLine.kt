@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2026 Proify
+ * Copyright 2026 Proify, Tomakino
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,24 +35,24 @@ import kotlinx.serialization.Serializable
  * @property metadata 元数据
  * @property text 主文本
  * @property words 主文本单词列表
- * @property secondaryText 次要文本
+ * @property secondary 次要文本
  * @property secondaryWords 次要文本单词列表
- * @property translationText 翻译文本
- * @property translationWords 翻译文本单词列表
+ * @property translation 主要翻译文本
+ * @property translationWords 主要翻译文本单词列表
  */
 @Serializable
 @Parcelize
 data class RichLyricLine(
     override var begin: Long = 0,
     override var end: Long = 0,
-    override var duration: Long = 0,
+    override var duration: Long = end - begin,
     override var isAlignedRight: Boolean = false,
     override var metadata: LyricMetadata? = null,
     override var text: String? = null,
     override var words: List<LyricWord>? = null,
-    override var secondaryText: String? = null,
+    override var secondary: String? = null,
     override var secondaryWords: List<LyricWord>? = null,
-    override var translationText: String? = null,
+    override var translation: String? = null,
     override var translationWords: List<LyricWord>? = null,
 ) : IRichLyricLine, Parcelable, DeepCopyable<RichLyricLine>, Normalize<RichLyricLine> {
 
@@ -67,10 +67,10 @@ data class RichLyricLine(
         text = words.toText(text)
 
         secondaryWords = secondaryWords?.normalize()
-        secondaryText = secondaryWords.toText(secondaryText)
+        secondary = secondaryWords.toText(secondary)
 
         translationWords = translationWords?.normalize()
-        translationText = translationWords.toText(translationText)
+        translation = translationWords.toText(translation)
     }
 
     private fun List<LyricWord>?.toText(default: String?): String? =

@@ -1,3 +1,19 @@
+/*
+ * Copyright 2026 Proify, Tomakino
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package io.github.proify.lyricon.xposed.lyricview
 
 import android.animation.ObjectAnimator
@@ -9,6 +25,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Outline
 import android.graphics.Paint
+import android.graphics.drawable.Drawable
 import android.view.View
 import android.view.ViewOutlineProvider
 import android.view.animation.LinearInterpolator
@@ -30,6 +47,7 @@ import io.github.proify.lyricon.xposed.util.NotificationCoverHelper
 import io.github.proify.lyricon.xposed.util.StatusBarColorMonitor
 import io.github.proify.lyricon.xposed.util.StatusColor
 import java.io.File
+import java.util.WeakHashMap
 import kotlin.math.roundToInt
 
 class LyricLogoView(context: Context) : ImageView(context),
@@ -201,7 +219,10 @@ class LyricLogoView(context: Context) : ImageView(context),
             LogoStyle.STYLE_COVER_SQUIRCLE,
             LogoStyle.STYLE_COVER_CIRCLE -> CoverStrategy()
 
-            else -> ProviderStrategy()
+            LogoStyle.STYLE_PROVIDER_LOGO ->
+                if (providerLogo == null) AppLogoStrategy() else ProviderStrategy()
+
+            else -> AppLogoStrategy()
         }
 
         if (strategy?.javaClass != newStrategy.javaClass) {
@@ -297,7 +318,10 @@ class LyricLogoView(context: Context) : ImageView(context),
         }
 
         override fun onColorUpdate() {
-            imageTintList = calculateTint()
+            imageTintList = when {
+                providerLogo?.colorful == true -> null
+                else -> calculateTint()
+            }
         }
 
         override fun onAttach() {
@@ -328,6 +352,8 @@ class LyricLogoView(context: Context) : ImageView(context),
             cachedBitmap = null
             lastProviderSignature = null
         }
+
+        lateinit var v: View
 
         private fun loadProviderBitmap(): Bitmap? {
             val logo = providerLogo ?: return null
@@ -421,6 +447,9 @@ class LyricLogoView(context: Context) : ImageView(context),
             setImageBitmap(null)
             lastFileSignature = null
             isEffective = false
+
+            outlineProvider = null
+            clipToOutline = false
         }
 
         override fun onVisibilityChanged(visible: Boolean) {
@@ -446,7 +475,7 @@ class LyricLogoView(context: Context) : ImageView(context),
 
             setImageBitmap(bitmap)
 
-            lastFileSignature = coverFile.md5()
+            lastFileSignature = coverFile.lastModified().toString()
             isEffective = bitmap != null
 
             val currentStyle = lyricStyle?.packageStyle?.logo?.style ?: LogoStyle.STYLE_COVER_CIRCLE
@@ -520,5 +549,40 @@ class LyricLogoView(context: Context) : ImageView(context),
             rotationAnimator = null
             this@LyricLogoView.rotation = 0f
         }
+    }
+
+    private inner class AppLogoStrategy : ILogoStrategy {
+        private val cacheIcons = WeakHashMap<String, Drawable>()
+
+        override var isEffective: Boolean = false
+
+        override fun render() {
+            imageTintList = null
+            val activePackage = LyricViewController.activePackage
+            val icon = getIcon(activePackage)
+            setImageDrawable(icon)
+            isEffective = icon != null
+        }
+
+        private fun getIcon(packageName: String): Drawable? {
+            if (packageName.isBlank()) {
+                return null
+            }
+            cacheIcons[packageName]?.let { return it }
+            val packageManager = context.packageManager
+            val icon = packageManager.getApplicationIcon(packageName)
+            cacheIcons[packageName] = icon
+            return icon
+        }
+
+        override fun updateContent() {}
+
+        override fun onColorUpdate() {
+            imageTintList = null
+        }
+
+        override fun onAttach() {}
+
+        override fun onDetach() {}
     }
 }

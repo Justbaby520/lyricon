@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2026 Proify
+ * Copyright 2026 Proify, Tomakino
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,8 +64,8 @@ class BasicLyricStyleActivity : BaseLyricActivity() {
         AppToolBarListContainer(
             title = stringResource(R.string.activity_base_lyric_style),
             canBack = true
-        ) { scope ->
-            scope.item {
+        ) {
+            item("content") {
                 MainContent()
             }
         }

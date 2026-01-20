@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2026 Proify
+ * Copyright 2026 Proify, Tomakino
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -159,6 +159,9 @@ class LyricView(
         updateVisibility()
     }
 
+    /**
+     * 高频用法
+     */
     fun updateVisibility() {
         visibilityIfChanged = if (isPlaying && textView.isNotEmpty()) {
             VISIBLE
@@ -182,4 +185,9 @@ class LyricView(
     @Suppress("unused")
     fun updateText(text: String?) {
     }
+
+    fun setDisplayTranslation(isDisplayTranslation: Boolean) {
+        textView.setDisplayTranslation(isDisplayTranslation)
+    }
+
 }

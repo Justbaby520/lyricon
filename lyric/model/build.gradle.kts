@@ -9,12 +9,10 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
-val version: String = "0.1.55"
-
 configure<LibraryExtension> {
     namespace = "io.github.proify.lyricon.lyric.model"
     compileSdk {
-        version = release(rootProject.extra.get("compileSdkVersion") as Int){
+        version = release(rootProject.extra.get("compileSdkVersion") as Int) {
             minorApiLevel = 1
         }
     }
@@ -49,6 +47,8 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 }
+
+val version: String = "0.1.63"
 
 mavenPublishing {
     coordinates(

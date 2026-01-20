@@ -1,11 +1,11 @@
 /*
- * Copyright 2026 Proify
+ * Copyright 2026 Proify, Tomakino
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,15 +14,21 @@
  * limitations under the License.
  */
 
-package io.makino.lyricon.lyric.bridge.broket
+package io.github.proify.lyricon.provider
 
-import androidx.test.ext.junit.runners.AndroidJUnit4
-import org.junit.runner.RunWith
+enum class ConnectionStatus {
+    /** 未连接 */
+    DISCONNECTED,
 
-/**
- * Instrumented test, which will execute on an Android device.
- *
- * See [testing documentation](http://d.android.com/tools/testing).
- */
-@RunWith(AndroidJUnit4::class)
-class ExampleInstrumentedTest
+    /** 已断开连接（服务器主动触发） */
+    DISCONNECTED_REMOTE,
+
+    /** 已断开连接（用户主动触发） */
+    DISCONNECTED_USER,
+
+    /** 连接中 */
+    CONNECTING,
+
+    /** 已连接 */
+    CONNECTED,
+}

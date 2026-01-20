@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2026 Proify
+ * Copyright 2026 Proify, Tomakino
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -158,12 +158,14 @@ fun LogoPage(
 
                 val styleNameRes = listOf(
                     R.string.item_logo_style_default,
+                    R.string.item_logo_style_app_logo,
                     R.string.item_logo_style_cover_square,
                     R.string.item_logo_style_cover_circle
                 )
 
                 val styleValues = listOf(
-                    LogoStyle.STYLE_DEFAULT,
+                    LogoStyle.STYLE_PROVIDER_LOGO,
+                    LogoStyle.STYLE_APP_LOGO,
                     LogoStyle.STYLE_COVER_SQUIRCLE,
                     LogoStyle.STYLE_COVER_CIRCLE
                 )

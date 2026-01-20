@@ -53,7 +53,6 @@ dependencies {
 
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.core.ktx)
-
     implementation(libs.miuix.android)
     implementation(libs.accompanist.drawablepainter)
     implementation(libs.androidx.browser)
@@ -81,6 +80,7 @@ dependencies {
     implementation(libs.androidx.compose.foundation.layout)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.compose.remote.creation.core)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

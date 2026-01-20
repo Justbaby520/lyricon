@@ -1,10 +1,32 @@
-package io.github.proify.lyricon.provider.remote
+/*
+ * Copyright 2026 Proify, Tomakino
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.github.proify.lyricon.provider.service
 
 import android.os.IBinder
 import android.os.RemoteException
 import android.util.Log
+import io.github.proify.lyricon.provider.ConnectionListener
+import io.github.proify.lyricon.provider.ConnectionStatus
 import io.github.proify.lyricon.provider.IRemoteService
 import io.github.proify.lyricon.provider.LyriconProvider
+import io.github.proify.lyricon.provider.ProviderConstants
+import io.github.proify.lyricon.provider.RemotePlayer
+import io.github.proify.lyricon.provider.player.CachedRemotePlayer
+import io.github.proify.lyricon.provider.player.RemotePlayerProxy
 import java.util.concurrent.CopyOnWriteArraySet
 
 /**
@@ -33,11 +55,15 @@ internal class RemoteServiceProxy(
         private const val TAG = "ProviderServiceImpl"
     }
 
-    /** 播放器代理 */
-    override val player: RemotePlayerProxy = RemotePlayerProxy()
+    private val playerProxy = RemotePlayerProxy()
+    override val player: RemotePlayer = CachedRemotePlayer(playerProxy)
 
     /** 当前连接状态 */
     override var connectionStatus: ConnectionStatus = ConnectionStatus.DISCONNECTED
+        set(value) {
+            field = value
+            playerProxy.isConnected = value == ConnectionStatus.CONNECTED
+        }
 
     /** 当前绑定的远程服务实例，可能为 null */
     private var remoteService: IRemoteService? = null
@@ -84,7 +110,7 @@ internal class RemoteServiceProxy(
         }
 
         remoteService = service
-        player.bindRemoteService(service.player)
+        playerProxy.bindRemoteService(service.player)
 
         connectionStatus = ConnectionStatus.CONNECTED
         connectionListeners.forEach {
@@ -109,14 +135,14 @@ internal class RemoteServiceProxy(
      * @param disconnectType 断开来源类型
      */
     fun disconnect(disconnectType: DisconnectType) {
-        Log.d(TAG, "Disconnect")
         connectionStatus = when (disconnectType) {
             DisconnectType.USER -> ConnectionStatus.DISCONNECTED_USER
             DisconnectType.REMOTE -> ConnectionStatus.DISCONNECTED_REMOTE
             DisconnectType.DEFAULT -> ConnectionStatus.DISCONNECTED
         }
+        if (ProviderConstants.isDebug()) Log.d(TAG, "Disconnect $disconnectType")
 
-        player.bindRemoteService(null)
+        playerProxy.bindRemoteService(null)
 
         remoteService?.let { service ->
             runCatching { service.asBinder().unlinkToDeath(deathRecipient, 0) }

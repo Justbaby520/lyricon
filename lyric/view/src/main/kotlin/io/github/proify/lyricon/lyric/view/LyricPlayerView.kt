@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2026 Proify
+ * Copyright 2026 Proify, Tomakino
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package io.github.proify.lyricon.lyric.view
 
 import android.content.Context
 import android.util.AttributeSet
-import android.view.View
 import android.widget.LinearLayout
 import androidx.core.view.forEach
 import androidx.core.view.isNotEmpty
@@ -28,6 +27,7 @@ import io.github.proify.lyricon.lyric.model.Song
 import io.github.proify.lyricon.lyric.model.extensions.TimingNavigator
 import io.github.proify.lyricon.lyric.model.interfaces.IRichLyricLine
 import io.github.proify.lyricon.lyric.model.lyricMetadataOf
+import io.github.proify.lyricon.lyric.view.LyricPlayerView.Companion.KEY_SONG_TITLE_LINE
 import io.github.proify.lyricon.lyric.view.line.LyricLineView
 import io.github.proify.lyricon.lyric.view.model.RichLyricLineModel
 import io.github.proify.lyricon.lyric.view.util.LayoutTransitionX
@@ -38,7 +38,7 @@ open class LyricPlayerView(context: Context, attrs: AttributeSet? = null) :
     LinearLayout(context, attrs) {
 
     companion object {
-        private const val KEY_SONG_TITLE_LINE = "TitleLine"
+        internal const val KEY_SONG_TITLE_LINE: String = "TitleLine"
         private const val MIN_GAP_DURATION: Long = 6 * 1000
     }
 
@@ -70,10 +70,16 @@ open class LyricPlayerView(context: Context, attrs: AttributeSet? = null) :
 
     private var lineModels: List<RichLyricLineModel>? = null
     private val activeLines = mutableListOf<IRichLyricLine>()
+
     private var config: RichLyricLineConfig = RichLyricLineConfig()
+    private var isDisplayTranslation: Boolean = false
+    private var enableRelativeProgress = false
+    private var enableRelativeProgressHighlight = false
+
     private val myLayoutTransition = LayoutTransitionX()
     private val tempViewsToRemove = mutableListOf<RichLyricLineView>()
-    private val tempViewsToAdd = mutableListOf<RichLyricLineView>()
+    private val tempViewsToAdd = mutableListOf<IRichLyricLine>()
+
     private val tempFindActiveLines: MutableList<RichLyricLineModel> = mutableListOf()
     private val reusableLayoutParams =
         LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT)
@@ -123,11 +129,17 @@ open class LyricPlayerView(context: Context, attrs: AttributeSet? = null) :
     }
 
     private fun createDoubleLineView(line: IRichLyricLine): RichLyricLineView {
-        val view = RichLyricLineView(context)
-        view.line = line
-        view.setStyle(config)
-        view.setMainLyricPlayListener(mainLyricPlayListener)
-        view.setSecondaryLyricPlayListener(secondaryLyricPlayListener)
+        val view = RichLyricLineView(
+            context,
+            displayTranslation = isDisplayTranslation,
+            enableRelativeProgress = enableRelativeProgress,
+            enableRelativeProgressHighlight = enableRelativeProgressHighlight
+        ).apply {
+            this.line = line
+            setStyle(config)
+            setMainLyricPlayListener(mainLyricPlayListener)
+            setSecondaryLyricPlayListener(secondaryLyricPlayListener)
+        }
         return view
     }
 
@@ -172,8 +184,14 @@ open class LyricPlayerView(context: Context, attrs: AttributeSet? = null) :
         }
     }
 
-    override fun removeView(view: View?) {
-        super.removeView(view)
+    fun setDisplayTranslation(displayTranslation: Boolean) {
+        isDisplayTranslation = displayTranslation
+        this.forEach { view ->
+            if (view is RichLyricLineView) {
+                view.displayTranslation = displayTranslation
+                view.notifyLineChanged()
+            }
+        }
     }
 
     fun seekTo(position: Long) {
@@ -192,12 +210,12 @@ open class LyricPlayerView(context: Context, attrs: AttributeSet? = null) :
         val matches = tempFindActiveLines
         updateActiveViews(matches)
 
-        forEach {
-            if (it is RichLyricLineView) {
+        this.forEach { view ->
+            if (view is RichLyricLineView) {
                 if (seekTo) {
-                    it.seekTo(position)
+                    view.seekTo(position)
                 } else {
-                    it.setPosition(position)
+                    view.setPosition(position)
                 }
             }
         }
@@ -276,7 +294,7 @@ open class LyricPlayerView(context: Context, attrs: AttributeSet? = null) :
         for (i in 0 until matchesSize) {
             val line = matches[i]
             if (line !in activeLines) {
-                tempViewsToAdd.add(createDoubleLineView(line))
+                tempViewsToAdd.add(line)
             }
         }
 
@@ -291,9 +309,9 @@ open class LyricPlayerView(context: Context, attrs: AttributeSet? = null) :
         if (isSingleViewSwap) {
             run {
                 val recycleView = getChildAt(0) as? RichLyricLineView ?: return@run
-                val newLine = tempViewsToAdd[0].line
+                val newLine = tempViewsToAdd[0]
 
-                newLine?.let { activeLines[0] = it }
+                newLine.let { activeLines[0] = it }
                 recycleView.line = newLine
 
                 recycleView.tryStartMarquee()
@@ -310,8 +328,10 @@ open class LyricPlayerView(context: Context, attrs: AttributeSet? = null) :
             // 批量处理添加
             val addSize = tempViewsToAdd.size
             for (i in 0 until addSize) {
-                val view = tempViewsToAdd[i]
-                view.line?.let { activeLines.add(it) }
+                val line = tempViewsToAdd[i]
+                activeLines.add(line)
+
+                val view = createDoubleLineView(line)
                 autoAddView(view)
 
                 view.tryStartMarquee()
@@ -330,8 +350,8 @@ open class LyricPlayerView(context: Context, attrs: AttributeSet? = null) :
 
     fun setStyle(config: RichLyricLineConfig): LyricPlayerView = apply {
         this.config = config
-        forEach {
-            if (it is RichLyricLineView) it.setStyle(config)
+        this.forEach { view ->
+            if (view is RichLyricLineView) view.setStyle(config)
         }
     }
 
@@ -408,3 +428,6 @@ open class LyricPlayerView(context: Context, attrs: AttributeSet? = null) :
         val end: Long
     )
 }
+
+fun IRichLyricLine.isTitleLine(): Boolean =
+    metadata?.getBoolean(KEY_SONG_TITLE_LINE, false) == true

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2026 Proify
+ * Copyright 2026 Proify, Tomakino
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,17 +22,17 @@ import io.github.proify.lyricon.lyric.view.util.dp
 import io.github.proify.lyricon.lyric.view.util.sp
 
 open class LyricLineConfig(
-    var text: TextConfig = MainTextConfig(),
-    var marquee: MarqueeConfig = MainMarqueeConfig(),
-    var syllable: SyllableConfig = MainSyllableConfig(),
-    var gradientProgressStyle: Boolean = true,
+    var text: TextConfig,
+    var marquee: MarqueeConfig,
+    var syllable: SyllableConfig,
+    var gradientProgressStyle: Boolean,
 )
 
 data class RichLyricLineConfig(
-    var primary: TextConfig = MainTextConfig(),
-    var secondary: TextConfig = SecondaryTextConfig(),
-    var marquee: MarqueeConfig = MainMarqueeConfig(),
-    var syllable: SyllableConfig = MainSyllableConfig(),
+    var primary: MainTextConfig = MainTextConfig(),
+    var secondary: SecondaryTextConfig = SecondaryTextConfig(),
+    var marquee: MarqueeConfig = DefaultMarqueeConfig(),
+    var syllable: SyllableConfig = DefaultSyllableConfig(),
     var gradientProgressStyle: Boolean = true,
 )
 
@@ -63,19 +63,21 @@ open class DefaultMarqueeConfig(
 interface SyllableConfig {
     var backgroundColor: Int
     var highlightColor: Int
+    var disableHighlight: Boolean
 }
 
 data class MainTextConfig(
     override var textColor: Int = Color.BLACK,
     override var textSize: Float = 16f.sp,
     override var typeface: Typeface = Typeface.DEFAULT,
+    var enableRelativeProgress: Boolean = false,
+    var enableRelativeProgressHighlight: Boolean = false,
 ) : TextConfig
 
-open class MainMarqueeConfig : DefaultMarqueeConfig()
-
-class MainSyllableConfig(
+class DefaultSyllableConfig(
     override var highlightColor: Int = Color.BLACK,
     override var backgroundColor: Int = Color.GRAY,
+    override var disableHighlight: Boolean = false,
 ) : SyllableConfig
 
 class SecondaryTextConfig(

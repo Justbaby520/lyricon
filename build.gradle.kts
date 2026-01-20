@@ -4,12 +4,12 @@ plugins {
     alias(libs.plugins.kotlin.compose) apply false
     alias(libs.plugins.ksp) apply false
 
-    id("com.vanniktech.maven.publish") version "0.35.0" apply false
+    id("com.vanniktech.maven.publish") version "0.36.0" apply false
 }
 
 extra["appPackageName"] = "io.github.proify.lyricon"
 extra["appVersionCode"] = 1
-extra["appVersionName"] = "1.0.0-dev"
+extra["appVersionName"] = "1.0.0-aplpa1"
 extra["compileSdkVersion"] = 36
 extra["targetSdkVersion"] = 36
 extra["minSdkVersion"] = 28

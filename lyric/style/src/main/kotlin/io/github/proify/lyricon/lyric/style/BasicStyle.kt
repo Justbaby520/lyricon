@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2026 Proify
+ * Copyright 2026 Proify, Tomakino
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package io.github.proify.lyricon.lyric.style
 
 import android.content.SharedPreferences
 import android.os.Parcelable
-import io.github.proify.android.extensions.jsonx
+import io.github.proify.android.extensions.json
 import io.github.proify.android.extensions.safeDecode
 import io.github.proify.android.extensions.toJson
 import kotlinx.parcelize.Parcelize
@@ -47,15 +47,15 @@ data class BasicStyle(
             Defaults.WIDTH_IN_COLOROS_CAPSULE_MODE
         )
 
-        margins = jsonx.safeDecode<RectF>(
+        margins = json.safeDecode<RectF>(
             preferences.getString("lyric_style_base_margins", null),
             Defaults.MARGINS
         )
-        paddings = jsonx.safeDecode<RectF>(
+        paddings = json.safeDecode<RectF>(
             preferences.getString("lyric_style_base_paddings", null),
             Defaults.PADDINGS
         )
-        visibilityRules = jsonx.safeDecode<MutableList<VisibilityRule>>(
+        visibilityRules = json.safeDecode<MutableList<VisibilityRule>>(
             preferences.getString("lyric_style_base_visibility_rules", null),
             Defaults.VISIBILITY_RULES.toMutableList()
         )

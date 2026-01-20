@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2026 Proify
+ * Copyright 2026 Proify, Tomakino
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import com.highcapable.yukihookapi.hook.core.YukiMemberHookCreator
 import com.highcapable.yukihookapi.hook.entity.YukiBaseHooker
 import com.highcapable.yukihookapi.hook.log.YLog
 import io.github.proify.android.extensions.deflate
-import io.github.proify.android.extensions.jsonx
+import io.github.proify.android.extensions.json
 import io.github.proify.android.extensions.safeEncode
 import io.github.proify.lyricon.app.bridge.AppBridgeConstants
 import io.github.proify.lyricon.central.BridgeCentral
@@ -120,7 +120,7 @@ object SystemUIHooker : YukiBaseHooker() {
         dataChannel.wait<String>(key = AppBridgeConstants.REQUEST_VIEW_TREE) { _ ->
             statusBarViewManager?.let {
                 val node = ViewHierarchyParser.buildNodeTree(it.statusBarView)
-                val data = jsonx.safeEncode(node)
+                val data = json.safeEncode(node)
                     .toByteArray(Charsets.UTF_8)
                     .deflate()
 

@@ -1,3 +1,19 @@
+/*
+ * Copyright 2026 Proify, Tomakino
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package io.github.proify.lyricon.central.provider.player
 
 import android.util.Log
@@ -36,7 +52,8 @@ object ActivePlayerDispatcher : PlayerListener {
         const val PLAYBACK_STATE_CHANGED = 2
         const val POSITION_CHANGED = 3
         const val SEEK_TO = 4
-        const val POST_TEXT = 5
+        const val SEND_TEXT = 5
+        const val DISPLAY_TRANSLATION_CHANGED = 6
     }
 
     /** 用于保护活跃播放器相关状态的读写锁 */
@@ -114,9 +131,18 @@ object ActivePlayerDispatcher : PlayerListener {
         }
     }
 
-    override fun onPostText(recorder: PlayerRecorder, text: String?) {
-        handleEvent(EventType.POST_TEXT, recorder) {
-            it.onPostText(text)
+    override fun onSendText(recorder: PlayerRecorder, text: String?) {
+        handleEvent(EventType.SEND_TEXT, recorder) {
+            it.onSendText(text)
+        }
+    }
+
+    override fun onDisplayTranslationChanged(
+        recorder: PlayerRecorder,
+        isDisplayTranslation: Boolean
+    ) {
+        handleEvent(EventType.DISPLAY_TRANSLATION_CHANGED, recorder) {
+            it.onDisplayTranslationChanged(isDisplayTranslation)
         }
     }
 
@@ -161,7 +187,10 @@ object ActivePlayerDispatcher : PlayerListener {
                     syncNewProviderState(recorder)
 
                     // 歌曲切换事件已在同步流程中处理，避免重复分发
-                    if (eventType != EventType.SONG_CHANGED) {
+                    if (eventType != EventType.SONG_CHANGED
+                        && eventType != EventType.DISPLAY_TRANSLATION_CHANGED
+                        && eventType != EventType.SEND_TEXT
+                    ) {
                         shouldBroadcastOriginalEvent = true
                     }
                 }
@@ -178,15 +207,16 @@ object ActivePlayerDispatcher : PlayerListener {
      * 将其记录器中缓存的最新状态同步给所有监听器。
      */
     private fun syncNewProviderState(recorder: PlayerRecorder) {
-        // 优先同步文本信息（如错误提示、解析结果等）
-        recorder.lastText?.let { text ->
-            broadcast { it.onPostText(text) }
-            return
-        }
-
         broadcast {
             it.onPlaybackStateChanged(activeIsPlaying)
+
+            recorder.lastText?.let { text ->
+                it.onSendText(text)
+                return@broadcast
+            }
+
             it.onSongChanged(recorder.lastSong)
+            it.onDisplayTranslationChanged(recorder.lastIsDisplayTranslation)
             it.onPositionChanged(recorder.lastPosition)
         }
     }

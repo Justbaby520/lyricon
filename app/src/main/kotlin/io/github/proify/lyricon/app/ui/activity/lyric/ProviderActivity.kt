@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2026 Proify
+ * Copyright 2026 Proify, Tomakino
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,17 @@
 
 package io.github.proify.lyricon.app.ui.activity.lyric
 
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -35,16 +39,20 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.BlurredEdgeTreatment
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -55,7 +63,9 @@ import com.airbnb.lottie.compose.rememberLottieComposition
 import io.github.proify.lyricon.app.Application
 import io.github.proify.lyricon.app.R
 import io.github.proify.lyricon.app.compose.AppToolBarListContainer
+import io.github.proify.lyricon.app.compose.GoogleRainbowText
 import io.github.proify.lyricon.app.compose.custom.miuix.basic.BasicComponentDefaults
+import io.github.proify.lyricon.app.compose.icon.GeminiColor
 import io.github.proify.lyricon.app.ui.activity.BaseActivity
 import io.github.proify.lyricon.app.ui.activity.lyric.packagestyle.sheet.AppCache
 import io.github.proify.lyricon.app.ui.activity.lyric.packagestyle.sheet.AsyncAppIcon
@@ -64,50 +74,75 @@ import io.github.proify.lyricon.app.util.SignatureValidator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
+import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.utils.PressFeedbackType
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 
 class LyricProviderActivity : BaseActivity() {
-    companion object {
-        private val CERTIFIED_SIGNATURE =
-            arrayOf(
-                //proifySign
-                "d75a43f76dbe80d816046f952b8d0f5f7abd71c9bd7b57786d5367c488bd5816"
-            )
-    }
 
     private val viewModel: ProviderViewModel by viewModels()
 
+    companion object {
+        private val CERTIFIED_SIGNATURE = arrayOf(
+            "d75a43f76dbe80d816046f952b8d0f5f7abd71c9bd7b57786d5367c488bd5816"
+        )
+
+        internal val tagCodeName: Map<String, Tag> by lazy {
+            val context = Application.instance
+            mapOf(
+                $$"$syllable" to Tag(
+                    imageVector = GeminiColor,
+                    title = context.getString(R.string.module_tag_syllable),
+                    rainbow = true
+                ),
+                $$"$translation" to Tag(
+                    icon = R.drawable.translate_24px,
+                    title = context.getString(R.string.module_tag_translation)
+                )
+            )
+        }
+    }
+
+    data class Tag(
+        val icon: Int? = null,
+        val imageVector: ImageVector? = null,
+        val title: String,
+        val rainbow: Boolean = false
+    )
+
     data class PackageItem(
-        val applicationInfo: PackageInfo,
+        val packageInfo: PackageInfo,
         val description: String?,
         val home: String?,
         val category: String?,
         val author: String?,
-        val certified: Boolean
+        val certified: Boolean,
+        val tags: List<Tag>
     ) {
-        fun getLabel(): String {
-            val cached = AppCache.getCachedLabel(applicationInfo.packageName)
-            if (cached != null) return cached
-
-            val context = Application.instance
-            val packageManager = context.packageManager
-            val label = applicationInfo.applicationInfo?.loadLabel(packageManager).toString()
-            AppCache.cacheLabel(applicationInfo.packageName, label)
-            return label
+        // 延迟加载标签,只在需要时计算
+        val label: String by lazy {
+            AppCache.getCachedLabel(packageInfo.packageName) ?: run {
+                val context = Application.instance
+                val packageManager = context.packageManager
+                val label = packageInfo.applicationInfo?.loadLabel(packageManager)?.toString()
+                    ?: packageInfo.packageName
+                AppCache.cacheLabel(packageInfo.packageName, label)
+                label
+            }
         }
     }
 
     data class UiState(
         val allApps: List<PackageItem> = emptyList(),
-        val isLoading: Boolean = false,
+        val isLoading: Boolean = false
     )
 
     class ProviderViewModel(application: android.app.Application) : AndroidViewModel(application) {
@@ -115,75 +150,146 @@ class LyricProviderActivity : BaseActivity() {
         private val packageManager: PackageManager = application.packageManager
 
         private val _uiState = MutableStateFlow(UiState())
-        val uiState: StateFlow<UiState> = _uiState
+        val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
         init {
+            loadProviders()
+        }
+
+        private fun loadProviders() {
             viewModelScope.launch {
                 _uiState.value = _uiState.value.copy(isLoading = true)
 
-                val apps = withContext(Dispatchers.IO) {
-                    val items = mutableListOf<PackageItem>()
-                    val packageInfos =
-                        packageManager.getInstalledPackages(
-                            PackageManager.GET_META_DATA
-                                    or PackageManager.GET_SIGNING_CERTIFICATES
-                        )
+                withContext(Dispatchers.IO) {
+                    // 获取所有已安装的包
+                    val packageInfos = packageManager.getInstalledPackages(
+                        PackageManager.GET_META_DATA or PackageManager.GET_SIGNING_CERTIFICATES
+                    )
 
-                    for (packageInfo in packageInfos) {
-                        val metaData = packageInfo.applicationInfo?.metaData ?: continue
-                        if (!metaData.getBoolean("lyricon_module")) continue
-                        val description = metaData.getString("lyricon_module_description")
-                        val category = metaData.getString("lyricon_module_category")
-                        val home = metaData.getString("lyricon_module_home")
-                        val author = metaData.getString("lyricon_module_author")
+                    // 快速过滤出目标包
+                    val targetPackages = packageInfos.filter { packageInfo ->
+                        val applicationInfo = packageInfo.applicationInfo ?: return@filter false
+                        val flags = applicationInfo.flags
 
-                        val certified =
-                            SignatureValidator.validateSignature(packageInfo, *CERTIFIED_SIGNATURE)
+                        if (flags and ApplicationInfo.FLAG_SYSTEM != 0
+                            || flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP != 0
+                        ) return@filter false
 
-                        items.add(
-                            PackageItem(
-                                applicationInfo = packageInfo,
-                                description = description,
-                                home = home,
-                                category = category,
-                                author = author,
-                                certified = certified
-                            )
-                        )
+                        applicationInfo.metaData?.getBoolean("lyricon_module") == true
                     }
-                    return@withContext items
+
+                    // 如果没有目标包,直接返回
+                    if (targetPackages.isEmpty()) {
+                        withContext(Dispatchers.Main) {
+                            _uiState.value = UiState(allApps = emptyList(), isLoading = false)
+                        }
+                        return@withContext
+                    }
+
+                    // 分批处理,提高初始响应速度
+                    val batchSize = 5
+                    val allApps = mutableListOf<PackageItem>()
+
+                    targetPackages.chunked(batchSize).forEach { batch ->
+                        val batchResults = batch.mapNotNull { packageInfo ->
+                            try {
+                                processPackageInfo(packageInfo)
+                            } catch (e: Exception) {
+                                null
+                            }
+                        }
+
+                        allApps.addAll(batchResults)
+
+                        // 每批次处理完后立即更新UI
+                        withContext(Dispatchers.Main) {
+                            _uiState.value = UiState(
+                                allApps = allApps.toList(),
+                                isLoading = allApps.size < targetPackages.size
+                            )
+                        }
+                    }
                 }
-                _uiState.value = _uiState.value.copy(isLoading = false, allApps = apps)
+            }
+        }
+
+        private fun processPackageInfo(packageInfo: PackageInfo): PackageItem? {
+            val applicationInfo = packageInfo.applicationInfo ?: return null
+            val metaData = applicationInfo.metaData ?: return null
+
+            // 提前返回,避免不必要的处理
+            if (!metaData.getBoolean("lyricon_module")) return null
+
+            // 并行读取元数据
+            val description = metaData.getString("lyricon_module_description")
+            val category = metaData.getString("lyricon_module_category")
+            val home = metaData.getString("lyricon_module_home")
+            val author = metaData.getString("lyricon_module_author")
+
+            // 签名验证可能较慢,但必须同步完成
+            val certified = SignatureValidator.validateSignature(
+                packageInfo,
+                *CERTIFIED_SIGNATURE
+            )
+
+            // 延迟标签提取
+            val tags = extractTags(packageInfo, applicationInfo, metaData)
+
+            // 预加载图标
+            if (AppCache.getCachedIcon(packageInfo.packageName) == null) {
+                try {
+                    applicationInfo.loadIcon(packageManager)?.let { icon ->
+                        AppCache.cacheIcon(packageInfo.packageName, icon)
+                    }
+                } catch (e: Exception) {
+                    // 忽略图标加载失败
+                }
+            }
+
+            return PackageItem(
+                packageInfo = packageInfo,
+                description = description,
+                home = home,
+                category = category,
+                author = author,
+                certified = certified,
+                tags = tags
+            )
+        }
+
+        private fun extractTags(
+            packageInfo: PackageInfo,
+            applicationInfo: ApplicationInfo,
+            metaData: Bundle
+        ): List<Tag> {
+            val tagsID = metaData.getInt("lyricon_module_tags")
+
+            val tagStrings = when {
+                tagsID != 0 -> {
+                    try {
+                        val resources = packageManager.getResourcesForApplication(applicationInfo)
+                        resources.getStringArray(tagsID).toList()
+                    } catch (e: Exception) {
+                        emptyList()
+                    }
+                }
+
+                else -> {
+                    metaData.getString("lyricon_module_tags")?.let { listOf(it) } ?: emptyList()
+                }
+            }
+
+            // 使用缓存的 tagCodeName
+            return tagStrings.mapNotNull { tag ->
+                tagCodeName[tag] ?: Tag(title = tag)
             }
         }
     }
 
     private data class AppCategory(
-        val name: String?,
-        val items: MutableList<PackageItem>
+        val name: String,
+        val items: List<PackageItem>
     )
-
-    @Composable
-    private fun categorizeApps(apps: List<PackageItem>): List<AppCategory> {
-        val map = mutableMapOf<String, AppCategory>()
-        for (app in apps) {
-            val category = app.category ?: stringResource(R.string.other)
-            val categoryItem = map.getOrPut(category) {
-                AppCategory(category, mutableListOf())
-            }
-            categoryItem.items.add(app)
-        }
-
-        if (map.size == 1 && map.containsKey(stringResource(R.string.other))) {
-            return listOf(
-                AppCategory(
-                    "",
-                    map[stringResource(R.string.other)]!!.items
-                )
-            )
-        }
-        return map.values.toList()
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -193,48 +299,62 @@ class LyricProviderActivity : BaseActivity() {
     @Composable
     private fun Content() {
         val state by viewModel.uiState.collectAsState()
-        val categorized = categorizeApps(state.allApps)
-        val showEmpty = remember(state.allApps) {
-            mutableStateOf(state.allApps.isEmpty())
+
+        val categorized by remember {
+            derivedStateOf { categorizeApps(state.allApps) }
         }
 
         AppToolBarListContainer(
             title = getString(R.string.activity_lyric_provider),
-            showEmpty = showEmpty.value,
-            canBack = true,
-            emptyContent = {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .overScrollVertical(),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    if (state.isLoading) {
-                        CircularProgressIndicator()
-                    } else {
+            showEmpty = false,
+            canBack = true
+        ) {
+            // 加载状态
+            if (state.isLoading) {
+//                item(key = "loading") {
+//                    Box(
+//                        modifier = Modifier
+//                            .fillParentMaxSize()
+//                            .overScrollVertical(),
+//                        contentAlignment = Alignment.Center
+//                    ) {
+//                        LoadingIndicator(size = LoadingIndicatorSize.XL)
+//                    }
+//                }
+                return@AppToolBarListContainer
+            }
+
+            // 空状态
+            if (state.allApps.isEmpty()) {
+                item(key = "empty") {
+                    Column(
+                        modifier = Modifier
+                            .fillParentMaxSize()
+                            .overScrollVertical(),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
                         val composition by rememberLottieComposition(
                             LottieCompositionSpec.Asset(
                                 AnimationEmoji.getAssetsFile("Neutral-face")
                             )
                         )
                         LottieAnimation(
-                            modifier = Modifier
-                                .size(100.dp),
+                            modifier = Modifier.size(100.dp),
                             composition = composition,
                             iterations = LottieConstants.IterateForever
                         )
-
                         Spacer(modifier = Modifier.height(24.dp))
                         Text("没有可用的歌词提供者")
                     }
                 }
-            }) { scope ->
+                return@AppToolBarListContainer
+            }
 
-            if (showEmpty.value) return@AppToolBarListContainer
+            // 列表内容
             categorized.forEach { category ->
-                if (category.name?.isNotBlank() == true) {
-                    scope.item(key = "header-${category.name}") {
+                if (category.name.isNotBlank()) {
+                    item(key = "header-${category.name}") {
                         SmallTitle(
                             text = category.name,
                             insideMargin = PaddingValues(28.dp, 0.dp)
@@ -242,69 +362,94 @@ class LyricProviderActivity : BaseActivity() {
                         Spacer(modifier = Modifier.height(10.dp))
                     }
                 }
-                scope.items(category.items, key = { it.applicationInfo.packageName }) {
-                    ListItem(it)
-                    Spacer(modifier = Modifier.height(13.dp))
+
+                items(
+                    items = category.items,
+                    key = { it.packageInfo.packageName }
+                ) { item ->
+                    ListItem(item)
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
             }
 
-            scope.item(key = "bottom_spacer") {
+            item(key = "bottom_spacer") {
                 Spacer(modifier = Modifier.height(4.dp))
             }
         }
     }
 
+    private fun categorizeApps(apps: List<PackageItem>): List<AppCategory> {
+        if (apps.isEmpty()) return emptyList()
+
+        val otherCategory = getString(R.string.other)
+        val grouped = apps.groupBy { it.category ?: otherCategory }
+
+        if (grouped.size == 1 && grouped.containsKey(otherCategory)) {
+            return listOf(AppCategory("", grouped[otherCategory]!!))
+        }
+
+        return grouped.map { (name, items) ->
+            AppCategory(name, items)
+        }
+    }
+
     @Composable
     private fun ListItem(item: PackageItem) {
+        val titleColor = BasicComponentDefaults.titleColor()
+        val summaryColor = BasicComponentDefaults.summaryColor()
+        val unknown = stringResource(R.string.unknown)
+
+        val info = remember(item.packageInfo.versionName, item.author) {
+            getString(
+                R.string.lyric_provider_info_secondary,
+                item.packageInfo.versionName ?: unknown,
+                getString(R.string.author),
+                item.author ?: unknown
+            )
+        }
+
+        // 延迟加载背景图片,只在需要时获取
+        val imageBitmap = remember(item.packageInfo.packageName) {
+            AppCache.getBitmap(item.packageInfo.packageName)?.asImageBitmap()
+        }
+
         Card(
             modifier = Modifier
                 .padding(horizontal = 16.dp, vertical = 0.dp)
                 .fillMaxWidth(),
-            insideMargin = PaddingValues(0.dp, 0.dp),
+            pressFeedbackType = PressFeedbackType.Sink
         ) {
-            //val checked by remember { mutableStateOf(false) }
-
-            val title = item.getLabel()
-            val titleColor = BasicComponentDefaults.titleColor()
-            val summaryColor = BasicComponentDefaults.summaryColor()
-            val description = item.description
-            val certified = item.certified
-
-            val unknown = stringResource(R.string.unknown)
-            val info = stringResource(
-                R.string.lyric_provider_info_secondary,
-                (item.applicationInfo.versionName ?: unknown),
-                stringResource(R.string.author),
-                (item.author ?: unknown)
-            )
-
-            Column(
-                modifier = Modifier.fillMaxWidth(),
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
             ) {
-                //  val interactionSource = remember { MutableInteractionSource() }
-                //val indication = LocalIndication.current
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                    //                                    .clickable(
-                    //                                        indication = indication,
-                    //                                        interactionSource = interactionSource,
-                    //                                        onClick = {
-                    //                                        }
-                    //                                    )
-                    ,
-                    verticalAlignment = Alignment.CenterVertically
+
+                // 只有在图片存在时才渲染背景
+                imageBitmap?.let { bitmap ->
+                    Image(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .blur(
+                                170.dp,
+                                edgeTreatment = BlurredEdgeTreatment.Unbounded
+                            ),
+                        bitmap = bitmap,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop
+                    )
+                }
+
+                Column(
+                    modifier = Modifier.padding(16.dp)
                 ) {
                     Row(
-                        modifier = Modifier
-                            .padding(16.dp)
-                            .fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-
-                        item.applicationInfo.applicationInfo?.let { it1 ->
+                        item.packageInfo.applicationInfo?.let { appInfo ->
+                            // AsyncAppIcon 会处理异步加载
                             AsyncAppIcon(
-                                application = it1,
+                                application = appInfo,
                                 modifier = Modifier.size(40.dp)
                             )
                             Spacer(modifier = Modifier.width(10.dp))
@@ -312,20 +457,21 @@ class LyricProviderActivity : BaseActivity() {
 
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = title,
+                                text = item.label,
                                 fontSize = MiuixTheme.textStyles.headline1.fontSize,
                                 fontWeight = FontWeight.Medium,
                                 color = titleColor.color(true)
                             )
+
                             Spacer(modifier = Modifier.height(4.dp))
 
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                if (certified) {
+                                if (item.certified) {
                                     Icon(
                                         modifier = Modifier.size(20.dp),
                                         painter = painterResource(R.drawable.verified_24px),
                                         contentDescription = null,
-                                        tint = Color(color = 0XFF66BB6A)
+                                        tint = Color(0XFF66BB6A)
                                     )
                                     Spacer(modifier = Modifier.width(4.dp))
                                 }
@@ -336,31 +482,82 @@ class LyricProviderActivity : BaseActivity() {
                                 )
                             }
                         }
-                        // Spacer(modifier = Modifier.width(10.dp))
-                        // Switch(checked, onCheckedChange = {})
+                    }
+
+                    item.description?.let { desc ->
+                        Text(
+                            modifier = Modifier.padding(top = 10.dp),
+                            text = desc,
+                            fontSize = MiuixTheme.textStyles.body2.fontSize,
+                            color = summaryColor.color(true)
+                        )
+                    }
+
+                    if (item.tags.isNotEmpty()) {
+                        TagView(item.tags)
                     }
                 }
-
-                if (description != null) {
-                    Text(
-                        modifier = Modifier.padding(
-                            start = 16.dp,
-                            end = 16.dp,
-                            bottom = 16.dp
-                        ),
-                        text = description,
-                        fontSize = MiuixTheme.textStyles.body2.fontSize,
-                        color = summaryColor.color(true)
-                    )
-                }
             }
-
         }
     }
 
-    @Preview(showBackground = true)
     @Composable
-    private fun ContentPreview() {
-        Content()
+    private fun TagView(tags: List<Tag>) {
+        Spacer(modifier = Modifier.height(16.dp))
+        FlowRow(modifier = Modifier.fillMaxWidth()) {
+            tags.forEachIndexed { index, tag ->
+                Card(
+                    modifier = Modifier.padding(start = if (index == 0) 0.dp else 10.dp),
+                    colors = CardDefaults.defaultColors(
+                        color = MiuixTheme.colorScheme.surface.copy(
+                            alpha = 0.65f
+                        )
+                    ),
+                    onClick = {},
+                    showIndication = true
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+
+                        if (tag.icon != null) {
+                            Icon(
+                                modifier = Modifier.size(20.dp),
+                                painter = painterResource(tag.icon),
+                                contentDescription = null,
+                                tint = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 1f)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                        } else if (tag.imageVector != null) {
+                            Image(
+                                modifier = Modifier.size(20.dp),
+                                imageVector = tag.imageVector,
+                                contentDescription = null,
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                        }
+
+                        if (tag.rainbow) {
+                            GoogleRainbowText(
+                                text = tag.title,
+                                style = MiuixTheme.textStyles.body2.copy(
+                                    color = MiuixTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            )
+                        } else {
+                            Text(
+                                text = tag.title,
+                                fontSize = MiuixTheme.textStyles.body2.fontSize,
+                                fontWeight = FontWeight.Medium,
+                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 }

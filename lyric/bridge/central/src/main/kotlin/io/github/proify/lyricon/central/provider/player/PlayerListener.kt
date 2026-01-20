@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2026 Proify
+ * Copyright 2026 Proify, Tomakino
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import io.github.proify.lyricon.lyric.model.Song
  * 该接口用于接收播放器在运行过程中产生的各类事件回调，
  * 事件均携带对应的 [PlayerRecorder]，以便区分事件来源。
  */
-interface PlayerListener {
+internal interface PlayerListener {
 
     /**
      * 当前播放歌曲发生变化时回调。
@@ -66,5 +66,13 @@ interface PlayerListener {
      * @param recorder 事件来源的播放器记录器
      * @param text     需要展示或处理的文本内容，可能为空
      */
-    fun onPostText(recorder: PlayerRecorder, text: String?)
+    fun onSendText(recorder: PlayerRecorder, text: String?)
+
+    /**
+     * 播放器显示翻译状态发生变化时回调。
+     *
+     * @param recorder              事件来源的播放器记录器
+     * @param isDisplayTranslation  当前是否显示翻译
+     */
+    fun onDisplayTranslationChanged(recorder: PlayerRecorder, isDisplayTranslation: Boolean)
 }

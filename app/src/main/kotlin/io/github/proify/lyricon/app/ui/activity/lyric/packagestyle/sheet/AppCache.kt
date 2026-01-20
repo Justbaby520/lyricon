@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2026 Proify
+ * Copyright 2026 Proify, Tomakino
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,26 +16,42 @@
 
 package io.github.proify.lyricon.app.ui.activity.lyric.packagestyle.sheet
 
+import android.graphics.Bitmap
 import android.graphics.drawable.Drawable
+import io.github.proify.android.extensions.toBitmap
+import java.lang.ref.WeakReference
 import java.util.WeakHashMap
 
 object AppCache {
     private val iconCache = WeakHashMap<String, Drawable>()
     private val labelCache = WeakHashMap<String, String>()
 
-    @Synchronized
-    fun getCachedIcon(packageName: String): Drawable? = iconCache[packageName]
+    private val blurredCache = mutableMapOf<String, WeakReference<Bitmap>>()
 
-    @Synchronized
-    fun cacheIcon(packageName: String, icon: Drawable) {
-        iconCache[packageName] = icon
+    fun getCachedIcon(packageName: String): Drawable? = synchronized(iconCache) {
+        iconCache[packageName]
     }
 
-    @Synchronized
-    fun getCachedLabel(packageName: String): String? = labelCache[packageName]
+    fun cacheIcon(packageName: String, icon: Drawable?): Any? = synchronized(iconCache) {
+        if (icon != null) iconCache[packageName] = icon else iconCache.remove(packageName)
+    }
 
-    @Synchronized
-    fun cacheLabel(packageName: String, label: String) {
+    fun getCachedLabel(packageName: String): String? = synchronized(labelCache) {
+        labelCache[packageName]
+    }
+
+    fun cacheLabel(packageName: String, label: String): Unit = synchronized(labelCache) {
         labelCache[packageName] = label
+    }
+
+    fun getBitmap(packageName: String, radius: Float = 20f): Bitmap? {
+        val cached = blurredCache[packageName]?.get()
+        if (cached != null) return cached
+
+        val drawable = getCachedIcon(packageName) ?: return null
+        val bitmap = drawable.toBitmap()
+
+        blurredCache[packageName] = WeakReference(bitmap)
+        return bitmap
     }
 }

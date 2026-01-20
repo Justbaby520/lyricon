@@ -1,10 +1,26 @@
+/*
+ * Copyright 2026 Proify, Tomakino
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 @file:Suppress("KotlinConstantConditions", "MemberVisibilityCanBePrivate")
 
 package io.github.proify.lyricon.lyric.style
 
 import android.content.SharedPreferences
 import android.os.Parcelable
-import io.github.proify.android.extensions.jsonx
+import io.github.proify.android.extensions.json
 import io.github.proify.android.extensions.safeDecode
 import io.github.proify.android.extensions.toJson
 import kotlinx.parcelize.Parcelize
@@ -38,10 +54,16 @@ data class TextStyle(
     var marqueeStopAtEnd: Boolean = Defaults.MARQUEE_STOP_AT_END,
     var marqueeInitialDelay: Int = Defaults.MARQUEE_INITIAL_DELAY,
     var marqueeRepeatUnlimited: Boolean = Defaults.MARQUEE_REPEAT_UNLIMITED,
-    var enableGradientProgressStyle: Boolean = Defaults.ENABLE_GRADIENT_PROGRESS_STYLE,
+    var gradientProgressStyle: Boolean = Defaults.ENABLE_GRADIENT_PROGRESS_STYLE,
+
+    var relativeProgress: Boolean = Defaults.RELATIVE_PROGRESS,
+    var relativeProgressHighlight: Boolean = Defaults.RELATIVE_PROGRESS_HIGHLIGHT
 ) : AbstractStyle(), Parcelable {
 
     object Defaults {
+        const val RELATIVE_PROGRESS: Boolean = true
+        const val RELATIVE_PROGRESS_HIGHLIGHT: Boolean = false
+
         const val TEXT_SIZE: Float = 0f
         val MARGINS: RectF = RectF()
         val PADDINGS: RectF = RectF()
@@ -77,18 +99,18 @@ data class TextStyle(
         textSize = preferences.getFloat("lyric_style_text_size", Defaults.TEXT_SIZE)
         repeatOutput =
             preferences.getBoolean("lyric_style_text_repeat_output", Defaults.REPEAT_OUTPUT)
-        margins = jsonx.safeDecode<RectF>(preferences.getString("lyric_style_text_margins", null))
-        paddings = jsonx.safeDecode<RectF>(preferences.getString("lyric_style_text_paddings", null))
+        margins = json.safeDecode<RectF>(preferences.getString("lyric_style_text_margins", null))
+        paddings = json.safeDecode<RectF>(preferences.getString("lyric_style_text_paddings", null))
 
         enableCustomTextColor = preferences.getBoolean(
             "lyric_style_text_enable_custom_color",
             Defaults.ENABLE_CUSTOM_TEXT_COLOR
         )
-        lightModeColor = jsonx.safeDecode<TextColor>(
+        lightModeColor = json.safeDecode<TextColor>(
             preferences.getString("lyric_style_text_color_light_mode", null),
             Defaults.LIGHT_MODE_COLOR
         )
-        darkModeColor = jsonx.safeDecode<TextColor>(
+        darkModeColor = json.safeDecode<TextColor>(
             preferences.getString("lyric_style_text_color_dark_mode", null),
             Defaults.DARK_MODE_COLOR
         )
@@ -133,9 +155,18 @@ data class TextStyle(
             "lyric_style_text_marquee_repeat_unlimited",
             Defaults.MARQUEE_REPEAT_UNLIMITED
         )
-        enableGradientProgressStyle = preferences.getBoolean(
+        gradientProgressStyle = preferences.getBoolean(
             "lyric_style_text_gradient_progress_style",
             Defaults.ENABLE_GRADIENT_PROGRESS_STYLE
+        )
+
+        relativeProgress = preferences.getBoolean(
+            "lyric_style_text_relative_progress",
+            Defaults.RELATIVE_PROGRESS
+        )
+        relativeProgressHighlight = preferences.getBoolean(
+            "lyric_style_text_relative_progress_highlight",
+            Defaults.RELATIVE_PROGRESS_HIGHLIGHT
         )
     }
 
@@ -167,6 +198,12 @@ data class TextStyle(
         editor.putBoolean("lyric_style_text_marquee_stop_at_end", marqueeStopAtEnd)
         editor.putBoolean("lyric_style_text_marquee_repeat_unlimited", marqueeRepeatUnlimited)
 
-        editor.putBoolean("lyric_style_text_gradient_progress_style", enableGradientProgressStyle)
+        editor.putBoolean("lyric_style_text_gradient_progress_style", gradientProgressStyle)
+
+        editor.putBoolean("lyric_style_text_relative_progress", relativeProgress)
+        editor.putBoolean(
+            "lyric_style_text_relative_progress_highlight",
+            relativeProgressHighlight
+        )
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2026 Proify
+ * Copyright 2026 Proify, Tomakino
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -193,7 +193,7 @@ class PackageStyleActivity : BaseLyricActivity() {
 }
 
 @Composable
-private fun PackageStyleScreen(viewModel: PackageStyleViewModel) {
+internal fun PackageStyleScreen(viewModel: PackageStyleViewModel) {
     val showBottomSheet by viewModel.showBottomSheet.collectAsState()
     val currentPackageName by viewModel.currentPackageName.collectAsState()
     val refreshTrigger by viewModel.refreshTrigger.collectAsState()

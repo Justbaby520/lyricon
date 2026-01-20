@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2026 Proify
+ * Copyright 2026 Proify, Tomakino
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,17 +17,25 @@
 package io.github.proify.lyricon.lyric.view
 
 import android.animation.LayoutTransition
+import android.annotation.SuppressLint
 import android.content.Context
-import android.util.AttributeSet
 import android.widget.LinearLayout
 import io.github.proify.lyricon.lyric.model.LyricLine
+import io.github.proify.lyricon.lyric.model.LyricWord
+import io.github.proify.lyricon.lyric.model.interfaces.ILyricTiming
 import io.github.proify.lyricon.lyric.model.interfaces.IRichLyricLine
 import io.github.proify.lyricon.lyric.view.line.LyricLineView
 import io.github.proify.lyricon.lyric.view.util.LayoutTransitionX
 import io.github.proify.lyricon.lyric.view.util.visible
 
-class RichLyricLineView(context: Context, attrs: AttributeSet? = null) :
-    LinearLayout(context, attrs) {
+@SuppressLint("ViewConstructor")
+class RichLyricLineView(
+    context: Context,
+    var displayTranslation: Boolean = false,
+    var enableRelativeProgress: Boolean = false,
+    var enableRelativeProgressHighlight: Boolean = false
+) :
+    LinearLayout(context) {
 
     companion object {
         private val EMPTY_LYRIC_LINE = LyricLine()
@@ -50,7 +58,14 @@ class RichLyricLineView(context: Context, attrs: AttributeSet? = null) :
         LyricLineView(context)
 
     val secondary: LyricLineView =
-        LyricLineView(context)
+        LyricLineView(context).apply {
+            visible = false
+        }
+
+    fun notifyLineChanged() {
+        setMainLine(line)
+        setSecondaryLine(line)
+    }
 
     init {
         orientation = VERTICAL
@@ -59,23 +74,65 @@ class RichLyricLineView(context: Context, attrs: AttributeSet? = null) :
         addView(secondary, lp)
     }
 
-    private fun setMainLine(lyricLine: IRichLyricLine?) {
-        val line = if (lyricLine == null) {
+    fun calculateRelativeProgressWords(
+        timing: ILyricTiming,
+        text: String?,
+        words: List<LyricWord>?,
+    ): List<LyricWord>? {
+        return if (words.isNullOrEmpty()
+            && !text.isNullOrBlank()
+            && (timing.begin >= 0 && timing.end > 0 && timing.begin < timing.end)
+        ) {
+            listOf(
+                LyricWord(
+                    text = text,
+                    begin = timing.begin,
+                    end = timing.end,
+                    duration = timing.end - timing.begin
+                )
+            )
+        } else {
+            words
+        }
+    }
+
+    private fun setMainLine(source: IRichLyricLine?) {
+        var isRelativeProgressWords = false
+
+        val line = if (source == null) {
             EMPTY_LYRIC_LINE
         } else {
+            val words = if (enableRelativeProgress && !source.isTitleLine()) {
+                calculateRelativeProgressWords(
+                    source,
+                    source.text,
+                    source.words
+                )
+            } else {
+                source.words
+            }
+            if (words != source.words) {
+                isRelativeProgressWords = true
+            }
+
             LyricLine(
-                begin = lyricLine.begin,
-                end = lyricLine.end,
-                duration = lyricLine.duration,
-                isAlignedRight = lyricLine.isAlignedRight,
-                metadata = lyricLine.metadata,
-                text = lyricLine.text,
-                words = lyricLine.words,
+                begin = source.begin,
+                end = source.end,
+                duration = source.duration,
+                isAlignedRight = source.isAlignedRight,
+                metadata = source.metadata,
+                text = source.text,
+                words = words,
             )
         }
 
         main.setLyric(line)
-        //main.visible = line.words.isNotEmpty()
+
+        if (isRelativeProgressWords) {
+            main.syllable.onlyScrollMode = !enableRelativeProgressHighlight
+        } else {
+            main.syllable.onlyScrollMode = false
+        }
     }
 
     fun setMainLyricPlayListener(listener: LyricPlayListener?) {
@@ -87,16 +144,42 @@ class RichLyricLineView(context: Context, attrs: AttributeSet? = null) :
     }
 
     private fun setSecondaryLine(source: IRichLyricLine?) {
+        if (source == null) {
+            secondary.setLyric(null)
+            secondary.visible = false
+            return
+        }
+
         val line = LyricLine().apply {
-            if (source == null) return@apply
             begin = source.begin
             end = source.end
             isAlignedRight = source.isAlignedRight
-            text = source.secondaryText
-            words = source.secondaryWords
+
+            when {
+                !source.secondary.isNullOrBlank() || !source.secondaryWords.isNullOrEmpty() -> {
+                    text = source.secondary
+                    words = calculateRelativeProgressWords(
+                        source,
+                        source.secondary,
+                        source.secondaryWords
+                    )
+                }
+
+                displayTranslation && (!source.translation.isNullOrBlank() || !source.translationWords.isNullOrEmpty()) -> {
+                    text = source.translation
+                    words = calculateRelativeProgressWords(
+                        source,
+                        source.translation,
+                        source.translationWords
+                    )
+                    type = LyricLine.TYPE_TRANSLATION
+                }
+            }
         }
+
         secondary.setLyric(line)
-        secondary.visible = false
+        secondary.visible = line.type == LyricLine.TYPE_TRANSLATION
+                && (!line.text.isNullOrBlank() || !line.words.isNullOrEmpty())
     }
 
     fun seekTo(position: Long) {
@@ -110,16 +193,14 @@ class RichLyricLineView(context: Context, attrs: AttributeSet? = null) :
     }
 
     fun setStyle(config: RichLyricLineConfig) {
-        setStyle(
-            main,
+        setMainStyle(
             config.primary,
             config.marquee,
             config.syllable,
             config.gradientProgressStyle
         )
 
-        setStyle(
-            secondary,
+        setSecondaryStyle(
             config.secondary,
             config.marquee,
             config.syllable,
@@ -127,20 +208,50 @@ class RichLyricLineView(context: Context, attrs: AttributeSet? = null) :
         )
     }
 
-    private fun setStyle(
-        view: LyricLineView,
-        textConfig: TextConfig,
+    private fun setMainStyle(
+        config: MainTextConfig,
+        marqueeConfig: MarqueeConfig,
+        syllableConfig: SyllableConfig,
+        gradientProgressStyle: Boolean
+    ) {
+        var notifyLineChanged = false
+
+        if (config.enableRelativeProgress != enableRelativeProgress) {
+            enableRelativeProgress = config.enableRelativeProgress
+            notifyLineChanged = true
+        }
+
+        if (enableRelativeProgressHighlight != config.enableRelativeProgressHighlight) {
+            enableRelativeProgressHighlight = config.enableRelativeProgressHighlight
+            notifyLineChanged = true
+        }
+
+        val lineConfig = LyricLineConfig(
+            config,
+            marqueeConfig,
+            syllableConfig,
+            gradientProgressStyle
+        )
+        main.setStyle(lineConfig)
+
+        if (notifyLineChanged) {
+            notifyLineChanged()
+        }
+    }
+
+    private fun setSecondaryStyle(
+        secondaryTextConfig: SecondaryTextConfig,
         marqueeConfig: MarqueeConfig,
         syllableConfig: SyllableConfig,
         gradientProgressStyle: Boolean
     ) {
         val config = LyricLineConfig(
-            textConfig,
+            secondaryTextConfig,
             marqueeConfig,
             syllableConfig,
             gradientProgressStyle
         )
-        view.setStyle(config)
+        secondary.setStyle(config)
     }
 
     fun tryStartMarquee() {
@@ -151,4 +262,5 @@ class RichLyricLineView(context: Context, attrs: AttributeSet? = null) :
             secondary.startMarquee()
         }
     }
+
 }

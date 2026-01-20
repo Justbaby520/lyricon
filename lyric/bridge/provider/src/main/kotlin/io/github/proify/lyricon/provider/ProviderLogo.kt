@@ -1,17 +1,32 @@
+/*
+ * Copyright 2026 Proify, Tomakino
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 @file:Suppress("unused", "MemberVisibilityCanBePrivate")
 
 package io.github.proify.lyricon.provider
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.Bitmap.Config
 import android.graphics.BitmapFactory
-import android.graphics.Color
 import android.graphics.drawable.Drawable
 import android.os.Parcelable
 import androidx.annotation.DrawableRes
-import androidx.annotation.IntDef
+import androidx.annotation.Px
 import androidx.core.graphics.drawable.toBitmap
-import androidx.core.graphics.drawable.toDrawable
 import io.github.proify.lyricon.provider.ProviderLogo.Companion.TYPE_BITMAP
 import io.github.proify.lyricon.provider.ProviderLogo.Companion.TYPE_SVG
 import kotlinx.parcelize.Parcelize
@@ -26,12 +41,14 @@ import kotlin.io.encoding.Base64
  *
  * @property data 原始字节数据
  * @property type 类型，取值见 [TYPE_BITMAP]、[TYPE_SVG]
+ * @property colorful 是否为彩色图标
  */
 @Serializable
 @Parcelize
 data class ProviderLogo(
     val data: ByteArray,
     val type: Int,
+    val colorful: Boolean = false
 ) : Parcelable {
 
     /**
@@ -42,7 +59,7 @@ data class ProviderLogo(
             BitmapFactory.decodeByteArray(
                 data, 0, data.size,
                 BitmapFactory.Options().apply {
-                    inPreferredConfig = Bitmap.Config.ARGB_8888
+                    inPreferredConfig = Config.ARGB_8888
                 }
             )
         }.getOrNull()
@@ -52,11 +69,6 @@ data class ProviderLogo(
      * 将数据解析为 SVG 字符串，仅在 [type] 为 [TYPE_SVG] 时有效
      */
     fun toSvg(): String? = if (type == TYPE_SVG) data.toString(Charsets.UTF_8) else null
-
-    /** 类型标记注解，仅允许 TYPE_BITMAP 或 TYPE_SVG */
-    @Retention(AnnotationRetention.SOURCE)
-    @IntDef(TYPE_BITMAP, TYPE_SVG)
-    annotation class Type
 
     companion object {
         const val TYPE_BITMAP: Int = 0
@@ -72,14 +84,27 @@ data class ProviderLogo(
             ProviderLogo(bitmap.toPngBytes(recycle), TYPE_BITMAP)
 
         /** 由 [Drawable] 构建 ProviderLogo */
-        fun fromDrawable(drawable: Drawable): ProviderLogo =
-            fromBitmap(drawable.toBitmap())
+        fun fromDrawable(
+            drawable: Drawable,
+            @Px width: Int = drawable.intrinsicWidth,
+            @Px height: Int = drawable.intrinsicHeight,
+            config: Config? = null,
+        ): ProviderLogo =
+            fromBitmap(drawable.toBitmap(width, height, config))
 
         /** 由资源 ID 构建 ProviderLogo */
-        fun fromDrawable(context: Context, @DrawableRes id: Int): ProviderLogo =
-            fromDrawable(
-                context.getDrawable(id) ?: Color.TRANSPARENT.toDrawable()
-            )
+        fun fromDrawable(
+            context: Context,
+            @DrawableRes id: Int,
+            @Px width: Int = -1,
+            @Px height: Int = -1,
+            config: Config? = null,
+        ): ProviderLogo {
+            val drawable = context.getDrawable(id)
+            require(drawable != null) { "Drawable not found" }
+            return if (width > 0 && height > 0) fromBitmap(drawable.toBitmap(width, height, config))
+            else fromBitmap(drawable.toBitmap(config = config))
+        }
 
         /** 由 SVG 字符串构建 ProviderLogo */
         fun fromSvg(svg: String): ProviderLogo =
@@ -95,13 +120,27 @@ data class ProviderLogo(
                 compress(Bitmap.CompressFormat.PNG, 100, out)
                 out.toByteArray()
             }.also { if (recycle) recycle() }
+
+        /** 获取图标类型名称 */
+        internal fun typeName(type: Int): String =
+            when (type) {
+                TYPE_BITMAP -> "Bitmap"
+                TYPE_SVG -> "SVG"
+                else -> "Unknown"
+            }
     }
+
+    override fun toString(): String =
+        "ProviderLogo(type=${typeName(type)}, colorful=$colorful, data=${data.size} bytes)"
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
-        if (other !is ProviderLogo) return false
+        if (javaClass != other?.javaClass) return false
+
+        other as ProviderLogo
 
         if (type != other.type) return false
+        if (colorful != other.colorful) return false
         if (!data.contentEquals(other.data)) return false
 
         return true
@@ -109,10 +148,8 @@ data class ProviderLogo(
 
     override fun hashCode(): Int {
         var result = type
+        result = 31 * result + colorful.hashCode()
         result = 31 * result + data.contentHashCode()
         return result
     }
-
-    override fun toString(): String =
-        "ProviderLogo(type=${if (type == TYPE_SVG) "SVG" else "BITMAP"})"
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2026 Proify
+ * Copyright 2026 Proify, Tomakino
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,8 +77,8 @@ class AboutActivity : BaseActivity() {
         AppToolBarListContainer(
             title = stringResource(id = R.string.activity_about),
             canBack = true,
-        ) { scope ->
-            scope.item {
+        ) {
+            item("head") {
                 Card(
                     modifier =
                         Modifier
@@ -139,7 +139,7 @@ class AboutActivity : BaseActivity() {
                 }
             }
 
-            scope.item {
+            item("info") {
                 val context = LocalContext.current
 
                 Card(

@@ -1,5 +1,5 @@
 /*
- * Copyright 2026 Proify
+ * Copyright 2026 Proify, Tomakino
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,9 @@ package io.github.proify.lyricon.app.compose
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -29,6 +32,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -137,7 +141,7 @@ fun getCurrentTitle(): String? {
 fun AppToolBarListContainer(
     context: Context = LocalContext.current,
     backEvent: () -> Unit = {
-        if (context is BaseActivity) context.onBackPressedDispatcher.onBackPressed()
+        (context as? BaseActivity)?.onBackPressedDispatcher?.onBackPressed()
     },
     title: Any? = getCurrentTitle(),
     canBack: Boolean = false,
@@ -148,12 +152,18 @@ fun AppToolBarListContainer(
     titleOnClick: () -> Unit = {},
     showEmpty: Boolean = false,
     emptyContent: @Composable () -> Unit = {},
-    content: (LazyListScope) -> Unit
+    content: LazyListScope.() -> Unit
 ) {
     AppTheme {
-        val hazeState = rememberHazeState()
-        val scrollBehavior =
-            MiuixScrollBehavior()
+        val hazeState = remember { HazeState() }
+        val scrollBehavior = MiuixScrollBehavior()
+
+        val titleText = remember(title) {
+            when (title) {
+                is Int -> null
+                else -> title?.toString() ?: ""
+            }
+        }
 
         Scaffold(
             bottomBar = bottomBar,
@@ -161,11 +171,11 @@ fun AppToolBarListContainer(
                 BlurTopAppBar(
                     hazeState = hazeState,
                     navigationIcon = {
-                        if (canBack) NavigationBackIcon(
-                            backEvent = backEvent
-                        )
+                        if (canBack) {
+                            NavigationBackIcon(backEvent = backEvent)
+                        }
                     },
-                    title = if (title is Int) stringResource(title) else title.toString(),
+                    title = if (title is Int) stringResource(title) else (titleText ?: ""),
                     scrollBehavior = scrollBehavior,
                     actions = actions,
                     titleDropdown = titleDropdown,
@@ -174,21 +184,35 @@ fun AppToolBarListContainer(
             }
         ) { paddingValues ->
             scaffoldContent()
+
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(top = paddingValues.calculateTopPadding()),
+                    .padding(top = paddingValues.calculateTopPadding())
             ) {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .overScrollVertical()
-                        .nestedScroll(scrollBehavior.nestedScrollConnection)
-                        .hazeSource(hazeState)
+
+                // LazyColumn 带入场动画
+                AnimatedVisibility(
+                    visible = !showEmpty,
+                    enter = fadeIn(),
+                    exit = fadeOut()
                 ) {
-                    content(this)
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .overScrollVertical()
+                            .nestedScroll(scrollBehavior.nestedScrollConnection)
+                            .hazeSource(hazeState),
+                        content = content
+                    )
                 }
-                if (showEmpty) {
+
+                // EmptyContent 带入场动画
+                AnimatedVisibility(
+                    visible = showEmpty,
+                    enter = fadeIn(),
+                    exit = fadeOut()
+                ) {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()

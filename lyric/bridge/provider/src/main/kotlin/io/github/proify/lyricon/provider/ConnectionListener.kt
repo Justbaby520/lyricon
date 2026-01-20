@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2026 Proify
+ * Copyright 2026 Proify, Tomakino
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-package io.github.proify.lyricon.provider.remote
-
-import io.github.proify.lyricon.provider.LyriconProvider
+package io.github.proify.lyricon.provider
 
 /**
  * 中央服务连接状态监听器。

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2026 Proify
+ * Copyright 2026 Proify, Tomakino
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,4 +56,10 @@ data class PlayerRecorder(val info: ProviderInfo) {
      * 通常用于传递错误信息、提示文本或其它附加说明。
      */
     var lastText: String? = null
+
+    /**
+     * 是否显示翻译。
+     */
+    var lastIsDisplayTranslation: Boolean = false
+
 }

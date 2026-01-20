@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2026 Proify
+ * Copyright 2026 Proify, Tomakino
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,21 +14,21 @@
  * limitations under the License.
  */
 
-package io.github.proify.lyricon.provider.remote
+package io.github.proify.lyricon.provider.service
 
-enum class ConnectionStatus {
-    /** 未连接 */
-    DISCONNECTED,
+/**
+ * 远程服务绑定器接口。
+ *
+ * 用于管理远程服务实例的绑定操作。
+ *
+ * @param T 远程服务类型
+ */
+internal interface RemoteServiceBinder<T> {
 
-    /** 已断开连接（服务器主动触发） */
-    DISCONNECTED_REMOTE,
-
-    /** 已断开连接（用户主动触发） */
-    DISCONNECTED_USER,
-
-    /** 连接中 */
-    CONNECTING,
-
-    /** 已连接 */
-    CONNECTED,
+    /**
+     * 绑定远程服务实例。
+     *
+     * @param service 远程服务实例
+     */
+    fun bindRemoteService(service: T)
 }

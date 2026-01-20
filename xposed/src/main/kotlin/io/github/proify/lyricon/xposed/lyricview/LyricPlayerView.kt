@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2026 Proify
+ * Copyright 2026 Proify, Tomakino
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,9 +26,9 @@ import io.github.proify.android.extensions.setColorAlpha
 import io.github.proify.android.extensions.sp
 import io.github.proify.lyricon.lyric.style.LyricStyle
 import io.github.proify.lyricon.lyric.style.TextStyle
+import io.github.proify.lyricon.lyric.view.DefaultMarqueeConfig
+import io.github.proify.lyricon.lyric.view.DefaultSyllableConfig
 import io.github.proify.lyricon.lyric.view.LyricPlayerView
-import io.github.proify.lyricon.lyric.view.MainMarqueeConfig
-import io.github.proify.lyricon.lyric.view.MainSyllableConfig
 import io.github.proify.lyricon.xposed.util.StatusBarColorMonitor
 import io.github.proify.lyricon.xposed.util.StatusColor
 import java.io.File
@@ -82,6 +82,8 @@ class LyricPlayerView(context: Context) : LyricPlayerView(context),
                 this.textColor = resolvePrimaryColor(textStyle)
                 this.textSize = fontSize
                 this.typeface = typeface
+                enableRelativeProgress = textStyle.relativeProgress
+                enableRelativeProgressHighlight = textStyle.relativeProgressHighlight
             }
 
             secondary.apply {
@@ -93,7 +95,7 @@ class LyricPlayerView(context: Context) : LyricPlayerView(context),
             this.marquee = buildMarqueeConfig(textStyle)
             this.syllable = buildSyllableConfig(textStyle)
 
-            this.gradientProgressStyle = textStyle.enableGradientProgressStyle
+            this.gradientProgressStyle = textStyle.gradientProgressStyle
         }
 
         setStyle(config)
@@ -144,7 +146,7 @@ class LyricPlayerView(context: Context) : LyricPlayerView(context),
         )
     }
 
-    private fun buildMarqueeConfig(textStyle: TextStyle) = MainMarqueeConfig().apply {
+    private fun buildMarqueeConfig(textStyle: TextStyle) = DefaultMarqueeConfig().apply {
         scrollSpeed = textStyle.marqueeSpeed
         ghostSpacing = textStyle.marqueeGhostSpacing
 
@@ -155,7 +157,7 @@ class LyricPlayerView(context: Context) : LyricPlayerView(context),
         stopAtEnd = textStyle.marqueeStopAtEnd
     }
 
-    private fun buildSyllableConfig(textStyle: TextStyle) = MainSyllableConfig().apply {
+    private fun buildSyllableConfig(textStyle: TextStyle) = DefaultSyllableConfig().apply {
         val customColor = textStyle.color(currentStatusColor.lightMode)
         val isCustomEnabled = textStyle.enableCustomTextColor && customColor != null
 
@@ -168,6 +170,7 @@ class LyricPlayerView(context: Context) : LyricPlayerView(context),
             isCustomEnabled && customColor.highlight != 0 -> customColor.highlight
             else -> currentStatusColor.color
         }
+
     }
 
     private fun resolvePrimaryColor(textStyle: TextStyle): Int {
@@ -206,4 +209,5 @@ class LyricPlayerView(context: Context) : LyricPlayerView(context),
             Typeface.create(baseTypeface, style)
         }
     }
+
 }

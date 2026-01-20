@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2026 Proify
+ * Copyright 2026 Proify, Tomakino
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,11 +24,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
-import top.yukonga.miuix.kmp.basic.BasicComponentColors
-import top.yukonga.miuix.kmp.basic.BasicComponentDefaults
+import io.github.proify.lyricon.app.compose.custom.miuix.basic.BasicComponentColors
+import io.github.proify.lyricon.app.compose.custom.miuix.basic.BasicComponentDefaults
+import io.github.proify.lyricon.app.compose.custom.miuix.extra.SuperSwitch
 import top.yukonga.miuix.kmp.basic.SwitchColors
 import top.yukonga.miuix.kmp.basic.SwitchDefaults
-import top.yukonga.miuix.kmp.extra.SuperSwitch
 
 @Composable
 fun SwitchPreference(

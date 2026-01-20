@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2026 Proify
+ * Copyright 2026 Proify, Tomakino
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,12 +36,12 @@ import io.github.proify.lyricon.app.compose.custom.miuix.basic.Card
 import io.github.proify.lyricon.app.compose.custom.miuix.extra.IconActions
 import io.github.proify.lyricon.app.compose.custom.miuix.extra.SpinnerEntry
 import io.github.proify.lyricon.app.compose.custom.miuix.extra.SuperSpinner
+import io.github.proify.lyricon.app.compose.custom.miuix.extra.SuperSwitch
 import io.github.proify.lyricon.app.event.SettingChangedEvent
 import io.github.proify.lyricon.app.util.AppLangUtils
 import io.github.proify.lyricon.app.util.AppThemeUtils
 import io.github.proify.lyricon.app.util.EventBus
 import top.yukonga.miuix.kmp.extra.SuperDropdown
-import top.yukonga.miuix.kmp.extra.SuperSwitch
 import java.util.Locale
 
 class SettingsActivity : BaseActivity() {
@@ -67,13 +67,13 @@ internal fun SettingsScreen(onSettingsChanged: () -> Unit) {
     AppToolBarListContainer(
         title = stringResource(id = R.string.activity_settings),
         canBack = true
-    ) { scope ->
-        scope.item("language_section") {
+    ) {
+        item("language_section") {
             SettingsCard {
                 LanguageSelector(onSettingsChanged)
             }
         }
-        scope.item("theme_section") {
+        item("theme_section") {
             SettingsCard(topPadding = 16.dp) {
                 ThemeModeSelector(onSettingsChanged)
             }

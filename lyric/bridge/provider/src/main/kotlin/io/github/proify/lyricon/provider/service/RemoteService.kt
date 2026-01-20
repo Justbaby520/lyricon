@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2026 Proify
+ * Copyright 2026 Proify, Tomakino
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 
-package io.github.proify.lyricon.provider.remote
+package io.github.proify.lyricon.provider.service
 
+import io.github.proify.lyricon.provider.ConnectionListener
+import io.github.proify.lyricon.provider.ConnectionStatus
 import io.github.proify.lyricon.provider.LyriconProvider
+import io.github.proify.lyricon.provider.RemotePlayer
 
 /**
  * 远程服务接口，定义与中心服务的交互。
@@ -86,7 +89,7 @@ fun buildConnectionListener(block: ConnectionListenerBuilder.() -> Unit): Connec
  * @param block 使用 [ConnectionListenerBuilder] 定义回调
  * @return 注册的监听器实例
  */
-fun RemoteService.addOnConnectionListener(block: ConnectionListenerBuilder.() -> Unit)
+fun RemoteService.addConnectionListener(block: ConnectionListenerBuilder.() -> Unit)
         : ConnectionListener {
     val listener = buildConnectionListener(block)
     addConnectionListener(listener)

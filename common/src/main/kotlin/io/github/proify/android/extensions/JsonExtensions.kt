@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2026 Proify
+ * Copyright 2026 Proify, Tomakino
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,10 +18,12 @@ package io.github.proify.android.extensions
 
 import kotlinx.serialization.json.Json
 
-
-val jsonx: Json = Json {
-    ignoreUnknownKeys = true
-    encodeDefaults = false
+val json: Json = Json {
+    coerceInputValues = true     // 尝试转换类型
+    ignoreUnknownKeys = true     // 忽略未知字段
+    isLenient = true             // 宽松的 JSON 语法
+    explicitNulls = false        // 不序列化 null
+    encodeDefaults = false       // 不序列化默认值
 }
 
 /**
@@ -69,14 +71,14 @@ inline fun <reified T> Json.safeEncode(value: T?): String {
  * 将任意对象转换为 JSON 字符串
  */
 inline fun <reified T> T.toJson(): String {
-    return jsonx.safeEncode(this)
+    return json.safeEncode(this)
 }
 
 /**
  * 从 JSON 字符串解析对象
  */
 inline fun <reified T> String.fromJson(default: T? = null): T {
-    return jsonx.safeDecode(this, default)
+    return json.safeDecode(this, default)
 }
 
 /**
@@ -84,6 +86,6 @@ inline fun <reified T> String.fromJson(default: T? = null): T {
  */
 inline fun <reified T> String.fromJsonOrNull(): T? {
     return runCatching {
-        jsonx.decodeFromString<T>(this)
+        json.decodeFromString<T>(this)
     }.getOrNull()
 }

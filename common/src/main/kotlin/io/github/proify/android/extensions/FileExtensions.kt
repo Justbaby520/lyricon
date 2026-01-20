@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2026 Proify
+ * Copyright 2026 Proify, Tomakino
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,13 +23,18 @@ import java.security.MessageDigest
 
 fun File.md5(): String {
     if (!exists() || !canRead()) return ""
-    val buffer = ByteArray(8192)
-    val digest = MessageDigest.getInstance("MD5")
-    FileInputStream(this).use { fis ->
-        var bytesRead: Int
-        while (fis.read(buffer).also { bytesRead = it } != -1) {
-            digest.update(buffer, 0, bytesRead)
+    try {
+        val buffer = ByteArray(8192)
+        val digest = MessageDigest.getInstance("MD5")
+        FileInputStream(this).use { fis ->
+            var bytesRead: Int
+            while (fis.read(buffer).also { bytesRead = it } != -1) {
+                digest.update(buffer, 0, bytesRead)
+            }
         }
+        return digest.digest().joinToString("") { "%02x".format(it) }
+    } catch (e: Exception) {
+        e.printStackTrace()
+        return ""
     }
-    return digest.digest().joinToString("") { "%02x".format(it) }
 }

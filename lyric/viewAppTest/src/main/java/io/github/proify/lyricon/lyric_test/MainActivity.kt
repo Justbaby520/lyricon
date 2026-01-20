@@ -1,3 +1,19 @@
+/*
+ * Copyright 2026 Proify, Tomakino
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package io.github.proify.lyricon.lyric_test
 
 import android.annotation.SuppressLint
@@ -19,7 +35,6 @@ import io.github.proify.lyricon.lyric.model.Song
 import io.github.proify.lyricon.lyric.view.RichLyricLineConfig
 import io.github.proify.lyricon.lyric_test.databinding.ActivityMainBinding
 import io.github.proify.lyricon.provider.LyriconProvider
-import io.github.proify.lyricon.provider.LyriconProviderHelper
 import io.github.proify.lyricon.provider.ProviderLogo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -57,15 +72,12 @@ class MainActivity : AppCompatActivity() {
     private val json = Json { ignoreUnknownKeys = true }
 
     /** LyriconProvider 帮助类，用于歌词同步和状态管理 */
-    internal val lyriconProviderHelper: LyriconProviderHelper by lazy {
-        LyriconProviderHelper(
-            LyriconProvider(
-                context = this,
-                providerPackageName = packageName,
-                logo = ProviderLogo.fromDrawable(this, R.drawable.play_arrow_24px)
-            )
+    internal val provider =
+        LyriconProvider(
+            context = this,
+            providerPackageName = packageName,
+            logo = ProviderLogo.fromDrawable(this, R.drawable.play_arrow_24px)
         )
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -84,7 +96,7 @@ class MainActivity : AppCompatActivity() {
         // 延迟注册 LyriconProvider
         lifecycleScope.launch {
             delay(5000)
-            lyriconProviderHelper.register()
+            provider.register()
             Toast.makeText(this@MainActivity, "LyriconProvider registered", Toast.LENGTH_SHORT)
                 .show()
         }
@@ -96,7 +108,7 @@ class MainActivity : AppCompatActivity() {
                 if (!startTrackingTouch) {
                     val max = binding.slider.valueTo
                     binding.slider.value = pos.toFloat().coerceAtMost(max)
-                    lyriconProviderHelper.player.setPosition(pos)
+                    provider.player.setPosition(pos)
                 }
                 binding.lyric.setPosition(pos)
                 delay(16L)
@@ -154,7 +166,7 @@ class MainActivity : AppCompatActivity() {
 
             override fun onStopTrackingTouch(slider: Slider) {
                 startTrackingTouch = false
-                player?.seekTo(slider.value.toLong()) ?: lyriconProviderHelper.player.setPosition(
+                player?.seekTo(slider.value.toLong()) ?: provider.player.setPosition(
                     slider.value.toLong()
                 )
             }
@@ -230,7 +242,7 @@ class MainActivity : AppCompatActivity() {
         switchTrack(mp3Name)
 
         Log.d(TAG, song.toString())
-        lyriconProviderHelper.player.setSong(song)
+        provider.player.setSong(song)
     }
 
     /**
@@ -254,7 +266,7 @@ class MainActivity : AppCompatActivity() {
      * 播放
      */
     private fun play() {
-        lyriconProviderHelper.player.setPlaybackState(true)
+        provider.player.setPlaybackState(true)
         binding.status.setIconResource(R.drawable.pause_24px)
         player?.takeIf { !it.isPlaying }?.play()
     }
@@ -263,7 +275,7 @@ class MainActivity : AppCompatActivity() {
      * 暂停
      */
     private fun pause() {
-        lyriconProviderHelper.player.setPlaybackState(false)
+        provider.player.setPlaybackState(false)
         binding.status.setIconResource(R.drawable.play_arrow_24px)
         player?.takeIf { it.isPlaying }?.pause()
     }

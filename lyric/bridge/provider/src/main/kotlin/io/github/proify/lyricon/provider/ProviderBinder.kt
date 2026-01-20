@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2026 Proify
+ * Copyright 2026 Proify, Tomakino
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 package io.github.proify.lyricon.provider
 
-import io.github.proify.lyricon.provider.remote.RemoteServiceBinder
+import io.github.proify.lyricon.provider.service.RemoteServiceBinder
 import java.util.concurrent.CopyOnWriteArraySet
 
 /**
@@ -34,13 +34,13 @@ import java.util.concurrent.CopyOnWriteArraySet
  */
 internal class ProviderBinder(
     val provider: LyriconProvider,
-    private val providerService: ProviderService,
+    private val providerService: LocalProviderService,
     private val remoteServiceBinder: RemoteServiceBinder<IRemoteService?>
 ) : IProviderBinder.Stub() {
 
     /** 序列化后的提供者信息字节数组，用于远程传输 */
     private val providerInfoByteArray by lazy {
-        json.encodeToString(ProviderInfo.serializer(), provider.providerInfo).toByteArray()
+        json.encodeToString<ProviderInfo>(provider.providerInfo).toByteArray()
     }
 
     /** 注册回调集合，用于通知注册完成事件 */

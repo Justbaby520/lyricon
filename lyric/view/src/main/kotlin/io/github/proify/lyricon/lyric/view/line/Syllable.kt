@@ -1,11 +1,17 @@
 /*
- * Copyright 2026 Proify
+ * Copyright 2026 Proify, Tomakino
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package io.github.proify.lyricon.lyric.view.line
@@ -39,6 +45,12 @@ class Syllable(private val ownerView: LyricLineView) {
             renderer.enableGradient = value
         }
 
+    var onlyScrollMode: Boolean = false
+        set(value) {
+            field = value
+            renderer.onlyScrollMode = value
+        }
+
     var playListener: LyricPlayListener? = null
 
     // --- 核心组件 ---
@@ -49,7 +61,9 @@ class Syllable(private val ownerView: LyricLineView) {
 
     // --- 缓存对象 (Zero Allocation) ---
     private val cachedLayoutInfo = LineRenderer.LayoutInfo()
-    private val cachedPaintContext = LineRenderer.PaintContext(inactivePaint, activePaint)
+    private val cachedPaintContext = LineRenderer.PaintContext(
+        ownerView.textPaint, inactivePaint, activePaint
+    )
 
     // 状态追踪
     private var lastPlayPosition: Long = Long.MIN_VALUE
@@ -206,6 +220,9 @@ class Syllable(private val ownerView: LyricLineView) {
 
     // --- 内部组件 ---
 
+    /**
+     * 卡拉OK动画
+     */
     private class KaraokeAnimator {
         private val interpolator = Interpolates.linear
         var currentWidth = 0f; private set
@@ -253,6 +270,9 @@ class Syllable(private val ownerView: LyricLineView) {
         }
     }
 
+    /**
+     * 词首字符下落动画
+     */
     private class EntranceEffect(private val interpolator: (Float) -> Float = Interpolates.linear::getInterpolation) {
         private val durationNanos = Constances.WORD_DROP_ANIMATION_DURATION * 1_000_000L
         private val activeAnims = mutableListOf<AnimState>()
@@ -318,6 +338,9 @@ class Syllable(private val ownerView: LyricLineView) {
         )
     }
 
+    /**
+     * 歌词自动滚动
+     */
     private class AutoScroller {
         fun reset(view: LyricLineView) {
             view.scrollXOffset = 0f; view.isScrollFinished = false
@@ -345,6 +368,9 @@ class Syllable(private val ownerView: LyricLineView) {
         }
     }
 
+    /**
+     * 文字渲染
+     */
     private class LineRenderer {
 
         class LayoutInfo {
@@ -361,13 +387,19 @@ class Syllable(private val ownerView: LyricLineView) {
             }
         }
 
-        data class PaintContext(val inactive: TextPaint, val active: TextPaint)
+        data class PaintContext(
+            val normal: TextPaint,
+            val inactive: TextPaint,
+            val active: TextPaint
+        )
 
         // --- Shader 缓存 ---
         private val gradColors = intArrayOf(0, 0, Color.TRANSPARENT)
         private val gradPositions = floatArrayOf(0f, 0.86f, 1f)
         private var cachedShader: LinearGradient? = null
         var enableGradient = true
+
+        var onlyScrollMode: Boolean = false
 
         fun draw(
             canvas: Canvas,
@@ -386,33 +418,46 @@ class Syllable(private val ownerView: LyricLineView) {
                 }
                 translate(tx, 0f)
 
-                // 先绘制非高亮文字
-                drawText(canvas, model, baseline, paints.inactive)
+                if (!onlyScrollMode) {
+                    // 先绘制非高亮文字
+                    drawText(canvas, model, baseline, paints.inactive)
 
-                // 绘制高亮部分
-                if (highlightWidth > 0f) {
-                    clipRect(0f, 0f, highlightWidth + 0.5f, layoutInfo.viewHeight.toFloat())
-                    if (enableGradient) applyGradient(paints.active, highlightWidth, model.width)
-                    else paints.active.shader = null
-                    drawText(canvas, model, baseline, paints.active)
+                    // 绘制高亮部分
+                    if (highlightWidth > 0f) {
+                        clipRect(0f, 0f, highlightWidth, layoutInfo.viewHeight.toFloat())
+                        if (enableGradient) {
+                            applyGradient(
+                                paints.active,
+                                highlightWidth,
+                                model.width
+                            )
+                        } else {
+                            paints.active.shader = null
+                        }
+                        drawText(canvas, model, baseline, paints.active)
+                    }
+                } else {
+                    drawText(canvas, model, baseline, paints.normal)
                 }
             }
         }
 
         // --- 内部函数 ---
 
-        private fun calculateBaseline(h: Int, p: Paint): Float {
-            val fm = p.fontMetrics
+        private fun calculateBaseline(h: Int, paint: Paint): Float {
+            val fm = paint.fontMetrics
             return (h - (fm.descent - fm.ascent)) / 2f - fm.ascent
         }
 
         private var lastHighlightWidth = -1f
         private fun applyGradient(paint: Paint, highlightWidth: Float, tw: Float) {
-            if (tw <= 0f) return
+            if (tw <= 0f) {
+                paint.shader = null
+                return
+            }
 
             val ratio = highlightWidth / tw
             val pos1 = ratio.coerceAtLeast(0.90f)
-
             val color = paint.color
 
             val needUpdate = cachedShader == null
@@ -441,7 +486,7 @@ class Syllable(private val ownerView: LyricLineView) {
         }
 
         private fun drawText(canvas: Canvas, model: LyricModel, baseline: Float, paint: Paint) {
-            if (model.isDisabledOffsetAnimation) {
+            if (onlyScrollMode || model.isDisabledOffsetAnimation) {
                 canvas.drawText(model.wordText, 0f, baseline, paint)
                 return
             }

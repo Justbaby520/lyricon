@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2026 Proify
+ * Copyright 2026 Proify, Tomakino
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,9 +24,10 @@ import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import io.github.proify.lyricon.provider.ProviderBinder.OnRegistrationCallback
-import io.github.proify.lyricon.provider.remote.ConnectionStatus
-import io.github.proify.lyricon.provider.remote.RemoteService
-import io.github.proify.lyricon.provider.remote.RemoteServiceProxy
+import io.github.proify.lyricon.provider.player.CachedRemotePlayer
+import io.github.proify.lyricon.provider.service.RemoteService
+import io.github.proify.lyricon.provider.service.RemoteServiceProxy
+import io.github.proify.lyricon.provider.service.addConnectionListener
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -50,13 +51,15 @@ import java.util.concurrent.atomic.AtomicBoolean
  * @property playerPackageName 播放器包名（默认为 providerPackageName）
  * @property logo 播放器 Logo，可为空
  * @property metadata 提供者元数据，可为空
+ * @property providerService 本地服务实例，可为空
  */
 class LyriconProvider(
     context: Context,
-    providerPackageName: String,
+    providerPackageName: String = context.packageName,
     playerPackageName: String = providerPackageName,
     logo: ProviderLogo? = null,
-    metadata: ProviderMetadata? = null
+    metadata: ProviderMetadata? = null,
+    providerService: ProviderService? = null
 ) {
 
     private companion object {
@@ -64,17 +67,23 @@ class LyriconProvider(
         private const val CONNECTION_TIMEOUT_MS = 4000L
     }
 
-    /** 应用级上下文 */
-    private val appContext: Context = context.applicationContext
+    /** 本地服务 */
+    var providerService: ProviderService? = providerService
+        set(value) {
+            field = value
+            localService.listener = value
+        }
 
-    /** 本地提供者服务实例 */
-    private val providerService = ProviderService()
+    val appContext: Context = context.applicationContext
+
+    /** 本地提供者服务实现 */
+    private val localService = LocalProviderService(providerService)
 
     /** 远程服务代理，用于与中心服务交互 */
     private val serviceProxy = RemoteServiceProxy(this)
 
     /** 提供者绑定器，负责注册回调和广播交互 */
-    private val binder = ProviderBinder(this, providerService, serviceProxy)
+    private val binder = ProviderBinder(this, localService, serviceProxy)
 
     /** 协程作用域，用于超时处理等异步操作 */
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -96,7 +105,7 @@ class LyriconProvider(
         }
     }
 
-    /** 提供者信息对象，包含包名、Logo、元数据等 */
+    /** 提供者信息对象 */
     val providerInfo: ProviderInfo = ProviderInfo(
         providerPackageName = providerPackageName,
         playerPackageName = playerPackageName,
@@ -106,10 +115,27 @@ class LyriconProvider(
 
     /** 远程服务接口 */
     val service: RemoteService = serviceProxy
+    val player: RemotePlayer get() = service.player
+
+    /**
+     * 是否自动同步数据，在连接和恢复连接时调用同步
+     */
+    var autoSync: Boolean = true
 
     init {
         CentralServiceReceiver.initialize(appContext)
         CentralServiceReceiver.addServiceListener(centralServiceListener)
+
+        service.addConnectionListener {
+            fun handleConnected() {
+                val player = this@LyriconProvider.player
+                if (autoSync && player is CachedRemotePlayer) {
+                    player.syncs()
+                }
+            }
+            onConnected { handleConnected() }
+            onReconnected { handleConnected() }
+        }
     }
 
     /**
@@ -174,12 +200,12 @@ class LyriconProvider(
         binder.addRegistrationCallback(registrationCallback)
 
         val bundle = Bundle().apply {
-            putBinder(Constants.EXTRA_BINDER, binder)
+            putBinder(ProviderConstants.EXTRA_BINDER, binder)
         }
 
-        val intent = Intent(Constants.ACTION_REGISTER_PROVIDER).apply {
-            setPackage(Constants.CENTRAL_PACKAGE_NAME)
-            putExtra(Constants.EXTRA_BUNDLE, bundle)
+        val intent = Intent(ProviderConstants.ACTION_REGISTER_PROVIDER).apply {
+            setPackage(ProviderConstants.CENTRAL_PACKAGE_NAME)
+            putExtra(ProviderConstants.EXTRA_BUNDLE, bundle)
         }
 
         appContext.sendBroadcast(intent)

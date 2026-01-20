@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2026 Proify
+ * Copyright 2026 Proify, Tomakino
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,60 +24,78 @@ import androidx.core.content.ContextCompat
 import java.util.concurrent.CopyOnWriteArraySet
 
 /**
- * 中央服务广播接收器。
- *
- * 负责监听中央服务启动完成广播，并通知注册的 [ServiceListener]。
- *
- * 提供初始化注册、监听器管理及广播分发功能。
+ * 中央服务状态广播接收器，用于协调服务启动状态的通知。
  */
 internal object CentralServiceReceiver {
 
-    /** 是否已初始化并注册广播接收器 */
+    @Volatile
     private var isInitialized = false
 
-    /** 已注册的服务监听器集合 */
     private val listeners = CopyOnWriteArraySet<ServiceListener>()
 
-    /** 添加服务启动监听器 */
-    fun addServiceListener(listener: ServiceListener) = listeners.add(listener)
-
-    /** 移除服务启动监听器 */
-    fun removeServiceListener(listener: ServiceListener) = listeners.remove(listener)
-
     /**
-     * 初始化广播接收器，注册监听中央服务启动完成事件。
-     *
-     * @param context 应用上下文
+     * 内部广播处理器，过滤并分发指定的系统或应用广播。
      */
-    fun initialize(context: Context) {
-        if (isInitialized) return
-        isInitialized = true
-
-        ContextCompat.registerReceiver(
-            context.applicationContext,
-            ServiceReceiver,
-            IntentFilter(Constants.ACTION_CENTRAL_BOOT_COMPLETED),
-            ContextCompat.RECEIVER_EXPORTED
-        )
-    }
-
-    /** 通知所有监听器中央服务已启动完成 */
-    fun notifyServiceBootCompleted() = listeners.forEach {
-        it.onServiceBootCompleted()
-    }
-
-    /** 内部广播接收器，接收中央服务启动完成广播 */
-    object ServiceReceiver : BroadcastReceiver() {
+    private val innerReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent?.action == Constants.ACTION_CENTRAL_BOOT_COMPLETED) {
+            if (intent?.action == ProviderConstants.ACTION_CENTRAL_BOOT_COMPLETED) {
                 notifyServiceBootCompleted()
             }
         }
     }
 
-    /** 服务监听器接口 */
+    /**
+     * 注册服务启动监听器。
+     */
+    fun addServiceListener(listener: ServiceListener) {
+        listeners.add(listener)
+    }
+
+    /**
+     * 移除服务启动监听器。
+     */
+    fun removeServiceListener(listener: ServiceListener) {
+        listeners.remove(listener)
+    }
+
+    /**
+     * 执行广播接收器的初始化与系统注册。
+     *
+     * @param context 建议传入 Application Context。
+     */
+    fun initialize(context: Context) {
+        if (isInitialized) return
+
+        synchronized(this) {
+            if (isInitialized) return
+
+            val filter = IntentFilter(ProviderConstants.ACTION_CENTRAL_BOOT_COMPLETED)
+            ContextCompat.registerReceiver(
+                context.applicationContext,
+                innerReceiver,
+                filter,
+                ContextCompat.RECEIVER_EXPORTED
+            )
+            isInitialized = true
+        }
+    }
+
+    /**
+     * 遍历并回调所有已注册监听器的启动完成事件。
+     */
+    fun notifyServiceBootCompleted() {
+        for (listener in listeners) {
+            listener.onServiceBootCompleted()
+        }
+    }
+
+    /**
+     * 服务状态变更回调接口。
+     */
     interface ServiceListener {
-        /** 当中央服务启动完成时回调 */
+        /**
+         * 当接收到中央服务启动完成信号时触发。
+         */
         fun onServiceBootCompleted()
     }
 }

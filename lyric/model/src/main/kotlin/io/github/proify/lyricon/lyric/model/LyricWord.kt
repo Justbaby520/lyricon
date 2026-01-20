@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2026 Proify
+ * Copyright 2026 Proify, Tomakino
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ import kotlinx.serialization.Serializable
 data class LyricWord(
     override var begin: Long = 0,
     override var end: Long = 0,
-    override var duration: Long = 0,
+    override var duration: Long = end - begin,
     override var text: String? = null,
     override var metadata: LyricMetadata? = null,
 ) : ILyricWord, Parcelable, DeepCopyable<LyricWord> {

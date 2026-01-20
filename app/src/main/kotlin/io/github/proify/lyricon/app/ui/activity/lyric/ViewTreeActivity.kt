@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2026 Proify
+ * Copyright 2026 Proify, Tomakino
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,6 +57,7 @@ import io.github.proify.lyricon.app.Application.Companion.systemUIChannel
 import io.github.proify.lyricon.app.R
 import io.github.proify.lyricon.app.bridge.AppBridgeConstants
 import io.github.proify.lyricon.app.compose.BlurTopAppBar
+import io.github.proify.lyricon.app.compose.LuckLoadingIndicator
 import io.github.proify.lyricon.app.compose.NavigationBackIcon
 import io.github.proify.lyricon.app.compose.custom.bonsai.core.Bonsai
 import io.github.proify.lyricon.app.compose.custom.bonsai.core.BonsaiStyle
@@ -78,7 +79,6 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
-import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
@@ -307,7 +307,7 @@ abstract class ViewTreeActivity : BaseLyricActivity() {
                 .padding(top = paddingValues.calculateTopPadding()),
             contentAlignment = Alignment.Center
         ) {
-            CircularProgressIndicator()
+            LuckLoadingIndicator()
         }
     }
 

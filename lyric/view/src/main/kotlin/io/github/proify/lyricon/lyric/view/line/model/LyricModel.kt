@@ -1,5 +1,5 @@
 /*
- * Copyright 2026 Proify
+ * Copyright 2026 Proify, Tomakino
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,7 +85,6 @@ private fun List<LyricWord>.toWordModels(): List<WordModel> {
             text = word.text.orEmpty()
         )
 
-        // 建立双向链接
         model.previous = previousModel
         previousModel?.next = model
 

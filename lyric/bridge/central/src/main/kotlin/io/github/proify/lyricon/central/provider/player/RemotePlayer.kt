@@ -1,3 +1,19 @@
+/*
+ * Copyright 2026 Proify, Tomakino
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package io.github.proify.lyricon.central.provider.player
 
 import android.annotation.SuppressLint
@@ -10,6 +26,7 @@ import io.github.proify.lyricon.central.inflate
 import io.github.proify.lyricon.central.json
 import io.github.proify.lyricon.lyric.model.Song
 import io.github.proify.lyricon.provider.IRemotePlayer
+import io.github.proify.lyricon.provider.ProviderConstants
 import io.github.proify.lyricon.provider.ProviderInfo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -43,7 +60,7 @@ internal class RemotePlayer(
     private val playerListener: PlayerListener = ActivePlayerDispatcher
 ) : IRemotePlayer.Stub() {
 
-    private companion object {
+    companion object {
         private val DEBUG = Constants.isDebug()
         private const val TAG = "RemotePlayer"
     }
@@ -84,7 +101,7 @@ internal class RemotePlayer(
 
     /** 播放进度读取间隔（毫秒） */
     @Volatile
-    private var positionUpdateInterval: Long = 1000L / 24L
+    private var positionUpdateInterval: Long = ProviderConstants.DEFAULT_POSITION_UPDATE_INTERVAL
 
     /** 标记当前实例是否已释放 */
     private val released = AtomicBoolean(false)
@@ -119,7 +136,8 @@ internal class RemotePlayer(
      */
     private fun initSharedMemory() {
         try {
-            val hashCode = "${info.providerPackageName}/${info.playerPackageName}".hashCode()
+            val hashCode =
+                "${info.providerPackageName}/${info.playerPackageName}".hashCode().toHexString()
             positionSharedMemory = SharedMemory.create(
                 "lyricon_music_position_${hashCode}_${Os.getpid()}",
                 Long.SIZE_BYTES
@@ -288,13 +306,18 @@ internal class RemotePlayer(
         recorder.lastSong = null
         recorder.lastText = text
 
-        runOnMain { onPostText(recorder, text) }
+        runOnMain { onSendText(recorder, text) }
+    }
+
+    override fun setDisplayTranslation(isDisplayTranslation: Boolean) {
+        if (released.get()) return
+
+        recorder.lastIsDisplayTranslation = isDisplayTranslation
+        runOnMain { onDisplayTranslationChanged(recorder, isDisplayTranslation) }
     }
 
     /**
      * 向远程进程暴露用于播放进度写入的 SharedMemory。
      */
-    override fun getPositionUpdateSharedMemory(): SharedMemory? {
-        return positionSharedMemory
-    }
+    override fun getPositionMemory(): SharedMemory? = positionSharedMemory
 }

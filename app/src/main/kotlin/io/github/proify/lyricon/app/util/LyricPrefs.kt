@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2026 Proify
+ * Copyright 2026 Proify, Tomakino
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ package io.github.proify.lyricon.app.util
 import android.content.SharedPreferences
 import io.github.proify.android.extensions.fromJson
 import io.github.proify.android.extensions.getWorldReadableSharedPreferences
-import io.github.proify.android.extensions.jsonx
+import io.github.proify.android.extensions.json
 import io.github.proify.android.extensions.safeDecode
 import io.github.proify.android.extensions.toJson
 import io.github.proify.lyricon.app.Application
@@ -80,8 +80,8 @@ object LyricPrefs {
 
     /** 获取已配置的包名集合 */
     fun getConfiguredPackageNames(): Set<String> {
-        val json = packageStyleManager.getString(KEY_CONFIGURED_PACKAGES, null)
-        return jsonx.safeDecode<MutableList<String>>(json).toSet()
+        val jsonData = packageStyleManager.getString(KEY_CONFIGURED_PACKAGES, null)
+        return json.safeDecode<List<String>>(jsonData).toSet()
     }
 
     /** 设置歌词显示可视化规则 */

@@ -1,11 +1,11 @@
 /*
- * Copyright 2026 Proify
+ * Copyright 2026 Proify, Tomakino
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
+@file:Suppress("ReplacePrintlnWithLogging")
+
 package io.github.proify.lyricon.bridge
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import io.github.proify.lyricon.provider.LyriconProvider
 import io.github.proify.lyricon.provider.ProviderLogo
-import io.github.proify.lyricon.provider.remote.addOnConnectionListener
+import io.github.proify.lyricon.provider.service.addConnectionListener
 import org.junit.runner.RunWith
 
 /**
@@ -31,6 +33,7 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class ExampleInstrumentedTest {
 
+    @Suppress("TestMethodWithoutAssertion")
     fun useLyriconProvider() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
 
@@ -43,7 +46,7 @@ class ExampleInstrumentedTest {
         )
 
         val service = provider.service
-        service.addOnConnectionListener {
+        service.addConnectionListener {
             onConnected {
                 println("已连接")
             }

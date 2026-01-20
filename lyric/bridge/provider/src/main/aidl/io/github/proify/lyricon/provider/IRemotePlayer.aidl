@@ -9,5 +9,6 @@ interface IRemotePlayer {
     void seekTo(long position);
     void sendText(String text);
     void setPositionUpdateInterval(int interval);
-    SharedMemory getPositionUpdateSharedMemory();
+    void setDisplayTranslation(boolean isDisplayTranslation);
+    SharedMemory getPositionMemory();
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2026 Proify
+ * Copyright 2026 Proify, Tomakino
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ package io.github.proify.lyricon.lyric.style
 
 import android.content.SharedPreferences
 import android.os.Parcelable
-import io.github.proify.android.extensions.jsonx
+import io.github.proify.android.extensions.json
 import io.github.proify.android.extensions.safeDecode
 import io.github.proify.android.extensions.toJson
 import kotlinx.parcelize.Parcelize
@@ -51,16 +51,16 @@ data class LogoStyle(
             "lyric_style_logo_enable_custom_color",
             Defaults.ENABLE_CUSTOM_COLOR
         )
-        lightModeColor = jsonx.safeDecode<LogoColor>(
+        lightModeColor = json.safeDecode<LogoColor>(
             preferences.getString("lyric_style_logo_color_light_mode", null),
             Defaults.LIGHT_MODE_COLOR
         )
-        darkModeColor = jsonx.safeDecode<LogoColor>(
+        darkModeColor = json.safeDecode<LogoColor>(
             preferences.getString("lyric_style_logo_color_dark_mode", null),
             Defaults.DARK_MODE_COLOR
         )
 
-        margins = jsonx.safeDecode<RectF>(
+        margins = json.safeDecode<RectF>(
             preferences.getString("lyric_style_logo_margins", null),
             Defaults.MARGINS
         )
@@ -92,7 +92,7 @@ data class LogoStyle(
 
     object Defaults {
         const val ENABLE: Boolean = true
-        const val STYLE: Int = STYLE_DEFAULT
+        const val STYLE: Int = STYLE_PROVIDER_LOGO
 
         const val ENABLE_CUSTOM_COLOR: Boolean = false
         val LIGHT_MODE_COLOR: LogoColor = LogoColor()
@@ -106,8 +106,9 @@ data class LogoStyle(
     }
 
     companion object {
-        const val STYLE_DEFAULT: Int = 0
+        const val STYLE_PROVIDER_LOGO: Int = 0
         const val STYLE_COVER_SQUIRCLE: Int = 1
         const val STYLE_COVER_CIRCLE: Int = 2
+        const val STYLE_APP_LOGO: Int = 3
     }
 }
