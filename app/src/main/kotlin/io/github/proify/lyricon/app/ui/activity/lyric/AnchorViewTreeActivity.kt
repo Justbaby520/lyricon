@@ -1,17 +1,7 @@
 /*
  * Copyright 2026 Proify, Tomakino
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Licensed under the Apache License, Version 2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  */
 
 package io.github.proify.lyricon.app.ui.activity.lyric
@@ -25,7 +15,7 @@ import androidx.compose.ui.graphics.Color
 import io.github.proify.lyricon.app.R
 import io.github.proify.lyricon.app.compose.custom.bonsai.core.node.Node
 import io.github.proify.lyricon.app.util.LyricPrefs
-import io.github.proify.lyricon.app.util.commitEdit
+import io.github.proify.lyricon.app.util.editCommit
 import io.github.proify.lyricon.common.util.ViewTreeNode
 import io.github.proify.lyricon.lyric.style.BasicStyle
 
@@ -48,9 +38,21 @@ class AnchorViewTreeActivity : ViewTreeActivity() {
         // no op
     }
 
+    override fun resetSettings() {
+        saveAnchorId(BasicStyle.Defaults.ANCHOR)
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         preferences.unregisterOnSharedPreferenceChangeListener(this)
+    }
+
+    internal fun saveAnchorId(id: String) {
+        preferences.editCommit { putString("lyric_style_base_anchor", id) }
+        currentAnchor = id
+        refreshTreeDisplay()
+
+        window.decorView.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
     }
 
     override fun createViewModel(): ViewTreeViewModel = @SuppressLint("StaticFieldLeak")
@@ -59,12 +61,7 @@ class AnchorViewTreeActivity : ViewTreeActivity() {
             val value = node.content
             val id = value.id ?: return
             if (id == "status_bar" || id == currentAnchor) return
-
-            preferences.commitEdit { putString("lyric_style_base_anchor", id) }
-            currentAnchor = id
-            refreshTreeDisplay()
-
-            window.decorView.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+            saveAnchorId(id)
         }
 
         override fun getNodeColor(node: ViewTreeNode): Color =

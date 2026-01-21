@@ -1,17 +1,7 @@
 /*
  * Copyright 2026 Proify, Tomakino
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Licensed under the Apache License, Version 2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  */
 
 package io.github.proify.lyricon.app.ui.activity.lyric.packagestyle
@@ -60,10 +50,11 @@ import io.github.proify.lyricon.app.ui.activity.lyric.BaseLyricActivity
 import io.github.proify.lyricon.app.ui.activity.lyric.packagestyle.page.AnimPage
 import io.github.proify.lyricon.app.ui.activity.lyric.packagestyle.page.LogoPage
 import io.github.proify.lyricon.app.ui.activity.lyric.packagestyle.page.TextPage
+import io.github.proify.lyricon.app.ui.activity.lyric.packagestyle.sheet.AppCache
 import io.github.proify.lyricon.app.ui.activity.lyric.packagestyle.sheet.PackageSwitchBottomSheet
 import io.github.proify.lyricon.app.updateLyricStyle
 import io.github.proify.lyricon.app.util.LyricPrefs
-import io.github.proify.lyricon.app.util.commitEdit
+import io.github.proify.lyricon.app.util.editCommit
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -71,7 +62,7 @@ import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.TabRowWithContour
 
 const val DEFAULT_PACKAGE_NAME: String = LyricPrefs.DEFAULT_PACKAGE_NAME
-private const val TAB_COUNT = 3
+private const val TAB_COUNT = 2
 
 class PackageStyleViewModel(
     @field:SuppressLint("StaticFieldLeak") private val context: Context,
@@ -112,7 +103,7 @@ class PackageStyleViewModel(
     fun resetPackage(packageName: String) {
         LyricPrefs
             .getSharedPreferences(LyricPrefs.getPackagePrefName(packageName))
-            .commitEdit { clear() }
+            .editCommit { clear() }
         _refreshTrigger.value++
 
         onLyricStyleUpdate()
@@ -127,8 +118,11 @@ class PackageStyleViewModel(
             context.getString(R.string.default_config)
         } else {
             runCatching {
+                AppCache.getCachedLabel(packageName)?.let { return@runCatching it }
                 val app = context.packageManager.getApplicationInfo(packageName, 0)
-                context.packageManager.getApplicationLabel(app).toString()
+                val label = context.packageManager.getApplicationLabel(app).toString()
+                AppCache.cacheLabel(packageName, label)
+                label
             }.getOrElse { context.getString(R.string.default_config) }
         }
 
@@ -177,7 +171,7 @@ class PackageStyleViewModelFactory(
 class PackageStyleActivity : BaseLyricActivity() {
     private val viewModel: PackageStyleViewModel by viewModels {
         PackageStyleViewModelFactory(
-            context = applicationContext,
+            context = this,
             onLyricStyleUpdate = {
                 updateLyricStyle()
             },
@@ -265,7 +259,7 @@ private fun StyleTabRow(
         listOf(
             stringResource(R.string.tab_style_text),
             stringResource(R.string.tab_style_icon),
-            stringResource(R.string.tab_style_anim),
+            //stringResource(R.string.tab_style_anim),
         )
 
     val selectedTabIndex = remember { mutableIntStateOf(0) }

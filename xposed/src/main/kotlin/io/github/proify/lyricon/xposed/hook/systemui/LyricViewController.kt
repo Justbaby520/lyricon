@@ -1,17 +1,7 @@
 /*
  * Copyright 2026 Proify, Tomakino
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Licensed under the Apache License, Version 2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  */
 
 package io.github.proify.lyricon.xposed.hook.systemui
@@ -27,12 +17,21 @@ import io.github.proify.lyricon.xposed.util.LyricPrefs
 import io.github.proify.lyricon.xposed.util.StatusBarColorMonitor
 import io.github.proify.lyricon.xposed.util.StatusColor
 
+/**
+ * 歌词视图控制器。
+ * 协调活跃播放器状态与 SystemUI 歌词视图之间的同步，
+ * 自动处理跨线程调度并监听状态栏颜色变化。
+ */
 object LyricViewController : ActivePlayerListener,
     StatusBarColorMonitor.OnColorChangeListener {
 
+    /** 获取当前是否处于播放状态 */
+    @Volatile
     var isPlaying: Boolean = false
         private set
 
+    /** 获取当前活跃播放器的包名 */
+    @Volatile
     var activePackage: String = ""
         private set
 
@@ -44,97 +43,81 @@ object LyricViewController : ActivePlayerListener,
     }
 
     override fun onActiveProviderChanged(providerInfo: ProviderInfo?) {
-        YLog.debug("activeProviderChanged: $providerInfo")
+        if (DEBUG) YLog.debug("activeProviderChanged: $providerInfo")
 
-        if (providerInfo == null) {
-            activePackage = ""
-            LyricPrefs.activePackageName = null
-
-            callView {
-                it.logoView.providerLogo = null
-                statusBarViewManager?.updateLyricStyle(LyricPrefs.getLyricStyle())
-                it.updateSong(null)
-                it.setPlaying(false)
-            }
-            return
-        }
-
-        val packageName = providerInfo.playerPackageName
-        activePackage = packageName
+        val packageName = providerInfo?.playerPackageName
+        activePackage = packageName.orEmpty()
         LyricPrefs.activePackageName = packageName
 
-        callView {
-            it.logoView.providerLogo = providerInfo.logo
-
-            val style = LyricPrefs.getLyricStyle()
-            statusBarViewManager?.updateLyricStyle(style)
-            it.updateVisibility()
+        runOnUi { view ->
+            if (providerInfo == null) {
+                view.logoView.providerLogo = null
+                statusBarViewManager?.updateLyricStyle(LyricPrefs.getLyricStyle())
+                view.updateSong(null)
+                view.setPlaying(false)
+            } else {
+                view.logoView.providerLogo = providerInfo.logo
+                val style = LyricPrefs.getLyricStyle()
+                statusBarViewManager?.updateLyricStyle(style)
+                view.updateVisibility()
+            }
         }
     }
 
     override fun onSongChanged(song: Song?) {
-        YLog.debug("songChanged: $song")
-        callView {
-            it.updateSong(song)
-        }
+        runOnUi { it.updateSong(song) }
     }
 
     override fun onPlaybackStateChanged(isPlaying: Boolean) {
-        YLog.debug("playbackStateChanged: $isPlaying")
         this.isPlaying = isPlaying
-        callView {
-            it.setPlaying(isPlaying)
-        }
+        runOnUi { it.setPlaying(isPlaying) }
     }
 
     override fun onPositionChanged(position: Long) {
-        callView {
-            it.updatePosition(position)
-        }
+        runOnUi { it.updatePosition(position) }
     }
 
     override fun onSeekTo(position: Long) {
-        callView {
-            it.seekTo(position)
-        }
+        runOnUi { it.seekTo(position) }
     }
 
     override fun onSendText(text: String?) {
-        callView {
-            it.updateText(text)
-        }
+        runOnUi { it.updateText(text) }
     }
 
     override fun onDisplayTranslationChanged(isDisplayTranslation: Boolean) {
-        callView {
-            it.setDisplayTranslation(isDisplayTranslation)
-        }
-    }
-
-    private inline fun callView(crossinline action: (LyricView) -> Unit) {
-        val view = statusBarViewManager?.lyricView ?: return
-        if (!view.isAttachedToWindow) return
-
-        val isMainThread = Looper.myLooper() == Looper.getMainLooper()
-
-        if (isMainThread) {
-            try {
-                action(view)
-            } catch (t: Throwable) {
-                YLog.error("callView action failed", t)
-            }
-        } else {
-            view.post {
-                try {
-                    if (view.isAttachedToWindow) action(view)
-                } catch (t: Throwable) {
-                    YLog.error("callView post action failed", t)
-                }
-            }
-        }
+        runOnUi { it.setDisplayTranslation(isDisplayTranslation) }
     }
 
     override fun onColorChange(color: StatusColor) {
-        callView { it.onColorChange(color) }
+        runOnUi { it.onColorChange(color) }
     }
+
+    private inline fun runOnUi(crossinline action: (LyricView) -> Unit) {
+        val manager = statusBarViewManager ?: return
+        val view = manager.lyricView
+
+        if (!view.isAttachedToWindow) return
+
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            performActionSafely(view, action)
+        } else {
+            view.post {
+                performActionSafely(view, action)
+            }
+        }
+    }
+
+    /**
+     * 在 UI 线程安全地执行动作并捕获异常。
+     */
+    private inline fun performActionSafely(view: LyricView, action: (LyricView) -> Unit) {
+        try {
+            if (view.isAttachedToWindow) action(view)
+        } catch (t: Throwable) {
+            YLog.error("LyricViewController: UI action execution failed", t)
+        }
+    }
+
+    private val DEBUG get() = Constants.isDebug
 }

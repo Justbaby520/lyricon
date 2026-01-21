@@ -31,6 +31,7 @@
     <inspection_tool class="AndroidLintMangledCRLF" enabled="true" level="ERROR" enabled_by_default="true" />
     <inspection_tool class="AndroidLintMemberExtensionConflict" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="AndroidLintMinSdkTooLow" enabled="true" level="WARNING" enabled_by_default="true" />
+    <inspection_tool class="AndroidLintModifierParameter" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="AndroidLintNegativeMargin" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="AndroidLintNoHardKeywords" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="AndroidLintNoOp" enabled="true" level="WARNING" enabled_by_default="true" />
@@ -478,7 +479,6 @@
     </inspection_tool>
     <inspection_tool class="JUnit5Converter" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="JUnitTestNG" enabled="true" level="WARNING" enabled_by_default="true" />
-    <inspection_tool class="JavaCollectionWithNullableTypeArgument" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="JavaLangImport" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="LabeledStatement" enabled="true" level="WARNING" enabled_by_default="true" />
     <inspection_tool class="LambdaParameterHidingMemberVariable" enabled="true" level="WARNING" enabled_by_default="true" />

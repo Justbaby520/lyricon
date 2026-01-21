@@ -1,25 +1,17 @@
 /*
  * Copyright 2026 Proify, Tomakino
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Licensed under the Apache License, Version 2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  */
 
 package io.github.proify.lyricon.app.ui.activity.lyric
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -42,6 +34,7 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -53,7 +46,9 @@ import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 import io.github.proify.android.extensions.inflate
-import io.github.proify.lyricon.app.Application.Companion.systemUIChannel
+import io.github.proify.lyricon.app.BuildConfig
+import io.github.proify.lyricon.app.LyriconApp
+import io.github.proify.lyricon.app.LyriconApp.Companion.systemUIChannel
 import io.github.proify.lyricon.app.R
 import io.github.proify.lyricon.app.bridge.AppBridgeConstants
 import io.github.proify.lyricon.app.compose.BlurTopAppBar
@@ -79,7 +74,10 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
+import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.icons.useful.Delete
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
 import kotlin.coroutines.resume
@@ -100,9 +98,13 @@ abstract class ViewTreeActivity : BaseLyricActivity() {
         data object RetryLoading : ViewTreeUiEvent
     }
 
-    /**
-     * Repository 负责数据获取和缓存
-     */
+    private fun doResetSettings() {
+        resetSettings()
+        if (LyriconApp.safeMode) finish()
+    }
+
+    abstract fun resetSettings()
+
     class ViewTreeRepository {
         private var cachedTree: ViewTreeNode? = null
 
@@ -125,7 +127,10 @@ abstract class ViewTreeActivity : BaseLyricActivity() {
                     try {
                         val jsonData = compressedData
                             .inflate()
-                        //Log.d("ViewTreeActivity", "jsonData: ${jsonData.toString(Charsets.UTF_8)}")
+                        if (BuildConfig.DEBUG) Log.d(
+                            "ViewTreeActivity",
+                            "jsonData: ${jsonData.toString(Charsets.UTF_8)}"
+                        )
                         val viewTreeNode = Json.decodeFromStream(
                             ViewTreeNode.serializer(),
                             jsonData.inputStream()
@@ -295,7 +300,21 @@ abstract class ViewTreeActivity : BaseLyricActivity() {
             hazeState = hazeState,
             navigationIcon = { NavigationBackIcon() },
             title = title,
-            scrollBehavior = scrollBehavior
+            scrollBehavior = scrollBehavior,
+            actions = {
+                Column(modifier = Modifier.padding(end = 14.dp)) {
+                    IconButton(
+                        onClick = ::doResetSettings,
+                    ) {
+                        Icon(
+                            modifier = Modifier.size(26.dp),
+                            imageVector = MiuixIcons.Useful.Delete,
+                            contentDescription = stringResource(id = R.string.delete),
+                            tint = MiuixTheme.colorScheme.onSurface,
+                        )
+                    }
+                }
+            },
         )
     }
 

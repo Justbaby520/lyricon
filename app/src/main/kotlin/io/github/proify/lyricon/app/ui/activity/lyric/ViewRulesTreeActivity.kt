@@ -1,17 +1,7 @@
 /*
  * Copyright 2026 Proify, Tomakino
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Licensed under the Apache License, Version 2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  */
 
 package io.github.proify.lyricon.app.ui.activity.lyric
@@ -40,7 +30,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
-import io.github.proify.lyricon.app.Application.Companion.systemUIChannel
+import io.github.proify.lyricon.app.LyriconApp.Companion.systemUIChannel
 import io.github.proify.lyricon.app.R
 import io.github.proify.lyricon.app.bridge.AppBridgeConstants
 import io.github.proify.lyricon.app.compose.custom.bonsai.core.node.Node
@@ -58,6 +48,11 @@ class ViewRulesTreeActivity : ViewTreeActivity() {
     private val activeRuleColor = Color(color = 0xFF66BB6A)
 
     override fun getToolBarTitle(): String = getString(R.string.activity_view_rules)
+
+    override fun resetSettings() {
+        LyricPrefs.setViewVisibilityRule(null)
+        refreshTreeDisplay()
+    }
 
     override fun createViewModel(): ViewTreeViewModel = @SuppressLint("StaticFieldLeak")
     object : ViewTreeViewModel() {
@@ -138,14 +133,6 @@ class ViewRulesTreeActivity : ViewTreeActivity() {
         val options = remember {
             listOf(
                 VisibilityOption(VisibilityRule.MODE_NORMAL, R.string.option_visibility_default),
-//            VisibilityOption(
-//                VisibilityRule.MODE_ALWAYS_VISIBLE,
-//                R.string.option_visibility_always_visible
-//            ),
-//            VisibilityOption(
-//                VisibilityRule.MODE_ALWAYS_HIDDEN,
-//                R.string.option_visibility_always_hidden
-//            ),
                 VisibilityOption(
                     VisibilityRule.MODE_HIDE_WHEN_PLAYING,
                     R.string.option_visibility_hide_when_playing

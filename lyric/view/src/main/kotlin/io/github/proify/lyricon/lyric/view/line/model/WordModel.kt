@@ -1,17 +1,7 @@
 /*
  * Copyright 2026 Proify, Tomakino
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Licensed under the Apache License, Version 2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  */
 
 @file:Suppress("MemberVisibilityCanBePrivate")
@@ -20,8 +10,6 @@ package io.github.proify.lyricon.lyric.view.line.model
 
 import android.graphics.Paint
 import io.github.proify.lyricon.lyric.model.interfaces.ILyricTiming
-import io.github.proify.lyricon.lyric.view.Constances
-import io.github.proify.lyricon.lyric.view.util.isChinese
 
 /**
  * 表示歌词中的单词及其相关位置信息、时间信息和字符偏移。
@@ -39,8 +27,6 @@ import io.github.proify.lyricon.lyric.view.util.isChinese
  * @property charWidths 各字符宽度数组
  * @property charStartPositions 各字符起始绘制位置数组
  * @property charEndPositions 各字符结束绘制位置数组
- * @property charOffsetMode 是否启用字符偏移模式（中文字符启用）
- * @property charOffsetY 字符垂直偏移信息
  */
 data class WordModel(
     override var begin: Long,
@@ -79,16 +65,6 @@ data class WordModel(
     /** 各字符结束绘制位置数组 */
     val charEndPositions: FloatArray = FloatArray(text.length)
 
-    /** 是否启用字符偏移模式 */
-    val charOffsetMode: Boolean = chars.any { it.isChinese() }
-
-    var dropDistance: Float = 0f
-        private set
-
-    /** 字符垂直偏移 */
-    var charOffsetY: Float = 0f
-
-    private var firstApplyCharOffsetY = true
 
     /**
      * 更新单词及其字符的尺寸和位置信息
@@ -99,13 +75,6 @@ data class WordModel(
     fun updateSizes(previous: WordModel?, paint: Paint) {
         paint.getTextWidths(chars, 0, chars.size, charWidths)
         textWidth = charWidths.sum()
-
-        if (firstApplyCharOffsetY) {
-            dropDistance = paint.textSize * Constances.WORD_DROP_ANIMATION_OFFSET_RATIO
-            charOffsetY = dropDistance
-            firstApplyCharOffsetY = false
-        }
-
         startPosition = previous?.endPosition ?: 0f
         endPosition = startPosition + textWidth
 
@@ -115,10 +84,6 @@ data class WordModel(
             currentPosition += charWidths[i]
             charEndPositions[i] = currentPosition
         }
-    }
-
-    fun resetOffset() {
-        charOffsetY = dropDistance
     }
 }
 

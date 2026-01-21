@@ -1,17 +1,7 @@
 /*
  * Copyright 2026 Proify, Tomakino
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Licensed under the Apache License, Version 2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  */
 
 package io.github.proify.lyricon.app.ui.activity
@@ -56,6 +46,7 @@ import io.github.proify.lyricon.app.compose.custom.miuix.basic.BasicComponent
 import io.github.proify.lyricon.app.compose.custom.miuix.basic.Card
 import io.github.proify.lyricon.app.compose.custom.miuix.extra.IconActions
 import io.github.proify.lyricon.app.compose.custom.miuix.extra.SuperArrow
+import io.github.proify.lyricon.app.util.AppLangUtils
 import io.github.proify.lyricon.app.util.launchBrowser
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -64,7 +55,6 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
-import java.util.Locale
 
 class AboutActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -74,6 +64,17 @@ class AboutActivity : BaseActivity() {
 
     @Composable
     private fun AboutContent() {
+        val buildTimeFormat =
+            Instant
+                .ofEpochMilli(BuildConfig.BUILD_TIME)
+                .atZone(ZoneId.systemDefault())
+                .format(
+                    DateTimeFormatter
+                        .ofLocalizedDateTime(FormatStyle.MEDIUM)
+                        .withLocale(AppLangUtils.getLocale()),
+                )
+
+
         AppToolBarListContainer(
             title = stringResource(id = R.string.activity_about),
             canBack = true,
@@ -149,16 +150,6 @@ class AboutActivity : BaseActivity() {
                             .fillMaxWidth(),
                     insideMargin = PaddingValues(0.dp),
                 ) {
-                    val buildTime = BuildConfig.BUILD_TIME
-                    val buildTimeFormat =
-                        Instant
-                            .ofEpochMilli(buildTime)
-                            .atZone(ZoneId.systemDefault())
-                            .format(
-                                DateTimeFormatter
-                                    .ofLocalizedDateTime(FormatStyle.MEDIUM)
-                                    .withLocale(Locale.getDefault()),
-                            )
                     BasicComponent(
                         leftAction = { IconActions(painterResource(R.drawable.ic_info)) },
                         title = stringResource(id = R.string.item_app_version),

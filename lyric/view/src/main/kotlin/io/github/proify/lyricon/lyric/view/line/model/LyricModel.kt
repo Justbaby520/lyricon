@@ -1,17 +1,7 @@
 /*
  * Copyright 2026 Proify, Tomakino
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Licensed under the Apache License, Version 2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  */
 @file:Suppress("unused")
 
@@ -21,7 +11,6 @@ import android.graphics.Paint
 import io.github.proify.lyricon.lyric.model.LyricLine
 import io.github.proify.lyricon.lyric.model.LyricWord
 import io.github.proify.lyricon.lyric.model.extensions.TimingNavigator
-import io.github.proify.lyricon.lyric.view.util.isChinese
 
 data class LyricModel(
     val begin: Long = 0,
@@ -37,11 +26,6 @@ data class LyricModel(
     val wordText: String by lazy { words.toText() }
     val wordTimingNavigator: TimingNavigator<WordModel> by lazy { TimingNavigator(words.toTypedArray()) }
     val isPlainText: Boolean = words.isEmpty()
-
-    /** 如果所有单词都为中文，则禁用字符偏移动画 */
-    val isDisabledOffsetAnimation: Boolean = words.all { word ->
-        word.chars.all { it.isWhitespace() || it.isChinese() }
-    }
 
     fun updateSizes(paint: Paint) {
         width = paint.measureText(text)

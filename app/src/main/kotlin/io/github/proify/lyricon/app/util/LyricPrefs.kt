@@ -1,17 +1,7 @@
 /*
  * Copyright 2026 Proify, Tomakino
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Licensed under the Apache License, Version 2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  */
 
 package io.github.proify.lyricon.app.util
@@ -22,7 +12,7 @@ import io.github.proify.android.extensions.getWorldReadableSharedPreferences
 import io.github.proify.android.extensions.json
 import io.github.proify.android.extensions.safeDecode
 import io.github.proify.android.extensions.toJson
-import io.github.proify.lyricon.app.Application
+import io.github.proify.lyricon.app.LyriconApp
 import io.github.proify.lyricon.app.bridge.AppBridge.LyricStylePrefs
 import io.github.proify.lyricon.app.bridge.AppBridge.LyricStylePrefs.KEY_ENABLED_PACKAGES
 import io.github.proify.lyricon.lyric.style.VisibilityRule
@@ -51,7 +41,7 @@ object LyricPrefs {
 
     /** 获取指定名称的 SharedPreferences*/
     fun getSharedPreferences(name: String): SharedPreferences {
-        return Application.instance.getWorldReadableSharedPreferences(name)
+        return LyriconApp.instance.getWorldReadableSharedPreferences(name)
     }
 
     /** 获取指定包名对应的样式配置偏好名称 */
@@ -60,7 +50,7 @@ object LyricPrefs {
 
     /** 设置启用的包名集合 */
     fun setEnabledPackageNames(names: Set<String>) {
-        packageStyleManager.commitEdit {
+        packageStyleManager.editCommit {
             putStringSet(KEY_ENABLED_PACKAGES, names)
         }
     }
@@ -73,7 +63,7 @@ object LyricPrefs {
 
     /** 设置已配置的包名集合 */
     fun setConfiguredPackageNames(names: Set<String>) {
-        packageStyleManager.commitEdit {
+        packageStyleManager.editCommit {
             putString(KEY_CONFIGURED_PACKAGES, names.toJson())
         }
     }
@@ -85,9 +75,13 @@ object LyricPrefs {
     }
 
     /** 设置歌词显示可视化规则 */
-    fun setViewVisibilityRule(rules: List<VisibilityRule>) {
-        basicStylePrefs.commitEdit {
-            putString("lyric_style_base_visibility_rules", rules.toJson())
+    fun setViewVisibilityRule(rules: List<VisibilityRule>?) {
+        basicStylePrefs.editCommit {
+            if (rules.isNullOrEmpty()) {
+                remove("lyric_style_base_visibility_rules")
+            } else {
+                putString("lyric_style_base_visibility_rules", rules.toJson())
+            }
         }
     }
 

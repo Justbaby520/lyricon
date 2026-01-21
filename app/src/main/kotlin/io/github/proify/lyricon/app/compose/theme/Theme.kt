@@ -1,17 +1,7 @@
 /*
  * Copyright 2026 Proify, Tomakino
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Licensed under the Apache License, Version 2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  */
 
 package io.github.proify.lyricon.app.compose.theme
@@ -24,6 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowInsetsControllerCompat
+import io.github.proify.lyricon.app.compose.MaterialPalette
 import io.github.proify.lyricon.app.util.AppThemeUtils
 import top.yukonga.miuix.kmp.theme.Colors
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -36,38 +27,47 @@ fun AppTheme(
     content: @Composable () -> Unit
 ) {
     val view = LocalView.current
-    val context = view.context
-    val window = if (context is Activity) context.window else null
+    val activity = view.context as? Activity
+    val colors = rememberAppColors()
 
-    val color = getThemeColorScheme()
     SideEffect {
-        if (window != null) WindowInsetsControllerCompat(window, view)
-            .isAppearanceLightStatusBars = color.isDark.not()
+        activity?.window?.let { window ->
+            WindowInsetsControllerCompat(window, view)
+                .isAppearanceLightStatusBars = !colors.isDark
+        }
     }
+
     MiuixTheme(
-        colors = color.colors,
-    ) {
-        content()
+        colors = colors.colors,
+        content = content
+    )
+}
+
+@Composable
+private fun rememberAppColors(): AppColors {
+    val context = LocalContext.current
+    val dark = resolveDarkMode(context)
+
+    return when {
+        AppThemeUtils.isEnableMonetColor(context) ->
+            AppColors(platformDynamicColors(dark), dark)
+
+        dark ->
+            AppColors(appDarkColorScheme(), true)
+
+        else ->
+            AppColors(appLightColorScheme(), false)
     }
 }
 
 @Composable
-fun getThemeColorScheme(): AppColors {
-    val context = LocalContext.current
-    val isEnableMonet = AppThemeUtils.isEnableMonetColor(context)
-
-    val dark = when (AppThemeUtils.getMode(context)) {
+private fun resolveDarkMode(context: android.content.Context): Boolean =
+    when (AppThemeUtils.getMode(context)) {
         AppThemeUtils.MODE_LIGHT -> false
         AppThemeUtils.MODE_DARK -> true
         AppThemeUtils.MODE_SYSTEM -> isSystemInDarkTheme()
         else -> isSystemInDarkTheme()
     }
-    return when {
-        isEnableMonet -> AppColors(platformDynamicColors(dark), dark)
-        dark -> AppColors(appDarkColorScheme(), true)
-        else -> AppColors(appLightColorScheme(), false)
-    }
-}
 
 class AppColors(
     val colors: Colors,
@@ -75,8 +75,8 @@ class AppColors(
 )
 
 fun appDarkColorScheme(): Colors = darkColorScheme(
-    error = Color(0xFFF44336),
-    errorContainer = Color(0xFFEF9A9A),
+    error = MaterialPalette.Red.Primary,
+    errorContainer = MaterialPalette.Red.Hue200,
 )
 
 fun appLightColorScheme(): Colors {
@@ -86,7 +86,7 @@ fun appLightColorScheme(): Colors {
         onBackground = black,
         onSurface = black,
         onSurfaceContainer = black,
-        error = Color(0xFFef5350),
-        errorContainer = Color(0xFFEF9A9A),
+        error = MaterialPalette.Red.Primary,
+        errorContainer = MaterialPalette.Red.Hue200,
     )
 }

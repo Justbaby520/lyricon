@@ -1,17 +1,7 @@
 /*
  * Copyright 2026 Proify, Tomakino
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Licensed under the Apache License, Version 2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  */
 
 @file:Suppress("unused")
@@ -27,7 +17,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
-import io.github.proify.lyricon.app.util.commitEdit
+import io.github.proify.lyricon.app.util.editCommit
 
 /**
  * 通用 PreferenceState,支持动态 SharedPreferences 实例
@@ -73,7 +63,7 @@ fun <T> rememberPreference(
             override var value: T
                 get() = state.value
                 set(newValue) {
-                    currentPrefs.commitEdit {
+                    currentPrefs.editCommit {
                         setter(key, newValue)
                     }
                     state.value = newValue

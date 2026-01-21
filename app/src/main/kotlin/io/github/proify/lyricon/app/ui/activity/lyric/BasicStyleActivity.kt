@@ -1,17 +1,7 @@
 /*
  * Copyright 2026 Proify, Tomakino
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Licensed under the Apache License, Version 2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  */
 
 package io.github.proify.lyricon.app.ui.activity.lyric
@@ -40,7 +30,7 @@ import io.github.proify.lyricon.app.compose.preference.InputType
 import io.github.proify.lyricon.app.compose.preference.RectInputPreference
 import io.github.proify.lyricon.app.compose.preference.rememberStringPreference
 import io.github.proify.lyricon.app.util.LyricPrefs
-import io.github.proify.lyricon.app.util.commitEdit
+import io.github.proify.lyricon.app.util.editCommit
 import io.github.proify.lyricon.lyric.style.BasicStyle
 import top.yukonga.miuix.kmp.extra.SpinnerEntry
 import top.yukonga.miuix.kmp.extra.SuperSpinner
@@ -130,7 +120,7 @@ class BasicLyricStyleActivity : BaseLyricActivity() {
                 selectedIndex = selectedIndex.intValue,
                 onSelectedIndexChange = {
                     selectedIndex.intValue = it
-                    preferences.commitEdit {
+                    preferences.editCommit {
                         putInt(
                             "lyric_style_base_insertion_order",
                             optionKeys[it]
@@ -158,7 +148,7 @@ class BasicLyricStyleActivity : BaseLyricActivity() {
                 },
                 inputType = InputType.DOUBLE,
                 maxValue = 1000.0,
-                title = stringResource(R.string.item_base_width_coloros_capsule),
+                title = stringResource(R.string.item_base_width_color_os_capsule),
             )
 
             RectInputPreference(

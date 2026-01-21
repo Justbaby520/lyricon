@@ -53,7 +53,9 @@ dependencies {
 
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.core.ktx)
+
     implementation(libs.miuix.android)
+
     implementation(libs.accompanist.drawablepainter)
     implementation(libs.androidx.browser)
     implementation(libs.chrisbanes.haze)
