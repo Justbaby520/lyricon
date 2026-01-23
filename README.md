@@ -2,6 +2,7 @@
 
 ![release](https://img.shields.io/github/v/release/proify/lyricon?style=flat)
 ![downloads](https://img.shields.io/github/downloads/proify/lyricon/total?style=flat)
+![Workflow Status](https://github.com/proify/lyricon/actions/workflows/android.yml/badge.svg)
 
 <img src="resources/logo.svg" width="60" alt="logo"/>
 

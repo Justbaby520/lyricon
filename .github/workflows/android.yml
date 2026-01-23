@@ -54,7 +54,7 @@ jobs:
             ./gradlew :lyricon:assembleRelease
           fi
         env:
-          RELEASE_STORE_FILE: release.jks
+          RELEASE_STORE_FILE: ../release.jks
           RELEASE_STORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD }}
           RELEASE_KEY_ALIAS: ${{ secrets.ALIAS }}
           RELEASE_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
