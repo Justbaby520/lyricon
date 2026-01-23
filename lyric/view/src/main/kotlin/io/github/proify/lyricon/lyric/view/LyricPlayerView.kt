@@ -451,7 +451,7 @@ open class LyricPlayerView(context: Context, attrs: AttributeSet? = null) :
                 textColor = primaryColor
             }
             syllable.apply {
-                this.backgroundColor = highlightColor
+                this.highlightColor = highlightColor
                 this.backgroundColor = backgroundColor
             }
         }
