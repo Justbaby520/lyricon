@@ -9,9 +9,12 @@ package io.github.proify.lyricon.lyric.view
 import android.content.Context
 import android.util.AttributeSet
 import android.widget.LinearLayout
+import androidx.annotation.CallSuper
+import androidx.core.view.contains
 import androidx.core.view.forEach
 import androidx.core.view.isNotEmpty
 import androidx.core.view.isVisible
+import io.github.proify.lyricon.lyric.model.LyricLine
 import io.github.proify.lyricon.lyric.model.RichLyricLine
 import io.github.proify.lyricon.lyric.model.Song
 import io.github.proify.lyricon.lyric.model.extensions.TimingNavigator
@@ -32,9 +35,47 @@ open class LyricPlayerView(context: Context, attrs: AttributeSet? = null) :
         private const val MIN_GAP_DURATION: Long = 6 * 1000
     }
 
+    private var textMode = false
+    private val recycleTextLineView: LyricLineView by lazy { LyricLineView(context) }
+
+    private fun updateTextLineViewStyle(config: RichLyricLineConfig) {
+        val lyricLineConfig = LyricLineConfig(
+            config.primary,
+            config.marquee,
+            config.syllable,
+            config.gradientProgressStyle
+        )
+        recycleTextLineView.setStyle(lyricLineConfig)
+    }
+
+    var text: String? = null
+        set(value) {
+            field = value
+
+            if (textMode.not()) {
+                reset()
+                textMode = true
+            }
+
+            if (value.isNullOrBlank()) {
+                removeAllViews()
+                return
+            }
+            if (!contains(recycleTextLineView)) {
+                addView(recycleTextLineView, reusableLayoutParams)
+                updateTextLineViewStyle(config)
+            }
+            recycleTextLineView.setLyric(LyricLine(text = value, end = 114514))
+            recycleTextLineView.post {
+                recycleTextLineView.startMarquee()
+            }
+        }
+
     var song: Song? = null
         set(value) {
             reset()
+            textMode = false
+
             if (value != null) {
                 val newSong = fillGapAtStart(value)
 
@@ -111,6 +152,8 @@ open class LyricPlayerView(context: Context, attrs: AttributeSet? = null) :
     fun reset() {
         removeAllViews()
         activeLines.clear()
+
+        if (enteringInterludeMode) exitInterludeMode()
     }
 
     override fun removeAllViews() {
@@ -228,13 +271,16 @@ open class LyricPlayerView(context: Context, attrs: AttributeSet? = null) :
                         secondarySize = config.secondary.textSize * scale
                     )
                 }
+
                 1 -> {
                     if (v1Visible) {
                         view.visibilityIfChanged = VISIBLE
                         // 若第一行主歌词仍在，则第二行反转字号作为“预告行”
                         val isV0Active = v0MainVisible == VISIBLE
-                        val pSize = if (isV0Active) config.secondary.textSize else config.primary.textSize
-                        val sSize = if (isV0Active) config.primary.textSize else config.secondary.textSize
+                        val pSize =
+                            if (isV0Active) config.secondary.textSize else config.primary.textSize
+                        val sSize =
+                            if (isV0Active) config.primary.textSize else config.secondary.textSize
 
                         applyLineStyle(
                             view = view,
@@ -246,6 +292,7 @@ open class LyricPlayerView(context: Context, attrs: AttributeSet? = null) :
                         view.visibilityIfChanged = GONE
                     }
                 }
+
                 else -> {
                     // 第三行及以后强制隐藏
                     view.visibilityIfChanged = GONE
@@ -297,6 +344,8 @@ open class LyricPlayerView(context: Context, attrs: AttributeSet? = null) :
     }
 
     private fun updatePosition(position: Long, seekTo: Boolean = false) {
+        if (textMode) return
+
         tempFindActiveLines.clear()
         timingNavigator.forEachAtOrPrevious(position) {
             tempFindActiveLines.add(it)
@@ -366,8 +415,17 @@ open class LyricPlayerView(context: Context, attrs: AttributeSet? = null) :
         )
     }
 
-    protected open fun enteringInterludeMode(duration: Long) {}
-    protected open fun exitInterludeMode() {}
+    private var enteringInterludeMode: Boolean = false
+
+    @CallSuper
+    protected open fun enteringInterludeMode(duration: Long) {
+        if (!enteringInterludeMode) enteringInterludeMode = true
+    }
+
+    @CallSuper
+    protected open fun exitInterludeMode() {
+        if (enteringInterludeMode) enteringInterludeMode = false
+    }
 
     private fun updateActiveViews(matches: List<IRichLyricLine>) {
         tempViewsToRemove.clear()
@@ -443,7 +501,7 @@ open class LyricPlayerView(context: Context, attrs: AttributeSet? = null) :
     }
 
     fun updateColor(primaryColor: Int, backgroundColor: Int, highlightColor: Int) {
-        this.config.apply {
+        getStyle().apply {
             primary.apply {
                 textColor = primaryColor
             }
@@ -456,19 +514,31 @@ open class LyricPlayerView(context: Context, attrs: AttributeSet? = null) :
             }
         }
 
-        this.forEach { view ->
-            if (view is RichLyricLineView) view.updateColor(
-                primaryColor,
-                backgroundColor,
-                highlightColor
-            )
+        forEach { view ->
+            if (view is RichLyricLineView) {
+                view.updateColor(
+                    primaryColor,
+                    backgroundColor,
+                    highlightColor
+                )
+            } else if (view is LyricLineView) {
+                view.updateColor(
+                    primaryColor,
+                    backgroundColor,
+                    highlightColor
+                )
+            }
         }
     }
 
     fun setStyle(config: RichLyricLineConfig): LyricPlayerView = apply {
         this.config = config
-        this.forEach { view ->
-            if (view is RichLyricLineView) view.setStyle(config)
+        if (textMode) {
+            updateTextLineViewStyle(config)
+        } else {
+            forEach { view ->
+                if (view is RichLyricLineView) view.setStyle(config)
+            }
         }
     }
 

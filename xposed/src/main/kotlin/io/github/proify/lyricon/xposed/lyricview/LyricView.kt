@@ -15,6 +15,7 @@ import android.content.Context
 import android.graphics.Color
 import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.view.children
@@ -29,8 +30,8 @@ import io.github.proify.lyricon.lyric.style.LyricStyle
 import io.github.proify.lyricon.lyric.view.util.LayoutTransitionX
 import io.github.proify.lyricon.xposed.util.OplusCapsuleHooker
 import io.github.proify.lyricon.xposed.util.OplusCapsuleHooker.CapsuleStateChangeListener
+import io.github.proify.lyricon.xposed.util.StatusBarColor
 import io.github.proify.lyricon.xposed.util.StatusBarColorMonitor
-import io.github.proify.lyricon.xposed.util.StatusColor
 
 /**
  * 歌词视图
@@ -66,7 +67,7 @@ class LyricView(
     var currentStyle: LyricStyle = initialStyle
         private set
 
-    private var currentStatusColor: StatusColor = StatusColor(Color.BLACK, false)
+    private var currentStatusColor: StatusBarColor = StatusBarColor(Color.BLACK, false)
     private var isPlaying: Boolean = false
 
     private val textViewOnHierarchyChangeListener = object : OnHierarchyChangeListener {
@@ -79,13 +80,40 @@ class LyricView(
         }
     }
 
+    /**
+     * 启用单次过渡变化动画，随后禁用
+     */
+    private fun enableTransitionChangeType() {
+        myLayoutTransition.enableTransitionType(LayoutTransition.CHANGING)
+    }
+
     override fun onCapsuleVisibilityChanged(isShowing: Boolean) {
+        enableTransitionChangeType()
         updateWidth(currentStyle)
+
         logoView.onCapsuleVisibilityChanged(isShowing)
     }
 
     val myLayoutTransition: LayoutTransition = LayoutTransitionX().apply {
-        // enableTransitionType(LayoutTransition.CHANGING)
+        addTransitionListener(object : LayoutTransition.TransitionListener {
+            override fun endTransition(
+                transition: LayoutTransition?,
+                container: ViewGroup?,
+                view: View?,
+                transitionType: Int
+            ) {
+                //禁用
+                disableTransitionType(LayoutTransition.CHANGING)
+            }
+
+            override fun startTransition(
+                transition: LayoutTransition?,
+                container: ViewGroup?,
+                view: View?,
+                transitionType: Int
+            ) {
+            }
+        })
     }
 
     var sleepMode: Boolean = false
@@ -129,7 +157,7 @@ class LyricView(
         if (logoGravity == lastLogoGravity) return
         lastLogoGravity = logoGravity
 
-      //  logoView.providerLogo = null
+        //  logoView.providerLogo = null
 
         if (contains(logoView)) removeView(logoView)
         val textIndex = indexOfChild(textView).coerceAtLeast(0)
@@ -140,7 +168,7 @@ class LyricView(
             else -> addView(logoView, textIndex)
         }
 
-       // logoView.providerLogo = LyricViewController.providerInfo?.logo
+        // logoView.providerLogo = LyricViewController.providerInfo?.logo
     }
 
     fun updateStyle(style: LyricStyle) {
@@ -206,10 +234,10 @@ class LyricView(
         requestLayout()
     }
 
-    override fun onColorChange(color: StatusColor) {
-        currentStatusColor = color
+    override fun onColorChanged(colorInfo: StatusBarColor) {
+        currentStatusColor = colorInfo
         children.forEach { child ->
-            (child as? StatusBarColorMonitor.OnColorChangeListener)?.onColorChange(color)
+            (child as? StatusBarColorMonitor.OnColorChangeListener)?.onColorChanged(colorInfo)
         }
     }
 
@@ -248,8 +276,8 @@ class LyricView(
         textView.song = song
     }
 
-    @Suppress("unused")
     fun updateText(text: String?) {
+        textView.text = text
     }
 
     fun setDisplayTranslation(isDisplayTranslation: Boolean) {

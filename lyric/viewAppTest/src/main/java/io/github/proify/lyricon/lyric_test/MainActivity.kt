@@ -31,6 +31,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 /**
  * 主界面 Activity，负责播放音乐、显示歌词及操作 UI 控件。
@@ -70,6 +72,7 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
+    @OptIn(ExperimentalUuidApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -77,8 +80,8 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
         setSupportActionBar(binding.toolbar)
 
-        binding.transitionManager.setOnClickListener {
-            startActivity(Intent(this, TransitionManagerActivity::class.java))
+        binding.sendText.setOnClickListener {
+            provider.player.sendText(Uuid.random().toString())
         }
 
         // 初始化播放器
@@ -103,7 +106,7 @@ class MainActivity : AppCompatActivity() {
                 if (!startTrackingTouch) {
                     val max = binding.slider.valueTo
                     binding.slider.value = pos.toFloat().coerceAtMost(max)
-                    provider.player.setPosition(pos)
+                  //  provider.player.setPosition(pos)
                 }
                 binding.lyric.setPosition(pos)
                 delay(16L)

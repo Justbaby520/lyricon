@@ -28,7 +28,7 @@ import io.github.proify.lyricon.xposed.util.ViewVisibilityController
 
 class StatusBarViewManager(
     val statusBarView: ViewGroup,
-    private var lyricStyle: LyricStyle
+    var currentLyricStyle: LyricStyle
 ) : ScreenStateMonitor.ScreenStateListener {
     private var lastAnchor = ""
     private var lastInsertionOrder = -1
@@ -55,7 +55,7 @@ class StatusBarViewManager(
         if (lyricView.isAttachedToWindow) return
         lastAnchor = ""
         lastInsertionOrder = -1
-        updateLyricStyle(lyricStyle)
+        updateLyricStyle(currentLyricStyle)
     }
 
     private val onGlobalLayoutListener = object : ViewTreeObserver.OnGlobalLayoutListener {
@@ -73,7 +73,7 @@ class StatusBarViewManager(
                 return
             }
             visibilityController.applyVisibilityRules(
-                rules = lyricStyle.basicStyle.visibilityRules,
+                rules = currentLyricStyle.basicStyle.visibilityRules,
                 isPlaying = playing
             )
             lastPlaying = playing
@@ -96,7 +96,7 @@ class StatusBarViewManager(
             YLog.error("LyricViewManager clock view not found")
         }
 
-        lyricView = createLyricView(lyricStyle)
+        lyricView = createLyricView(currentLyricStyle)
         lyricView.addOnAttachStateChangeListener(lyricViewAttachStateChangeListener)
 
         statusBarView.doOnAttach { checkLyricViewExists() }
@@ -105,7 +105,7 @@ class StatusBarViewManager(
     private fun getClockView(): View? = statusBarView.findViewById(Constants.clockId)
 
     fun updateLyricStyle(lyricStyle: LyricStyle) {
-        this.lyricStyle = lyricStyle
+        this.currentLyricStyle = lyricStyle
         val basicStyle = lyricStyle.basicStyle
 
         val needUpdateLocation =

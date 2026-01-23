@@ -35,8 +35,8 @@ import io.github.proify.lyricon.xposed.hook.systemui.LyricViewController
 import io.github.proify.lyricon.xposed.util.NotificationCoverHelper
 import io.github.proify.lyricon.xposed.util.OplusCapsuleHooker
 import io.github.proify.lyricon.xposed.util.OplusCapsuleHooker.CapsuleStateChangeListener
+import io.github.proify.lyricon.xposed.util.StatusBarColor
 import io.github.proify.lyricon.xposed.util.StatusBarColorMonitor
-import io.github.proify.lyricon.xposed.util.StatusColor
 import java.io.File
 import java.util.WeakHashMap
 import kotlin.math.roundToInt
@@ -63,7 +63,7 @@ class LyricLogoView(context: Context) : ImageView(context),
             }
         }
 
-    private var currentStatusColor: StatusColor = StatusColor(Color.BLACK, false)
+    private var currentStatusColor: StatusBarColor = StatusBarColor(Color.BLACK, false)
     private var lyricStyle: LyricStyle? = null
 
     // --- 进度条绘制属性 ---
@@ -160,8 +160,8 @@ class LyricLogoView(context: Context) : ImageView(context),
         strategy?.onDetach()
     }
 
-    override fun onColorChange(color: StatusColor) {
-        currentStatusColor = color
+    override fun onColorChanged(colorInfo: StatusBarColor) {
+        currentStatusColor = colorInfo
         if (strategy?.isEffective == true) {
             strategy?.onColorUpdate()
         }

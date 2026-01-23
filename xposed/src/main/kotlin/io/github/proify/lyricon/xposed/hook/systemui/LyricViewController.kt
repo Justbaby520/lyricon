@@ -14,8 +14,8 @@ import io.github.proify.lyricon.lyric.model.Song
 import io.github.proify.lyricon.provider.ProviderInfo
 import io.github.proify.lyricon.xposed.lyricview.LyricView
 import io.github.proify.lyricon.xposed.util.LyricPrefs
+import io.github.proify.lyricon.xposed.util.StatusBarColor
 import io.github.proify.lyricon.xposed.util.StatusBarColorMonitor
-import io.github.proify.lyricon.xposed.util.StatusColor
 
 /**
  * 歌词视图控制器。
@@ -38,8 +38,8 @@ object LyricViewController : ActivePlayerListener,
     @SuppressLint("StaticFieldLeak")
     var statusBarViewManager: StatusBarViewManager? = null
 
-   var providerInfo: ProviderInfo? = null
-    private  set
+    var providerInfo: ProviderInfo? = null
+        private set
 
     init {
         StatusBarColorMonitor.register(this)
@@ -93,8 +93,8 @@ object LyricViewController : ActivePlayerListener,
         runOnUi { it.setDisplayTranslation(isDisplayTranslation) }
     }
 
-    override fun onColorChange(color: StatusColor) {
-        runOnUi { it.onColorChange(color) }
+    override fun onColorChanged(colorInfo: StatusBarColor) {
+        runOnUi { it.onColorChanged(colorInfo) }
     }
 
     private inline fun runOnUi(crossinline action: (LyricView) -> Unit) {

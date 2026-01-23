@@ -19,8 +19,8 @@ import io.github.proify.lyricon.lyric.style.TextStyle
 import io.github.proify.lyricon.lyric.view.DefaultMarqueeConfig
 import io.github.proify.lyricon.lyric.view.DefaultSyllableConfig
 import io.github.proify.lyricon.lyric.view.LyricPlayerView
+import io.github.proify.lyricon.xposed.util.StatusBarColor
 import io.github.proify.lyricon.xposed.util.StatusBarColorMonitor
-import io.github.proify.lyricon.xposed.util.StatusColor
 import java.io.File
 import kotlin.math.min
 
@@ -32,7 +32,7 @@ class LyricPlayerView(context: Context) : LyricPlayerView(context),
         private const val FONT_WEIGHT_MAX: Int = 1000
     }
 
-    private var currentStatusColor = StatusColor(Color.BLACK, false)
+    private var currentStatusColor = StatusBarColor(Color.BLACK, false)
     private var currentLyricStyle: LyricStyle? = null
 
     var linkedTextView: TextView? = null
@@ -49,10 +49,12 @@ class LyricPlayerView(context: Context) : LyricPlayerView(context),
     }
 
     override fun enteringInterludeMode(duration: Long) {
+        super.enteringInterludeMode(duration)
         eventListener?.enteringInterludeMode(duration)
     }
 
     override fun exitInterludeMode() {
+        super.exitInterludeMode()
         eventListener?.exitInterludeMode()
     }
 
@@ -92,8 +94,8 @@ class LyricPlayerView(context: Context) : LyricPlayerView(context),
         setStyle(config)
     }
 
-    override fun onColorChange(color: StatusColor) {
-        this.currentStatusColor = color
+    override fun onColorChanged(colorInfo: StatusBarColor) {
+        this.currentStatusColor = colorInfo
         refreshColors()
     }
 

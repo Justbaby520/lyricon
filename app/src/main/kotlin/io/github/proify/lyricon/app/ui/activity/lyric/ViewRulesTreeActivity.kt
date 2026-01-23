@@ -47,6 +47,17 @@ class ViewRulesTreeActivity : ViewTreeActivity() {
     internal val viewModel: RuleViewModel by viewModels()
     private val activeRuleColor = Color(color = 0xFF66BB6A)
 
+    override fun onDestroy() {
+        super.onDestroy()
+        clearNormalRules()
+    }
+
+    private fun clearNormalRules() {
+        LyricPrefs.setViewVisibilityRule(
+            LyricPrefs.getViewVisibilityRule().filterNot { it.mode == VisibilityRule.MODE_NORMAL }
+        )
+    }
+
     override fun getToolBarTitle(): String = getString(R.string.activity_view_rules)
 
     override fun resetSettings() {

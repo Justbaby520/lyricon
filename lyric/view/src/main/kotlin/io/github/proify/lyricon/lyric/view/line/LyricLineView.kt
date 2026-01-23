@@ -28,7 +28,7 @@ class LyricLineView(context: Context, attrs: AttributeSet? = null) :
 
     init {
         isHorizontalFadingEdgeEnabled = true
-        setFadingEdgeLength(15.dp)
+        setFadingEdgeLength(14.dp)
     }
 
     val textPaint: TextPaint = TextPaint(TextPaint.ANTI_ALIAS_FLAG).apply {
