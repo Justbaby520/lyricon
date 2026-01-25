@@ -62,8 +62,10 @@ implementation("io.github.proify.lyricon:provider:0.1.64")
 
 ```kotlin
 val provider = LyriconProvider(
-    context
-    //logo = ProviderLogo.fromDrawable(context, R.drawable.logo)
+    context,
+    
+    //建议使用纯色图标
+    //logo = ProviderLogo.fromDrawable(context, R.drawable.logo),
     
     //设置本地服务实现方，方便在没有Lsposed环境下测试，仅测试时使用，正式发布时请删除
     //centralPackageNames = listOf("io.github.lyricon.localcentralapp")
