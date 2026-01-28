@@ -13,37 +13,41 @@ import android.animation.TimeInterpolator
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import androidx.interpolator.view.animation.LinearOutSlowInInterpolator
 
-class LayoutTransitionX : LayoutTransition() {
-
+class LayoutTransitionX(
+    config: Config = Config()
+) : LayoutTransition() {
     init {
-        setDuration(CHANGE_APPEARING, mChangingAppearingDuration)
-        setDuration(CHANGE_DISAPPEARING, mChangingDisappearingDuration)
-        setDuration(CHANGING, mChangingDuration)
-        setDuration(APPEARING, mAppearingDuration)
-        setDuration(DISAPPEARING, mDisappearingDuration)
+        setDuration(CHANGE_APPEARING, config.changeAppearingDuration)
+        setDuration(CHANGE_DISAPPEARING, config.changeDisappearingDuration)
+        setDuration(CHANGING, config.changingDuration)
+        setDuration(APPEARING, config.appearingDuration)
+        setDuration(DISAPPEARING, config.disappearingDuration)
 
-        setInterpolator(CHANGE_APPEARING, sChangingAppearingInterpolator)
-        setInterpolator(CHANGE_DISAPPEARING, sChangingDisappearingInterpolator)
-        setInterpolator(CHANGING, sChangingInterpolator)
-        setInterpolator(APPEARING, sAppearingInterpolator)
-        setInterpolator(DISAPPEARING, sDisappearingInterpolator)
+        setInterpolator(CHANGE_APPEARING, config.changeAppearingInterpolator)
+        setInterpolator(CHANGE_DISAPPEARING, config.changeDisappearingInterpolator)
+        setInterpolator(CHANGING, config.changingInterpolator)
+        setInterpolator(APPEARING, config.appearingInterpolator)
+        setInterpolator(DISAPPEARING, config.disappearingInterpolator)
     }
 
+    data class Config(
+        val appearingDuration: Long = 220,
+        val disappearingDuration: Long = 180,
+        val changeAppearingDuration: Long = 300,
+        val changeDisappearingDuration: Long = 300,
+        val changingDuration: Long = 260,
+
+        val appearingInterpolator: TimeInterpolator = INTERPOLATOR_ACCEL_DECEL,
+        val disappearingInterpolator: TimeInterpolator = INTERPOLATOR_ACCEL_DECEL,
+        val changeAppearingInterpolator: TimeInterpolator = INTERPOLATOR_DECEL,
+        val changeDisappearingInterpolator: TimeInterpolator = INTERPOLATOR_DECEL,
+        val changingInterpolator: TimeInterpolator = INTERPOLATOR_DECEL
+    )
+
     companion object {
-        private val ACCEL_DECEL_INTERPOLATOR: TimeInterpolator = FastOutSlowInInterpolator()
-        private val DECEL_INTERPOLATOR: TimeInterpolator = LinearOutSlowInInterpolator()
-
-        val sAppearingInterpolator: TimeInterpolator = ACCEL_DECEL_INTERPOLATOR
-        val sDisappearingInterpolator: TimeInterpolator = ACCEL_DECEL_INTERPOLATOR
-        val sChangingAppearingInterpolator: TimeInterpolator = DECEL_INTERPOLATOR
-        val sChangingDisappearingInterpolator: TimeInterpolator = DECEL_INTERPOLATOR
-        val sChangingInterpolator: TimeInterpolator = DECEL_INTERPOLATOR
-
-        const val DEFAULT_DURATION: Long = 300
-        const val mChangingAppearingDuration: Long = DEFAULT_DURATION
-        const val mChangingDisappearingDuration: Long = DEFAULT_DURATION
-        const val mChangingDuration: Long = DEFAULT_DURATION
-        const val mAppearingDuration: Long = DEFAULT_DURATION
-        const val mDisappearingDuration: Long = DEFAULT_DURATION
+        private val INTERPOLATOR_ACCEL_DECEL: TimeInterpolator =
+            FastOutSlowInInterpolator()
+        private val INTERPOLATOR_DECEL: TimeInterpolator =
+            LinearOutSlowInInterpolator()
     }
 }

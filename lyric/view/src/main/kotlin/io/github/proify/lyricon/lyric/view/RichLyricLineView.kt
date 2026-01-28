@@ -8,6 +8,7 @@
 
 package io.github.proify.lyricon.lyric.view
 
+import android.animation.LayoutTransition
 import android.annotation.SuppressLint
 import android.content.Context
 import android.widget.LinearLayout
@@ -18,6 +19,7 @@ import io.github.proify.lyricon.lyric.model.interfaces.ILyricTiming
 import io.github.proify.lyricon.lyric.model.interfaces.IRichLyricLine
 import io.github.proify.lyricon.lyric.model.lyricMetadataOf
 import io.github.proify.lyricon.lyric.view.line.LyricLineView
+import io.github.proify.lyricon.lyric.view.util.LayoutTransitionX
 import io.github.proify.lyricon.lyric.view.util.visible
 
 @SuppressLint("ViewConstructor")
@@ -31,13 +33,13 @@ class RichLyricLineView(
     companion object {
         private val EMPTY_LYRIC_LINE = LyricLine()
     }
-//
-//    val customLayoutTransition: LayoutTransition = LayoutTransitionX().apply {
-//    }
-//
-//    init {
-//        layoutTransition = customLayoutTransition
-//    }
+
+    val customLayoutTransition: LayoutTransition = LayoutTransitionX().apply {
+    }
+
+    init {
+        layoutTransition = customLayoutTransition
+    }
 
     var line: IRichLyricLine? = null
         set(value) {

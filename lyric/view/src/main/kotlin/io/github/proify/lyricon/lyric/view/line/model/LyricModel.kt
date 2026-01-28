@@ -48,7 +48,7 @@ internal fun emptyLyricModel(): LyricModel = LyricModel(
 internal fun LyricLine.createModel(): LyricModel = LyricModel(
     begin = begin,
     end = end,
-    duration = duration,
+    duration = end - begin,
     text = text.orEmpty(),
     words = words?.toWordModels() ?: emptyList(),
     isAlignedRight = isAlignedRight
@@ -65,7 +65,7 @@ private fun List<LyricWord>.toWordModels(): List<WordModel> {
         val model = WordModel(
             begin = word.begin,
             end = word.end,
-            duration = word.duration,
+            duration = word.end - word.begin,
             text = word.text.orEmpty()
         )
 
