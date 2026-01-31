@@ -138,7 +138,14 @@ class FloatWindowService : Service() {
         override fun onDisplayTranslationChanged(isDisplayTranslation: Boolean) {
             Log.d(TAG, "onDisplayTranslationChanged: $isDisplayTranslation")
             runInUiThread {
-                helper?.floatingView?.setDisplayTranslation(isDisplayTranslation)
+                helper?.floatingView?.updateDisplayTranslation(displayTranslation = isDisplayTranslation)
+            }
+        }
+
+        override fun onDisplayRomaChanged(displayRoma: Boolean) {
+            Log.d(TAG, "onDisplayRomaChanged: $displayRoma")
+            runInUiThread {
+                helper?.floatingView?.updateDisplayTranslation(displayRoma = displayRoma)
             }
         }
     }

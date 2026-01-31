@@ -8,10 +8,10 @@
 
 package io.github.proify.lyricon.xposed.systemui.util
 
+import android.annotation.SuppressLint
 import android.view.View
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XposedHelpers
-import io.github.proify.android.extensions.rom.ColorOS
 import java.util.concurrent.CopyOnWriteArrayList
 
 /**
@@ -26,9 +26,16 @@ object OplusCapsuleHooker {
     private var lastIsShowing: Boolean? = null
     private var unhook: XC_MethodHook.Unhook? = null
 
+    @SuppressLint("PrivateApi")
+    fun isSupportCapsule(classLoader: ClassLoader): Boolean = try {
+        classLoader.loadClass("com.android.systemui.plugins.statusbar.CapsulePlugin") != null
+    } catch (_: Exception) {
+        false
+    }
+
     fun initialize(classLoader: ClassLoader) {
         unhook?.unhook()
-        if (!ColorOS.isSupportCapsule(classLoader)) return
+        if (!isSupportCapsule(classLoader)) return
 
         unhook = XposedHelpers.findAndHookMethod(
             classLoader.loadClass(

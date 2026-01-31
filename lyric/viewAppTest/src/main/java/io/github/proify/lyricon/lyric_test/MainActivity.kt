@@ -118,7 +118,7 @@ class MainActivity : AppCompatActivity() {
             showtranslation = !showtranslation
             provider.player.setDisplayTranslation(showtranslation)
 
-            binding.lyric.setDisplayTranslation(showtranslation)
+            binding.lyric.updateDisplayTranslation(showtranslation)
         }
     }
 

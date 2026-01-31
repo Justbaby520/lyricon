@@ -49,6 +49,10 @@ class CachedRemotePlayer(
     var lastDisplayTranslation: Boolean? = null
         private set
 
+    /** 最近的显示罗马音 */
+    @Volatile
+    var lastDisplayRoma: Boolean? = null
+
     @Volatile
     private var lastLyricType = LastLyricType.NONE
 
@@ -71,6 +75,10 @@ class CachedRemotePlayer(
 
         lastDisplayTranslation?.let {
             player.setDisplayTranslation(it)
+        }
+
+        lastDisplayRoma?.let {
+            player.setDisplayRoma(it)
         }
 
         when (lastLyricType) {
@@ -120,5 +128,10 @@ class CachedRemotePlayer(
     override fun setDisplayTranslation(displayTranslation: Boolean): Boolean {
         lastDisplayTranslation = displayTranslation
         return player.setDisplayTranslation(displayTranslation)
+    }
+
+    override fun setDisplayRoma(displayRoma: Boolean): Boolean {
+        lastDisplayRoma = displayRoma
+        return player.setDisplayRoma(displayRoma)
     }
 }

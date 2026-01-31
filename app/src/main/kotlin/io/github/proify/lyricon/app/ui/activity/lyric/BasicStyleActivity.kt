@@ -20,7 +20,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import io.github.proify.android.extensions.rom.ColorOS
 import io.github.proify.lyricon.app.R
 import io.github.proify.lyricon.app.compose.AppToolBarListContainer
 import io.github.proify.lyricon.app.compose.custom.miuix.basic.Card
@@ -32,6 +31,7 @@ import io.github.proify.lyricon.app.compose.preference.RectInputPreference
 import io.github.proify.lyricon.app.compose.preference.SwitchPreference
 import io.github.proify.lyricon.app.compose.preference.rememberStringPreference
 import io.github.proify.lyricon.app.util.LyricPrefs
+import io.github.proify.lyricon.app.util.Utils
 import io.github.proify.lyricon.app.util.editCommit
 import io.github.proify.lyricon.lyric.style.BasicStyle
 import top.yukonga.miuix.kmp.extra.SpinnerEntry
@@ -66,7 +66,6 @@ class BasicLyricStyleActivity : AbstractLyricActivity() {
     @Composable
     private fun MainContent() {
         val context = LocalContext.current
-        val isSupportCapsule = ColorOS.isSupportCapsule(context.classLoader)
 
         Card(
             modifier = Modifier
@@ -144,7 +143,7 @@ class BasicLyricStyleActivity : AbstractLyricActivity() {
                 title = stringResource(R.string.item_base_width),
             )
 
-            if (isSupportCapsule) {
+            if (Utils.isOPlus) {
                 InputPreference(
                     sharedPreferences = preferences,
                     key = "lyric_style_base_width_in_coloros_capsule_mode",

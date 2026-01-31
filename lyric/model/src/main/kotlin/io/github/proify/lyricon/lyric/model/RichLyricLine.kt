@@ -44,6 +44,7 @@ data class RichLyricLine(
     override var secondaryWords: List<LyricWord>? = null,
     override var translation: String? = null,
     override var translationWords: List<LyricWord>? = null,
+    override var roma: String? = null
 ) : IRichLyricLine, Parcelable, DeepCopyable<RichLyricLine>, Normalize<RichLyricLine> {
 
     init {

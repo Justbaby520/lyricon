@@ -80,7 +80,8 @@ internal class RemotePlayerProxy : RemotePlayer, RemoteServiceBinder<IRemotePlay
         return try {
             positionByteBuffer?.putLong(0, position.coerceAtLeast(0))
             true
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to set position", e)
             false
         }
     }
@@ -94,6 +95,9 @@ internal class RemotePlayerProxy : RemotePlayer, RemoteServiceBinder<IRemotePlay
     override fun setDisplayTranslation(displayTranslation: Boolean): Boolean =
         executeRemoteCall { it.setDisplayTranslation(displayTranslation) }
 
+    override fun setDisplayRoma(displayRoma: Boolean): Boolean =
+        executeRemoteCall { it.setDisplayRoma(displayRoma) }
+
     override val isActive: Boolean
         get() = iRemotePlayer?.asBinder()?.isBinderAlive == true
 
@@ -101,12 +105,16 @@ internal class RemotePlayerProxy : RemotePlayer, RemoteServiceBinder<IRemotePlay
         positionActive.set(false)
 
         positionByteBuffer?.let {
-            runCatching { SharedMemory.unmap(it) }
+            runCatching { SharedMemory.unmap(it) }.getOrElse { it ->
+                Log.e(TAG, "Failed to unmap shared memory", it)
+            }
             positionByteBuffer = null
         }
 
         positionSharedMemory?.let {
-            runCatching { it.close() }
+            runCatching { it.close() }.getOrElse { it ->
+                Log.e(TAG, "Failed to close shared memory", it)
+            }
             positionSharedMemory = null
         }
 

@@ -70,4 +70,5 @@ interface ActivePlayerListener {
      */
     fun onDisplayTranslationChanged(isDisplayTranslation: Boolean)
 
+    fun onDisplayRomaChanged(displayRoma: Boolean)
 }

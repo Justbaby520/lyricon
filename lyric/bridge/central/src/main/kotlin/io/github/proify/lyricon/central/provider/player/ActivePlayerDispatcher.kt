@@ -99,6 +99,15 @@ object ActivePlayerDispatcher : PlayerListener {
         }
     }
 
+    override fun onDisplayRomaChanged(
+        recorder: PlayerRecorder,
+        displayRoma: Boolean
+    ) {
+        dispatchIfActive(recorder, allowDuplicateIfSwitching = false) {
+            it.onDisplayRomaChanged(displayRoma)
+        }
+    }
+
     private inline fun dispatchIfActive(
         recorder: PlayerRecorder,
         allowDuplicateIfSwitching: Boolean = true,
@@ -152,6 +161,7 @@ object ActivePlayerDispatcher : PlayerListener {
             }
 
             listener.onDisplayTranslationChanged(recorder.lastIsDisplayTranslation)
+            listener.onDisplayRomaChanged(recorder.lastDisplayRoma)
             listener.onPositionChanged(recorder.lastPosition)
         }
     }

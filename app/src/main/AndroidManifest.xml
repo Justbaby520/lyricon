@@ -6,6 +6,10 @@
         android:name="android.permission.QUERY_ALL_PACKAGES"
         tools:ignore="PackageVisibilityPolicy" />
 
+    <queries>
+        <package android:name="com.oplus.systemui.plugins" />
+    </queries>
+
     <application
         android:name=".LyriconApp"
         android:allowBackup="true"

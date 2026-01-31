@@ -16,10 +16,19 @@ import androidx.browser.customtabs.CustomTabColorSchemeParams
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.core.content.edit
 import androidx.core.net.toUri
+import io.github.proify.lyricon.app.LyriconApp
 import io.github.proify.lyricon.app.compose.theme.CurrentThemeConfigs
 import io.github.proify.lyricon.app.ui.activity.MainActivity
 
 object Utils {
+    val isOPlus: Boolean by lazy {
+        try {
+            val pm = LyriconApp.get().packageManager
+            pm.getPackageInfo("com.oplus.systemui.plugins", 0) != null
+        } catch (_: Exception) {
+            false
+        }
+    }
 
     fun forceStop(packageName: String?): ShellUtils.CommandResult =
         ShellUtils.execCmd(

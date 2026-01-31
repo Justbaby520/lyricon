@@ -77,4 +77,13 @@ interface RemotePlayer {
      * @param displayTranslation 是否显示翻译
      */
     fun setDisplayTranslation(displayTranslation: Boolean): Boolean
+
+    /**
+     * 显示罗马音。
+     *
+     * 如果[RichLyricLine] 中有罗马音信息，则显示罗马音。
+     *
+     * @param displayRoma 是否显示罗马音
+     */
+    fun setDisplayRoma(displayRoma: Boolean): Boolean
 }

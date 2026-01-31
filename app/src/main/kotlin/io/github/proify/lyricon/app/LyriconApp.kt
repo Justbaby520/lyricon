@@ -9,24 +9,36 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.SharedPreferences
 import android.content.pm.PackageInfo
-import android.util.Log
 import androidx.core.content.pm.PackageInfoCompat
 import com.highcapable.yukihookapi.hook.factory.dataChannel
 import com.highcapable.yukihookapi.hook.xposed.application.ModuleApplication
 import com.highcapable.yukihookapi.hook.xposed.channel.YukiHookDataChannel
-import io.github.proify.lyricon.app.LyriconApp.Companion.systemUIChannel
-import io.github.proify.lyricon.app.bridge.AppBridgeConstants
 import io.github.proify.lyricon.app.util.AppLangUtils
 import io.github.proify.lyricon.common.PackageNames
 import io.github.proify.lyricon.common.util.safe
 
 class LyriconApp : ModuleApplication() {
 
+    init {
+        instance = this
+    }
+
+    override fun attachBaseContext(base: Context) {
+        AppLangUtils.setDefaultLocale(base)
+        super.attachBaseContext(AppLangUtils.wrapContext(base))
+    }
+
+    override fun getSharedPreferences(name: String?, mode: Int): SharedPreferences =
+        super.getSharedPreferences(name, mode).safe()
+
     companion object {
         const val TAG: String = "LyriconApp"
 
         @SuppressLint("StaticFieldLeak")
         lateinit var instance: LyriconApp
+            private set
+
+        fun get(): LyriconApp = instance
 
         val packageInfo: PackageInfo by lazy {
             instance.packageManager.getPackageInfo(
@@ -47,25 +59,4 @@ class LyriconApp : ModuleApplication() {
             _safeMode = safeMode
         }
     }
-
-    init {
-        instance = this
-    }
-
-    override fun attachBaseContext(base: Context) {
-        AppLangUtils.setDefaultLocale(base)
-        super.attachBaseContext(AppLangUtils.wrapContext(base))
-    }
-
-    override fun getSharedPreferences(name: String?, mode: Int): SharedPreferences =
-        super.getSharedPreferences(name, mode).safe()
-}
-
-fun updateRemoteLyricStyle() {
-    fun getCallSourceMethod(): String {
-        val stackTrace = Thread.currentThread().stackTrace
-        return if (stackTrace.size > 3) "${stackTrace[3].className}.${stackTrace[3].methodName}" else "Unknown"
-    }
-    Log.d(LyriconApp.TAG, "updateRemoteLyricStyle called from ${getCallSourceMethod()}")
-    systemUIChannel.put(AppBridgeConstants.REQUEST_UPDATE_LYRIC_STYLE)
 }

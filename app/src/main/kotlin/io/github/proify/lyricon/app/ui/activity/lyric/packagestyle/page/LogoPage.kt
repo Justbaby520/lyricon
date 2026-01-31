@@ -22,11 +22,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import io.github.proify.android.extensions.rom.ColorOS
 import io.github.proify.lyricon.app.R
 import io.github.proify.lyricon.app.compose.custom.miuix.basic.Card
 import io.github.proify.lyricon.app.compose.custom.miuix.basic.ScrollBehavior
@@ -38,6 +36,7 @@ import io.github.proify.lyricon.app.compose.preference.LogoColorPreference
 import io.github.proify.lyricon.app.compose.preference.RectInputPreference
 import io.github.proify.lyricon.app.compose.preference.SwitchPreference
 import io.github.proify.lyricon.app.compose.preference.rememberIntPreference
+import io.github.proify.lyricon.app.util.Utils
 import io.github.proify.lyricon.app.util.editCommit
 import io.github.proify.lyricon.lyric.style.BasicStyle
 import io.github.proify.lyricon.lyric.style.LogoStyle
@@ -51,9 +50,6 @@ fun LogoPage(
     scrollBehavior: ScrollBehavior,
     sharedPreferences: SharedPreferences
 ) {
-    val context = LocalContext.current
-    val isSupportCapsule = ColorOS.isSupportCapsule(context.classLoader)
-
     LazyColumn(
         modifier = Modifier
             .fillMaxWidth()
@@ -106,7 +102,7 @@ fun LogoPage(
             }
         }
 
-        if (isSupportCapsule) {
+        if (Utils.isOPlus) {
             item(key = "coloros") {
                 SmallTitle(
                     text = stringResource(R.string.item_logo_section_coloros),

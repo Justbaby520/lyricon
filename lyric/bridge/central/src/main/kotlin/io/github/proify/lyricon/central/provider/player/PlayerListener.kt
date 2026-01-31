@@ -65,4 +65,5 @@ internal interface PlayerListener {
      * @param isDisplayTranslation  当前是否显示翻译
      */
     fun onDisplayTranslationChanged(recorder: PlayerRecorder, isDisplayTranslation: Boolean)
+    fun onDisplayRomaChanged(recorder: PlayerRecorder, displayRoma: Boolean)
 }

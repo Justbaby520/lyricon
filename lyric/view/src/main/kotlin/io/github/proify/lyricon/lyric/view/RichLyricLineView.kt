@@ -30,7 +30,8 @@ class RichLyricLineView(
     context: Context,
     var displayTranslation: Boolean = false,
     var enableRelativeProgress: Boolean = false,
-    var enableRelativeProgressHighlight: Boolean = false
+    var enableRelativeProgressHighlight: Boolean = false,
+    var displayRoma: Boolean = false
 ) : LinearLayout(context), UpdatableColor {
 
     companion object {
@@ -192,12 +193,19 @@ class RichLyricLineView(
                     metadata = lyricMetadataOf("translation" to "true")
                     isGenerated = words !== source.translationWords
                 }
+
+                displayRoma -> {
+                    text = source.roma
+                    metadata = lyricMetadataOf("roma" to "true")
+                }
             }
         }
 
         val hasContent = newLine.text?.isNotBlank() == true || !newLine.words.isNullOrEmpty()
-        secondary.visible =
-            hasContent && (newLine.words?.isEmpty() == true || newLine.metadata?.getBoolean("translation") == true)
+        secondary.visible = hasContent
+                && (newLine.words?.isEmpty() == true
+                || newLine.metadata?.getBoolean("translation") == true
+                || newLine.metadata?.getBoolean("roma") == true)
 
         secondary.setLyric(newLine)
         secondary.syllable.isOnlyScrollMode = isGenerated && !enableRelativeProgressHighlight

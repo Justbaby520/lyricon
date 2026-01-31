@@ -57,7 +57,6 @@ class MainActivity : AppCompatActivity() {
             }
 
             override fun onPositionChanged(position: Long) {
-
             }
 
             override fun onSeekTo(position: Long) {
@@ -70,6 +69,10 @@ class MainActivity : AppCompatActivity() {
 
             override fun onDisplayTranslationChanged(isDisplayTranslation: Boolean) {
                 log("onDisplayTranslationChanged: $isDisplayTranslation")
+            }
+
+            override fun onDisplayRomaChanged(displayRoma: Boolean) {
+                log("onDisplayRomaChanged: $displayRoma")
             }
         })
     }

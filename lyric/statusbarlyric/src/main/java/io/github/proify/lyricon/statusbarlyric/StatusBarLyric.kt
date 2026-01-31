@@ -271,8 +271,14 @@ class StatusBarLyric(
         textView.text = text
     }
 
-    fun setDisplayTranslation(isDisplayTranslation: Boolean) {
-        textView.setDisplayTranslation(isDisplayTranslation)
+    fun updateDisplayTranslation(
+        displayTranslation: Boolean = textView.isDisplayTranslation,
+        displayRoma: Boolean = textView.isDisplayRoma
+    ) {
+        textView.updateDisplayTranslation(
+            displayTranslation,
+            displayRoma
+        )
     }
 
     private val keyguardManager by lazy { context.getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager }

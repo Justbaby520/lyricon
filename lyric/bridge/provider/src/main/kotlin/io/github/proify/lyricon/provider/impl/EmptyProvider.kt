@@ -41,5 +41,6 @@ class EmptyProvider(override val providerInfo: ProviderInfo) : LyriconProvider {
         override fun setPositionUpdateInterval(interval: Int): Boolean = false
         override fun sendText(text: String?): Boolean = false
         override fun setDisplayTranslation(displayTranslation: Boolean): Boolean = false
+        override fun setDisplayRoma(displayRoma: Boolean): Boolean = false
     }
 }

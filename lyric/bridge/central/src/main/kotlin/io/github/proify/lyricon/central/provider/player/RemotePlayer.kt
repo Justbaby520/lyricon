@@ -237,6 +237,16 @@ internal class RemotePlayer(
         }
     }
 
+    override fun setDisplayRoma(isDisplayRoma: Boolean) {
+        if (released.get()) return
+        if (DEBUG) Log.i(TAG, "Display roma: $isDisplayRoma")
+
+        recorder.lastDisplayRoma = isDisplayRoma
+        playerListener.safeNotify {
+            onDisplayRomaChanged(recorder, isDisplayRoma)
+        }
+    }
+
     override fun getPositionMemory(): SharedMemory? = positionSharedMemory
 
     /**

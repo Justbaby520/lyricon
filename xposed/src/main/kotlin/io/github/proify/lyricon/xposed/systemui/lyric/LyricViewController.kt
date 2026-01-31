@@ -38,6 +38,7 @@ object LyricViewController : ActivePlayerListener, Handler.Callback,
     private const val MSG_SEEK_TO = 5
     private const val MSG_SEND_TEXT = 6
     private const val MSG_TRANSLATION_TOGGLE = 7
+    private const val MSG_SHOW_ROMA = 8
 
     private const val UPDATE_INTERVAL_MS = 1000L / 60L
 
@@ -128,6 +129,13 @@ object LyricViewController : ActivePlayerListener, Handler.Callback,
             .sendToTarget()
     }
 
+    override fun onDisplayRomaChanged(displayRoma: Boolean) {
+        if (DEBUG) YLog.debug(tag = TAG, msg = "onDisplayRomaChanged: $displayRoma")
+
+        uiHandler.obtainMessage(MSG_SHOW_ROMA, if (displayRoma) 1 else 0, 0)
+            .sendToTarget()
+    }
+
     // --- 集中式 UI 处理逻辑 ---
     override fun handleMessage(msg: Message): Boolean {
         var ok = true
@@ -176,7 +184,8 @@ object LyricViewController : ActivePlayerListener, Handler.Callback,
                 }
 
                 MSG_SEND_TEXT -> view.updateText(msg.obj as? String)
-                MSG_TRANSLATION_TOGGLE -> view.setDisplayTranslation(msg.arg1 == 1)
+                MSG_TRANSLATION_TOGGLE -> view.updateDisplayTranslation(displayTranslation = msg.arg1 == 1)
+                MSG_SHOW_ROMA -> view.updateDisplayTranslation(displayRoma = msg.arg1 == 1)
             }
         } catch (e: Throwable) {
             YLog.error(tag = TAG, msg = "handleMessageInternal error", e = e)

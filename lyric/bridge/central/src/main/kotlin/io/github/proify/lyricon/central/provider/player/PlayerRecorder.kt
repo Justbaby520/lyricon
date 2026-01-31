@@ -37,6 +37,9 @@ data class PlayerRecorder(val info: ProviderInfo) {
     var lastIsDisplayTranslation: Boolean = false
 
     @Volatile
+    var lastDisplayRoma = false
+
+    @Volatile
     var lastLyricType: LyricType = LyricType.NONE
         private set
 

@@ -39,15 +39,18 @@ open class LyricPlayerView @JvmOverloads constructor(
         private const val MIN_GAP_DURATION: Long = 8 * 1000
     }
 
-    // --- 状态与配置 ---
     private var textMode = false
     private var config = RichLyricLineConfig()
-    private var isDisplayTranslation = false
+
+    var isDisplayTranslation = false
+        private set
+    var isDisplayRoma = false
+        private set
+
     private var enableRelativeProgress = false
     private var enableRelativeProgressHighlight = false
     private var enteringInterludeMode = false
 
-    // --- 播放数据 ---
     var song: Song? = null
         set(value) {
             reset()
@@ -88,7 +91,6 @@ open class LyricPlayerView @JvmOverloads constructor(
             recycleTextLineView.post { recycleTextLineView.startMarquee() }
         }
 
-    // --- 视图持有与辅助容器 ---
     private var lineModels: List<RichLyricLineModel>? = null
     private val activeLines = mutableListOf<IRichLyricLine>()
     private val recycleTextLineView by lazy { LyricLineView(context) }
@@ -102,7 +104,6 @@ open class LyricPlayerView @JvmOverloads constructor(
     private var timingNavigator: TimingNavigator<RichLyricLineModel> = emptyTimingNavigator()
     private var interludeState: InterludeState? = null
 
-    // --- 布局动画与监听 ---
     private var layoutTransitionX: LayoutTransitionX? = null
 
     /**
@@ -158,11 +159,17 @@ open class LyricPlayerView @JvmOverloads constructor(
 
     fun getStyle() = config
 
-    fun setDisplayTranslation(displayTranslation: Boolean) {
+    fun updateDisplayTranslation(
+        displayTranslation: Boolean = isDisplayTranslation,
+        displayRoma: Boolean = isDisplayRoma
+    ) {
         isDisplayTranslation = displayTranslation
+        isDisplayRoma = displayRoma
         forEach {
             if (it is RichLyricLineView) {
-                it.displayTranslation = displayTranslation; it.notifyLineChanged()
+                it.displayTranslation = displayTranslation
+                it.displayRoma = displayRoma
+                it.notifyLineChanged()
             }
         }
     }
@@ -357,7 +364,11 @@ open class LyricPlayerView @JvmOverloads constructor(
     }
 
     private fun createDoubleLineView(line: IRichLyricLine) = RichLyricLineView(
-        context, isDisplayTranslation, enableRelativeProgress, enableRelativeProgressHighlight
+        context,
+        displayTranslation = isDisplayTranslation,
+        displayRoma = isDisplayRoma,
+        enableRelativeProgress = enableRelativeProgress,
+        enableRelativeProgressHighlight = enableRelativeProgressHighlight,
     ).apply {
         this.line = line
         setStyle(config)
