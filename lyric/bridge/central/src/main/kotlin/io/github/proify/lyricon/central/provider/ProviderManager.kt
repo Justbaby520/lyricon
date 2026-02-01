@@ -6,6 +6,7 @@
 
 package io.github.proify.lyricon.central.provider
 
+import io.github.proify.lyricon.provider.ProviderInfo
 import java.util.concurrent.CopyOnWriteArraySet
 
 /**
@@ -51,4 +52,9 @@ internal object ProviderManager {
             provider.onDestroy()
         }
     }
+
+    //fun getProviders(): Set<RemoteProvider> = providers
+
+    fun getProvider(providerInfo: ProviderInfo): RemoteProvider? =
+        providers.firstOrNull { it.providerInfo == providerInfo }
 }

@@ -71,14 +71,9 @@ data class SVGHelper(val svg: SVG) {
     }
 
     companion object {
-        fun create(svg: String): SVGHelper? {
-            try {
-                val svg = SVG.getFromString(svg)
-                return SVGHelper(svg)
-
-            } catch (ignored: Exception) {
-            }
-            return null
+        fun create(svg: String): SVGHelper {
+            val svg = SVG.getFromString(svg)
+            return SVGHelper(svg)
         }
 
         fun create(file: File): SVGHelper? {

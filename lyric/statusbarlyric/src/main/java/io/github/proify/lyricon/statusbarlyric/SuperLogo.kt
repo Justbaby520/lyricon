@@ -17,6 +17,7 @@ import android.graphics.Color
 import android.graphics.Outline
 import android.graphics.Paint
 import android.graphics.drawable.Drawable
+import android.util.Log
 import android.view.View
 import android.view.ViewOutlineProvider
 import android.view.animation.LinearInterpolator
@@ -77,9 +78,11 @@ class SuperLogo(context: Context) : ImageView(context) {
         private const val DEFAULT_TEXT_SIZE_DP = 14
         private const val SQUIRCLE_CORNER_RADIUS_DP = 4
         const val VIEW_TAG: String = "lyricon:logo_view"
+        const val TAG = "SuperLogo"
     }
 
     var coverFile: File? = null
+
     var oplusCapsuleShowing: Boolean = false
         set(value) {
             field = value
@@ -224,13 +227,14 @@ class SuperLogo(context: Context) : ImageView(context) {
             LogoStyle.STYLE_COVER_CIRCLE -> CoverStrategy()
 
             LogoStyle.STYLE_PROVIDER_LOGO ->
-                if (providerLogo == null) AppLogoStrategy() else ProviderStrategy()
+                if (providerLogo == null) null else ProviderStrategy()
 
-            else -> AppLogoStrategy()
+            LogoStyle.STYLE_APP_LOGO -> AppLogoStrategy()
+            else -> null
         }
 
         // 如果策略类型发生变化，执行完整的切换流程
-        if (strategy?.javaClass != newStrategy.javaClass) {
+        if (strategy?.javaClass != newStrategy?.javaClass) {
             strategy?.onDetach() // 让旧策略清理资源
             resetViewAttributes() // 彻底重置 View 属性
 
@@ -238,10 +242,10 @@ class SuperLogo(context: Context) : ImageView(context) {
 
             // 如果 View 已经 attach，立即触发新策略的 attach
             if (isAttachedToWindow) {
-                newStrategy.onAttach()
+                newStrategy?.onAttach()
             }
             // 初始渲染
-            newStrategy.updateContent()
+            newStrategy?.updateContent()
         } else {
             // 策略未变，仅更新内容
             strategy?.updateContent()
@@ -391,7 +395,13 @@ class SuperLogo(context: Context) : ImageView(context) {
 
         private fun loadProviderBitmap(): Bitmap? {
             val logo = providerLogo ?: return null
-            val signature = "${logo.hashCode()}_${width}_${height}_${logo.type}"
+
+            val lp = layoutParams ?: return null
+            val w = lp.width
+            val h = lp.height
+
+            val signature = "${logo.hashCode()}_${w}_${h}_${logo.type}"
+            Log.d(TAG, "Provider logo signature: $signature")
 
             if (signature == lastProviderSignature && cachedBitmap != null) {
                 return cachedBitmap
@@ -401,8 +411,16 @@ class SuperLogo(context: Context) : ImageView(context) {
                 ProviderLogo.TYPE_BITMAP -> logo.toBitmap()
                 ProviderLogo.TYPE_SVG -> {
                     val svgString = logo.toSvg()
-                    if (svgString.isNullOrBlank()) null
-                    else SVGHelper.create(svgString)?.createBitmap(width, height)
+                    if (svgString.isNullOrBlank()) {
+                        Log.w(TAG, "Invalid SVG string")
+                        null
+                    } else {
+                        Log.d(
+                            TAG,
+                            "SVG string: w:$w, h:$h, svg: $svgString"
+                        )
+                        SVGHelper.create(svgString).createBitmap(w, h)
+                    }
                 }
 
                 else -> null

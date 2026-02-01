@@ -340,6 +340,13 @@ open class LyricPlayerView @JvmOverloads constructor(
                 view.translationY = 0f
             }
         }
+
+        postInvalidateOnAnimation()
+    }
+
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        super.onSizeChanged(w, h, oldw, oldh)
+        updateViewsVisibility()
     }
 
     private fun applyCenterScaleStyle(

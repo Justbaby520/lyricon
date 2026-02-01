@@ -8,8 +8,8 @@ plugins {
 }
 
 extra["appPackageName"] = "io.github.proify.lyricon"
-extra["appVersionCode"] = 10
-extra["appVersionName"] = "1.0.0-beta3"
+extra["appVersionCode"] = 11
+extra["appVersionName"] = "1.0.0-beta4"
 extra["compileSdkVersion"] = 36
 extra["targetSdkVersion"] = 36
 extra["minSdkVersion"] = 28

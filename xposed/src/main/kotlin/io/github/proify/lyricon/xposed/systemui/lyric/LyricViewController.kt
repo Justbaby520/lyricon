@@ -29,7 +29,7 @@ object LyricViewController : ActivePlayerListener, Handler.Callback,
     NotificationCoverHelper.OnCoverUpdateListener {
 
     private const val TAG = "LyricViewController"
-    private const val DEBUG = false
+    private const val DEBUG = true
 
     private const val MSG_PROVIDER_CHANGED = 1
     private const val MSG_SONG_CHANGED = 2
@@ -50,6 +50,7 @@ object LyricViewController : ActivePlayerListener, Handler.Callback,
     var activePackage: String = ""
         private set
 
+    @Volatile
     var providerInfo: ProviderInfo? = null
         private set
 
@@ -85,7 +86,7 @@ object LyricViewController : ActivePlayerListener, Handler.Callback,
     }
 
     override fun onPositionChanged(position: Long) {
-        if (DEBUG) YLog.debug(tag = TAG, msg = "onPositionChanged: $position")
+        // if (DEBUG) YLog.debug(tag = TAG, msg = "onPositionChanged: $position")
 
         val now = SystemClock.uptimeMillis()
 
@@ -150,17 +151,10 @@ object LyricViewController : ActivePlayerListener, Handler.Callback,
             val view = controller.lyricView
             when (msg.what) {
                 MSG_PROVIDER_CHANGED -> {
-                    val provider: ProviderInfo? = msg.obj as? ProviderInfo
+                    val provider = msg.obj as? ProviderInfo
                     this.providerInfo = provider
                     activePackage = providerInfo?.playerPackageName.orEmpty()
                     LyricPrefs.activePackageName = activePackage
-
-                    view.logoView.apply {
-                        val activePackage = this@LyricViewController.activePackage
-                        this.activePackage = activePackage
-                        coverFile = NotificationCoverHelper.getCoverFile(activePackage)
-                        providerLogo = provider?.logo
-                    }
 
                     if (provider == null) {
                         view.setSong(null)
@@ -168,6 +162,13 @@ object LyricViewController : ActivePlayerListener, Handler.Callback,
                     } else {
                         controller.updateLyricStyle(LyricPrefs.getLyricStyle())
                         view.updateVisibility()
+                    }
+
+                    view.logoView.apply {
+                        val activePackage = this@LyricViewController.activePackage
+                        this.activePackage = activePackage
+                        coverFile = NotificationCoverHelper.getCoverFile(activePackage)
+                        post { providerLogo = provider?.logo }
                     }
                 }
 
@@ -197,7 +198,7 @@ object LyricViewController : ActivePlayerListener, Handler.Callback,
     ////////// 非UI线程方法结束 /////////
 
     override fun onColorChanged(color: Int, lightMode: Boolean) {
-        if (DEBUG) YLog.debug(tag = TAG, msg = "onColorChanged: $color, $lightMode")
+        // if (DEBUG) YLog.debug(tag = TAG, msg = "onColorChanged: $color, $lightMode")
         forViewEach {
             setStatusBarColor(currentStatusColor.apply {
                 this.color = color
@@ -216,7 +217,7 @@ object LyricViewController : ActivePlayerListener, Handler.Callback,
     override fun onCoverUpdated(packageName: String, coverFile: File) {
         forViewEach {
             logoView.apply {
-                if (packageName == this.activePackage && strategy is SuperLogo.CoverStrategy) {
+                if (packageName == activePackage && strategy is SuperLogo.CoverStrategy) {
                     this.coverFile = coverFile
                     strategy?.updateContent()
                 }
