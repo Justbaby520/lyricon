@@ -59,6 +59,7 @@ import io.github.proify.lyricon.app.ui.activity.lyric.packagestyle.sheet.AsyncAp
 import io.github.proify.lyricon.app.util.AnimationEmoji
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
+import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.ListPopup
@@ -329,7 +330,7 @@ class LyricProviderActivity : BaseActivity() {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = module.label,
-                                fontSize = MiuixTheme.textStyles.headline1.fontSize,
+                                fontSize = 16.sp,
                                 fontWeight = FontWeight.Medium,
                                 color = titleColor.color(true)
                             )
@@ -348,7 +349,7 @@ class LyricProviderActivity : BaseActivity() {
                                 }
                                 Text(
                                     text = secondaryInfo,
-                                    fontSize = MiuixTheme.textStyles.body2.fontSize,
+                                    fontSize = 14.sp,
                                     color = summaryColor.color(true)
                                 )
                             }
@@ -357,6 +358,9 @@ class LyricProviderActivity : BaseActivity() {
 
                     // 描述信息
                     if (!module.description.isNullOrBlank()) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        HorizontalDivider()
+
                         Text(
                             modifier = Modifier.padding(top = 10.dp),
                             text = module.description,

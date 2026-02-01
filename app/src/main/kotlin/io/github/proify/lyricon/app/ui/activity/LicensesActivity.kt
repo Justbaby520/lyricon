@@ -81,7 +81,7 @@ class LicensesActivity : BaseActivity() {
                 val developers = sourceLibrary.developers
                 val url = sourceLibrary.url
                 val description = sourceLibrary.description
-                val year = sourceLibrary.year
+                val year = sourceLibrary.version
                 val project = sourceLibrary.project
                 val licenses = sourceLibrary.licenses
 

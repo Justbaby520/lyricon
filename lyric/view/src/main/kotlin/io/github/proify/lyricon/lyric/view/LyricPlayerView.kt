@@ -155,6 +155,7 @@ open class LyricPlayerView @JvmOverloads constructor(
         this.config = config
         updateTextLineViewStyle(config)
         forEach { if (it is RichLyricLineView) it.setStyle(config) }
+        updateViewsVisibility()
     }
 
     fun getStyle() = config
