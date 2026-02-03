@@ -17,6 +17,7 @@ import kotlinx.serialization.Serializable
  * @property playerPackageName 播放器包名
  * @property logo 播放器Logo
  * @property metadata 元数据
+ * @property processName 播放器进程名
  */
 @Serializable
 @Parcelize
@@ -25,7 +26,7 @@ data class ProviderInfo(
     val playerPackageName: String,
     val logo: ProviderLogo? = null,
     val metadata: ProviderMetadata? = null,
-    val processName: String = playerPackageName
+    val processName: String? = null
 ) : Parcelable {
 
     override fun equals(other: Any?): Boolean {
@@ -33,11 +34,14 @@ data class ProviderInfo(
         if (other !is ProviderInfo) return false
         return providerPackageName == other.providerPackageName
                 && playerPackageName == other.playerPackageName
+                && processName == other.processName
+
     }
 
     override fun hashCode(): Int {
         var result = providerPackageName.hashCode()
         result = 31 * result + playerPackageName.hashCode()
+        result = 31 * result + processName.hashCode()
         return result
     }
 }

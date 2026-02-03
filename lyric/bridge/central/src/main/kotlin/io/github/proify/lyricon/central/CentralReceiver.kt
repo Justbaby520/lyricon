@@ -54,7 +54,6 @@ internal object CentralReceiver : BroadcastReceiver() {
                 return
             }
 
-            //处理多进程注册，共享同一个播放器服务
             val registered = ProviderManager.getProvider(providerInfo)
             if (registered != null) {
                 provider = registered
