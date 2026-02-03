@@ -316,10 +316,32 @@ class LyricLineView(context: Context, attrs: AttributeSet? = null) :
             val deltaNanos = if (lastFrameNanos == 0L) 0L else (frameTimeNanos - lastFrameNanos)
             lastFrameNanos = frameTimeNanos
 
-            val changed = if (isMarqueeMode()) {
-                marquee.step(deltaNanos); true
-            } else {
-                syllable.onFrameUpdate(frameTimeNanos)
+            val isMarqueeMode = isMarqueeMode()
+            val isOverflow = isOverflow()
+            val isSyllableMode = isSyllableMode()
+
+            if (isMarqueeMode) {
+                if (!isOverflow) {
+                    marquee.step(deltaNanos)
+                    postInvalidateOnAnimation()
+                    return
+                }
+            }
+
+            if (isSyllableMode) {
+                if (isPlayFinished() || (syllable.isScrollOnly && !isOverflow)) {
+                    syllable.onFrameUpdate(frameTimeNanos)
+                    postInvalidateOnAnimation()
+                    return
+                }
+            }
+
+            var hasChanged = false
+            if (isMarqueeMode) {
+                marquee.step(deltaNanos)
+                hasChanged = true
+            } else if (isSyllableMode) {
+                hasChanged = syllable.onFrameUpdate(frameTimeNanos)
             }
 
             if (changed) postInvalidateOnAnimation()
