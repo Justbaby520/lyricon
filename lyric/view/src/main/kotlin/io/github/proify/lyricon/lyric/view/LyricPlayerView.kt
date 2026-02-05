@@ -268,75 +268,121 @@ open class LyricPlayerView(
         if (totalChildCount == 0) return
 
         val v0 = getChildAtOrNull(0) as? RichLyricLineView ?: return
-        val v0HasSec = v0.secondary.isVisible
+        val v1 = getChildAtOrNull(1) as? RichLyricLineView // 可能为 null
 
-        // 1. 判定 V0 内部状态
-        val v0HideMain = v0HasSec && v0.main.isPlayFinished() && totalChildCount > 1
-        val v0MainVisible = if (v0HideMain) GONE else VISIBLE
-        val v0InternalLineCount = (if (v0HideMain) 0 else 1) + (if (v0HasSec) 1 else 0)
+        // --- Phase 1: 状态决策 ---
 
-        // 2. 判定 V1 是否可见
-        var v1Visible = false
-        var v1InternalLineCount = 0
-        if (totalChildCount > 1 && v0InternalLineCount <= 1) {
-            v1Visible = true
-            val v1 = getChildAtOrNull(1) as? RichLyricLineView
-            v1InternalLineCount = 1 + (if (v1?.secondary?.isVisible == true) 1 else 0)
+        // 判定条件：V0 的主歌词是否已播放完毕（意图进入下一句）
+        val v0MainFinished = v0.main.isPlayFinished()
+        // 判定条件：V0 是否有副歌词内容
+        val v0HasSecContent = v0.secondary.lyric.let {
+            it.text.isNotBlank() || it.words.isNotEmpty()
         }
 
-        // 3. 确定缩放比例：根据总行数决定
-        val totalLines = v0InternalLineCount + v1InternalLineCount
-        val targetScale = if (totalLines > 1) {
-            config.scaleInMultiLineMode.coerceIn(0.1f, 2f)
+        // 核心逻辑：是否进入"换行过渡模式"
+        // 条件：V0主唱完 + V1存在 + (V0没副歌词 或者 我们决定牺牲副歌词来显示下一句)
+        // 这里我们倾向于：只要V0唱完且V1存在，就进入过渡模式（符合你描述的"V0变小, V1变大"）
+        val isTransitionMode = v0MainFinished && v1 != null
+
+        // --- Phase 2: 样式与初步可见性配置 ---
+
+        val pSize = config.primary.textSize
+        val sSize = config.secondary.textSize
+
+        // [配置 V0]
+        if (isTransitionMode) {
+            // 模式：换行过渡 (V0 Main 变小，V0 Sec 强制隐藏)
+            v0.main.visibilityIfChanged = VISIBLE
+            v0.main.setTextSize(sSize) // 变小
+            v0.secondary.visibilityIfChanged = GONE // 腾出位置
+        } else {
+            // 模式：聚焦当前 (V0 Main 正常)
+            v0.main.visibilityIfChanged = VISIBLE
+            v0.main.setTextSize(pSize)
+            // 如果不是过渡模式，且有内容，暂时允许显示（稍后可能会被 Phase 3 挤掉）
+            v0.secondary.visibilityIfChanged = if (v0HasSecContent) VISIBLE else GONE
+            v0.secondary.setTextSize(sSize)
+        }
+
+        // [配置 V1]
+        if (v1 != null) {
+            if (isTransitionMode) {
+                // 模式：换行过渡 (V1 Main 变大，作为新的焦点)
+                v1.main.visibilityIfChanged = VISIBLE
+                v1.main.setTextSize(pSize) // 变大
+                v1.secondary.visibilityIfChanged = GONE // 刚开始唱，副歌词暂不显示或优先级最低
+            } else {
+                // 模式：预读 (V1 Main 小字)
+                v1.main.visibilityIfChanged = VISIBLE
+                v1.main.setTextSize(sSize)
+                v1.secondary.visibilityIfChanged = GONE
+            }
+        }
+
+        // --- Phase 3: 最终裁决 (The Final Check) ---
+        // 强制执行"最多显示2个"的硬性规定，按优先级保留
+
+        var slotsRemaining = 2
+
+        forEach { view ->
+            if (view is RichLyricLineView) {
+                var mainVis = view.main.visibility
+                var secVis = view.secondary.visibility
+
+                // 检查 Main
+                if (view.main.isVisible) {
+                    if (slotsRemaining > 0) {
+                        slotsRemaining--
+                    } else {
+                        mainVis = GONE
+                    }
+                }
+                // 检查 Secondary
+                // 注意：因为我们在 Phase 2 已经根据模式策略性地隐藏了 v0.secondary (在过渡时)，
+                // 所以这里的循环主要是为了兜底。
+                if (view.secondary.isVisible) {
+                    if (slotsRemaining > 0) {
+                        slotsRemaining--
+                    } else {
+                        secVis = GONE
+                    }
+                }
+
+
+                // 如果容器内全被隐藏了，容器本身也隐藏
+                val allGone = mainVis != VISIBLE && secVis != VISIBLE
+                if (!allGone) {
+                    view.main.visibilityIfChanged = mainVis
+                    view.secondary.visibilityIfChanged = secVis
+                }
+                view.visibilityIfChanged = if (allGone) GONE else VISIBLE
+            }
+        }
+
+        // --- Phase 4: 布局动画与缩放 (基于最终可见性) ---
+
+        // 重新计算实际可见行数，用于缩放
+        val finalVisibleLines = (2 - slotsRemaining) // 总槽位(2) - 剩余槽位 = 实际占用
+
+        val targetScale = if (finalVisibleLines > 1) {
+            config.scaleInMultiLine.coerceIn(0.1f, 2f)
         } else 1.0f
 
-        // 4. 确定是否处于"多视图吸附"模式
-        val isMultiViewMode = totalChildCount > 1 && v1Visible && targetScale != 1.0f
+        val isMultiViewMode =
+            totalChildCount > 1 && v1?.visibility == VISIBLE && targetScale != 1.0f
 
         for (i in 0 until totalChildCount) {
             val view = getChildAtOrNull(i) as? RichLyricLineView ?: continue
 
-            when (i) {
-                0 -> {
-                    view.visibilityIfChanged = VISIBLE
-                    applyCenterScaleStyle(
-                        view,
-                        v0MainVisible,
-                        config.primary.textSize,
-                        config.secondary.textSize,
-                        targetScale
-                    )
-                }
+            // 应用缩放
+            view.setRenderScale(targetScale)
 
-                1 -> {
-                    if (v1Visible) {
-                        view.visibilityIfChanged = VISIBLE
-                        val isV0Active = v0MainVisible == VISIBLE
-                        val pSize =
-                            if (isV0Active) config.secondary.textSize else config.primary.textSize
-                        val sSize =
-                            if (isV0Active) config.primary.textSize else config.secondary.textSize
-                        applyCenterScaleStyle(view, VISIBLE, pSize, sSize, targetScale)
-                    } else {
-                        view.visibilityIfChanged = GONE
-                        view.translationY = 0f
-                    }
-                }
-
-                else -> {
-                    view.visibilityIfChanged = GONE
-                    view.translationY = 0f
-                }
-            }
-
-            // --- 中心吸附计算 (基于 View 容器判断) ---
+            // 应用吸附位移
             if (isMultiViewMode && view.isVisible && view.height > 0) {
-                // 计算单侧缩进量（基于原始高度，因为缩放在 Canvas 层）
                 val offset = (view.height * (1f - targetScale)) / 2f
-                // i=0 向下吸附，i=1 向上吸附
+                // i=0 向下吸附(+)，i=1 向上吸附(-)
                 view.translationY = if (i == 0) offset else -offset
-            } else if (!v1Visible || targetScale == 1.0f) {
-                // 如果切回单 View 模式或比例恢复 1.0，必须清空位移
+            } else {
                 view.translationY = 0f
             }
         }
@@ -347,19 +393,6 @@ open class LyricPlayerView(
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
         updateViewsVisibility()
-    }
-
-    private fun applyCenterScaleStyle(
-        view: RichLyricLineView,
-        mainVis: Int,
-        pBase: Float,
-        sBase: Float,
-        scale: Float
-    ) {
-        view.main.visibilityIfChanged = mainVis
-        if (view.main.textSize != pBase) view.main.setTextSize(pBase)
-        if (view.secondary.textSize != sBase) view.secondary.setTextSize(sBase)
-        view.setRenderScale(scale)
     }
 
     private fun createDoubleLineView(line: IRichLyricLine) = RichLyricLineView(

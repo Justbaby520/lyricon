@@ -42,7 +42,7 @@ class LyricLineView(context: Context, attrs: AttributeSet? = null) :
         textSize = 24f.sp
     }
 
-    var lyricModel: LyricModel = emptyLyricModel()
+    var lyric: LyricModel = emptyLyricModel()
         private set
 
     var scrollXOffset: Float = 0f
@@ -52,7 +52,7 @@ class LyricLineView(context: Context, attrs: AttributeSet? = null) :
     val syllable: Syllable = Syllable(this)
     private val animationDriver = AnimationDriver()
 
-    val lyricWidth: Float get() = lyricModel.width
+    val lyricWidth: Float get() = lyric.width
 
     fun reset() {
         animationDriver.stop()
@@ -60,7 +60,7 @@ class LyricLineView(context: Context, attrs: AttributeSet? = null) :
         syllable.reset()
         scrollXOffset = 0f
         isScrollFinished = false
-        lyricModel = emptyLyricModel()
+        lyric = emptyLyricModel()
         refreshModelSizes()
         invalidate()
     }
@@ -183,7 +183,7 @@ class LyricLineView(context: Context, attrs: AttributeSet? = null) :
     }
 
     fun refreshModelSizes() {
-        lyricModel.updateSizes(textPaint)
+        lyric.updateSizes(textPaint)
     }
 
 //    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
@@ -266,7 +266,7 @@ class LyricLineView(context: Context, attrs: AttributeSet? = null) :
 
     fun setLyric(line: LyricLine?) {
         reset()
-        lyricModel = line?.normalize()?.createModel() ?: emptyLyricModel()
+        lyric = line?.normalize()?.createModel() ?: emptyLyricModel()
 
         refreshModelSizes()
         invalidate()
@@ -285,16 +285,31 @@ class LyricLineView(context: Context, attrs: AttributeSet? = null) :
         if (isMarqueeMode()) marquee.pause()
     }
 
-    fun isMarqueeMode(): Boolean = lyricModel.isPlainText
+    fun isMarqueeMode(): Boolean = lyric.isPlainText
     fun isOverflow(): Boolean = lyricWidth > measuredWidth
 
     override fun onDraw(canvas: Canvas) {
         if (isMarqueeMode()) marquee.draw(canvas) else syllable.draw(canvas)
     }
 
-    fun isPlayStarted(): Boolean = if (isMarqueeMode()) true else syllable.isStarted
-    fun isPlaying(): Boolean = if (isMarqueeMode()) true else syllable.isPlaying
-    fun isPlayFinished(): Boolean = if (isMarqueeMode()) false else syllable.isFinished
+    fun isPlayStarted(): Boolean = if (isMarqueeMode()) {
+        !marquee.isAnimationFinished()
+    } else {
+        syllable.isStarted
+    }
+
+    fun isPlaying(): Boolean = if (isMarqueeMode()) {
+        !marquee.isAnimationFinished()
+    } else {
+        syllable.isPlaying
+    }
+
+    fun isPlayFinished(): Boolean = if (isMarqueeMode()) {
+        marquee.isAnimationFinished()
+    } else {
+        (syllable.lastPosition >= lyric.end)
+                || syllable.isFinished
+    }
 
     internal inner class AnimationDriver : Choreographer.FrameCallback {
         private var running = false

@@ -7,12 +7,6 @@
 <resources>
     <string name="app_name">Lyricon</string>
     <string name="xposed_description">Текст песен в строке состояния 🎵</string>
-    <string name="ok">@android:string/ok</string>
-    <string name="yes">@android:string/yes</string>
-    <string name="no">@android:string/no</string>
-    <string name="cancel">@android:string/cancel</string>
-    <string name="copy">@android:string/copy</string>
-    <string name="paste">@android:string/paste</string>
     <string name="confirm">Подтвердить</string>
     <string name="save">Сохранить</string>
     <string name="add">Добавить</string>

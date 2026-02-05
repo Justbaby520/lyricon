@@ -10,9 +10,9 @@ package io.github.proify.lyricon.lyric.view.util
 
 import android.animation.LayoutTransition
 import android.animation.TimeInterpolator
-import android.view.animation.AccelerateDecelerateInterpolator
-import android.view.animation.DecelerateInterpolator
 import android.view.animation.LinearInterpolator
+import androidx.interpolator.view.animation.FastOutSlowInInterpolator
+import androidx.interpolator.view.animation.LinearOutSlowInInterpolator
 
 class LayoutTransitionX : LayoutTransition {
 
@@ -62,8 +62,8 @@ class LayoutTransitionX : LayoutTransition {
         const val TRANSITION_CONFIG_SMOOTH = "smooth"
         const val TRANSITION_CONFIG_SLOW = "slow"
 
-        val INTERPOLATOR_ACCEL_DECEL: TimeInterpolator = AccelerateDecelerateInterpolator()
-        val INTERPOLATOR_DECEL: TimeInterpolator = DecelerateInterpolator()
+        val INTERPOLATOR_ACCEL_DECEL = FastOutSlowInInterpolator()
+        val INTERPOLATOR_DECEL = LinearOutSlowInInterpolator()
         val INTERPOLATOR_LINEAR: TimeInterpolator = LinearInterpolator()
 
         val Fast = Config(

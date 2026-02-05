@@ -40,7 +40,8 @@ class RichLyricLineView(
     val main = LyricLineView(context)
     val secondary = LyricLineView(context).apply { visible = false }
 
-    private var renderScale = 1.0f
+    var renderScale = 1.0f
+        private set
 
     private fun updateLayoutTransitionX(config: String? = LayoutTransitionX.TRANSITION_CONFIG_SMOOTH) {
         val layoutTransitionX = LayoutTransitionX(config)

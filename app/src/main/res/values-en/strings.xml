@@ -7,12 +7,6 @@
 <resources>
     <string name="app_name">Lyricon</string>
     <string name="xposed_description">Status bar lyrics extension 🎵</string>
-    <string name="ok">@android:string/ok</string>
-    <string name="yes">@android:string/yes</string>
-    <string name="no">@android:string/no</string>
-    <string name="cancel">@android:string/cancel</string>
-    <string name="copy">@android:string/copy</string>
-    <string name="paste">@android:string/paste</string>
     <string name="confirm">Confirm</string>
     <string name="save">Save</string>
     <string name="add">Add</string>
@@ -33,7 +27,6 @@
     <string name="module_status_not_activated">Not activated</string>
     <string name="module_status_system_ui_safe_mode">SystemUI error, disabled</string>
     <string name="module_status_waiting_for_reboot">Waiting for SystemUI restart</string>
-    <string name="module_status_summary" formatted="true">v%s</string>
     <string name="restart_system_ui">Restart SystemUI</string>
     <string name="restart_app">Restart App</string>
     <string name="restart_fail">Restart failed</string>
@@ -50,7 +43,7 @@
     <string name="activity_package_style_manager">Manage Package Configs</string>
     <string name="activity_lyric_provider">Lyric Providers</string>
     <string name="activity_open_source_license">Open Source Licenses</string>
-    <string name="item_base_lyric_style">Base Style</string>
+    <string name="item_base_lyric_style">Base Configs</string>
     <string name="item_summary_base_lyric_style">Configure position, size, and display rules</string>
     <string name="item_package_style_manager">Package Configs</string>
     <string name="item_summary_package_style_manager">Set default style or individual package styles</string>
@@ -65,7 +58,6 @@
     <string name="add_package_config">Add Package Config</string>
     <string name="item_app_version">Version</string>
     <string name="item_build_time">Build Time</string>
-    <string name="item_app_version_summary" formatted="true">%s (%s) %s</string>
     <string name="item_view_on_github">View on GitHub</string>
     <string name="item_open_source_license">Open Source Licenses</string>
     <string name="section_music_apps">Related</string>
@@ -148,7 +140,6 @@
     <string name="rect_top">Top</string>
     <string name="rect_right">Right</string>
     <string name="rect_bottom">Bottom</string>
-    <string name="item_provider_info_secondary" formatted="true">%s, %s %s</string>
     <string name="module_tag_syllable">Dynamic</string>
     <string name="module_tag_translation">Translation</string>
     <string name="no_provider_available">No lyric providers available</string>
@@ -156,7 +147,7 @@
     <string name="option_provider_list_full">Full</string>
     <string name="option_provider_list_short">Compact</string>
     <string name="no_query_app_permission">Please grant permission to read apps</string>
-    <string name="package_config_default">Default Config</string>
+    <string name="package_config_default">Default</string>
     <string name="item_text_fading_edge_length">Fading edge length</string>
     <string name="item_app_backup">Backup</string>
     <string name="item_app_restore">Restore</string>

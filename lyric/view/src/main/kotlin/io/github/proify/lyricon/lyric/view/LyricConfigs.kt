@@ -25,7 +25,7 @@ data class RichLyricLineConfig(
     var marquee: MarqueeConfig = DefaultMarqueeConfig(),
     var syllable: SyllableConfig = DefaultSyllableConfig(),
     var gradientProgressStyle: Boolean = true,
-    var scaleInMultiLineMode: Float = 1f,
+    var scaleInMultiLine: Float = 1f,
     var fadingEdgeLength: Int = 10
 )
 

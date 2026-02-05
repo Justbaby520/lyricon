@@ -198,7 +198,7 @@ class Marquee(private val viewRef: WeakReference<LyricLineView>) {
      */
     fun draw(canvas: Canvas) {
         val view = viewRef.get() ?: return
-        val model = view.lyricModel
+        val model = view.lyric
         val paint = view.textPaint
         val text = model.text
         val lyricWidth = model.width

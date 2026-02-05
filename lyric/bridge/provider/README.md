@@ -14,10 +14,10 @@
 
 ![version](https://img.shields.io/maven-central/v/io.github.proify.lyricon/provider)
 
-在模块的 `build.gradle.kts` 中添加依赖：
+在`build.gradle.kts` 中添加依赖：
 
 > [!WARNING]
-> 最低支持Android 8.1(27)，你可以继续添加，调用时判断系统版本即可。
+> 最低支持Android 8.1(27)
 
 ```kotlin
 implementation("io.github.proify.lyricon:provider:0.1.66")
@@ -71,29 +71,19 @@ val provider = LyriconFactory.createProvider(
     //建议使用纯色图标
     //logo = ProviderLogo.fromDrawable(context, R.drawable.logo),
 
-    //设置本地服务实现方，方便在没有Lsposed环境下测试，仅测试时使用，正式发布时请删除
+    //（可选）设置本地服务实现方，方便在没有Lsposed环境下测试，仅测试时使用，正式发布时请删除
     //centralPackageName = "io.github.lyricon.localcentralapp"
 )
-```
 
-### 连接状态监听
-
-> 你一般不需要配置自动断连，因为内部会自动处理断连。
-
-```kotlin
+//连接状态监听
 provider.service.addConnectionListener {
     onConnected { }
     onReconnected { }
     onDisconnected { }
     onConnectTimeout { }
 }
-```
 
-### 注册 Provider
-
-初始化完成后需显式注册：
-
-```kotlin
+//注册 Provider
 provider.register()
 ```
 
@@ -157,7 +147,7 @@ player.setSong(
 player.setPosition(100)
 ```
 
-### 3. 完整歌词结构（逐字 / 次要歌词 / 翻译）
+### 3. 完整歌词结构（逐字 / 次要歌词 / 翻译 / 罗马音）
 
 ```kotlin
 player.setSong(
@@ -178,7 +168,7 @@ player.setSong(
                     LyricWord(text = "朋友", begin = 800, end = 1000)
                 ),
                 secondary = "（不想做普通朋友）",
-                translation = "I can't just be a normal friend"
+                translation = "I can't just be a normal friend",
             )
         )
     )

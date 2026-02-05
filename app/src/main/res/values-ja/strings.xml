@@ -7,12 +7,6 @@
 <resources>
     <string name="app_name">詞幕</string>
     <string name="xposed_description">ステータスバーに歌詞表示機能を追加します🎵</string>
-    <string name="ok">@android:string/ok</string>
-    <string name="yes">@android:string/yes</string>
-    <string name="no">@android:string/no</string>
-    <string name="cancel">@android:string/cancel</string>
-    <string name="copy">@android:string/copy</string>
-    <string name="paste">@android:string/paste</string>
     <string name="confirm">確定</string>
     <string name="save">保存</string>
     <string name="add">追加</string>

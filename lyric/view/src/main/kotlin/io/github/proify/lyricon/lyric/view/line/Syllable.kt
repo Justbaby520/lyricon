@@ -7,11 +7,9 @@
 package io.github.proify.lyricon.lyric.view.line
 
 import android.graphics.Canvas
-import android.graphics.Color
 import android.graphics.LinearGradient
 import android.graphics.Matrix
 import android.graphics.Paint
-import android.graphics.PorterDuff
 import android.graphics.RenderNode
 import android.graphics.Shader
 import android.graphics.Typeface
@@ -41,7 +39,8 @@ class Syllable(private val view: LyricLineView) {
     private val progressAnimator = ProgressAnimator()
     private val scrollController = ScrollController()
 
-    private var lastPosition = Long.MIN_VALUE
+    var lastPosition = Long.MIN_VALUE
+        private set
 
     var playListener: LyricPlayListener? = null
 
@@ -144,7 +143,7 @@ class Syllable(private val view: LyricLineView) {
             return
         }
 
-        val model = view.lyricModel
+        val model = view.lyric
         val currentWord = model.wordTimingNavigator.first(position)
         val targetWidth = calculateTargetWidth(position, currentWord)
 
@@ -183,11 +182,11 @@ class Syllable(private val view: LyricLineView) {
 
     private fun calculateTargetWidth(
         pos: Long,
-        word: WordModel? = view.lyricModel.wordTimingNavigator.first(pos)
+        word: WordModel? = view.lyric.wordTimingNavigator.first(pos)
     ): Float = when {
         word != null -> word.endPosition
-        pos >= view.lyricModel.end -> view.lyricWidth
-        pos <= view.lyricModel.begin -> 0f
+        pos >= view.lyric.end -> view.lyricWidth
+        pos <= view.lyric.begin -> 0f
         else -> progressAnimator.currentWidth
     }
 
@@ -320,7 +319,7 @@ class Syllable(private val view: LyricLineView) {
 
         override fun draw(canvas: Canvas, scrollX: Float) {
             textRenderer.draw(
-                canvas, view.lyricModel, width, height, scrollX, overflow,
+                canvas, view.lyric, width, height, scrollX, overflow,
                 highlightWidth, isGradientEnabled, isOnlyScrollMode,
                 backgroundPaint, highlightPaint, view.textPaint
             )
@@ -362,9 +361,8 @@ class Syllable(private val view: LyricLineView) {
         override fun draw(canvas: Canvas, scrollX: Float) {
             if (isDirty) {
                 val recordingCanvas = renderNode.beginRecording(width, height)
-                recordingCanvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
                 textRenderer.draw(
-                    recordingCanvas, view.lyricModel, width, height, scrollX, overflow,
+                    recordingCanvas, view.lyric, width, height, scrollX, overflow,
                     highlightWidth, isGradientEnabled, isOnlyScrollMode,
                     backgroundPaint, highlightPaint, view.textPaint
                 )
