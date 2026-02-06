@@ -4,12 +4,15 @@
  * http://www.apache.org/licenses/LICENSE-2.0
  */
 
+@file:Suppress("unused")
+
 package io.github.proify.lyricon.lyric.view
 
 import android.content.Context
 import android.util.AttributeSet
 import android.util.Log
 import android.view.Gravity
+import android.view.ViewTreeObserver
 import android.widget.LinearLayout
 import androidx.annotation.CallSuper
 import androidx.core.view.contains
@@ -27,7 +30,7 @@ import io.github.proify.lyricon.lyric.view.model.RichLyricLineModel
 import io.github.proify.lyricon.lyric.view.util.LayoutTransitionX
 import io.github.proify.lyricon.lyric.view.util.getChildAtOrNull
 import io.github.proify.lyricon.lyric.view.util.visibilityIfChanged
-import io.github.proify.lyricon.lyric.view.util.visible
+import io.github.proify.lyricon.lyric.view.util.visibleIfChanged
 
 open class LyricPlayerView(
     context: Context,
@@ -37,6 +40,7 @@ open class LyricPlayerView(
     companion object {
         internal const val KEY_SONG_TITLE_LINE: String = "TitleLine"
         private const val MIN_GAP_DURATION: Long = 8 * 1000
+        private const val TAG = "LyricPlayerView"
     }
 
     private var textMode = false
@@ -89,7 +93,8 @@ open class LyricPlayerView(
                 reset(); textMode = true
             }
             if (value.isNullOrBlank()) {
-                removeAllViews(); return
+                removeAllViews()
+                return
             }
 
             if (!contains(recycleTextLineView)) {
@@ -116,13 +121,10 @@ open class LyricPlayerView(
     private var layoutTransitionX: LayoutTransitionX? = null
 
     /**
-     * 由autoAddView方法设置
-     * @see [autoAddView]
+     * 由 [autoAddView] 方法在合适使设置
      */
     private fun updateLayoutTransitionX(config: String? = LayoutTransitionX.TRANSITION_CONFIG_SMOOTH) {
-        layoutTransitionX = LayoutTransitionX(config).apply {
-            //setAnimateParentHierarchy(false)
-        }
+        layoutTransitionX = LayoutTransitionX(config)
         layoutTransition = null
     }
 
@@ -134,7 +136,7 @@ open class LyricPlayerView(
 
     private val secondaryLyricPlayListener = object : LyricPlayListener {
         override fun onPlayStarted(view: LyricLineView) {
-            view.visible = true; updateViewsVisibility()
+            view.visibleIfChanged = true; updateViewsVisibility()
         }
 
         override fun onPlayEnded(view: LyricLineView) = updateViewsVisibility()
@@ -515,9 +517,20 @@ open class LyricPlayerView(
 
     private data class InterludeState(val start: Long, val end: Long)
 
+    private val myViewTreeObserver =
+        ViewTreeObserver.OnGlobalLayoutListener {
+            updateViewsVisibility()
+        }
+
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
+        viewTreeObserver.removeOnGlobalLayoutListener(myViewTreeObserver)
         reset()
+    }
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        viewTreeObserver.addOnGlobalLayoutListener(myViewTreeObserver)
     }
 }
 

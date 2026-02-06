@@ -39,7 +39,7 @@ data class Song(
             val isValid = line.begin >= 0
                     && line.begin < line.end
                     && line.duration > 0
-                    && line.text.isNullOrBlank()
+                    && !line.text.isNullOrBlank()
             if (isValid) line else null
         }?.normalizeSortByTime()
     }

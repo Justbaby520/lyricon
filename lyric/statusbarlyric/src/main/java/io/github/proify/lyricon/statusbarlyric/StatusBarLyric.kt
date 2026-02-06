@@ -97,10 +97,10 @@ class StatusBarLyric(
      * 单次布局过渡动画处理器
      */
     private val singleLayoutTransition: LayoutTransition = LayoutTransitionX().apply {
-        enableTransitionType(LayoutTransition.CHANGING)
         addTransitionListener(object : LayoutTransition.TransitionListener {
             override fun startTransition(p0: LayoutTransition, p1: ViewGroup, p2: View, p3: Int) {}
             override fun endTransition(p0: LayoutTransition?, p1: ViewGroup?, p2: View?, p3: Int) {
+                disableTransitionType(LayoutTransition.CHANGING)
                 layoutTransition = null
             }
         })
@@ -284,6 +284,7 @@ class StatusBarLyric(
     }
 
     private fun triggerSingleTransition() {
+        singleLayoutTransition.enableTransitionType(LayoutTransition.CHANGING)
         layoutTransition = singleLayoutTransition
     }
 

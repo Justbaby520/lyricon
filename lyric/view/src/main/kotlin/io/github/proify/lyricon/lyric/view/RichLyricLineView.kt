@@ -22,7 +22,7 @@ import io.github.proify.lyricon.lyric.model.interfaces.IRichLyricLine
 import io.github.proify.lyricon.lyric.model.lyricMetadataOf
 import io.github.proify.lyricon.lyric.view.line.LyricLineView
 import io.github.proify.lyricon.lyric.view.util.LayoutTransitionX
-import io.github.proify.lyricon.lyric.view.util.visible
+import io.github.proify.lyricon.lyric.view.util.visibleIfChanged
 
 @SuppressLint("ViewConstructor")
 class RichLyricLineView(
@@ -38,7 +38,7 @@ class RichLyricLineView(
     }
 
     val main = LyricLineView(context)
-    val secondary = LyricLineView(context).apply { visible = false }
+    val secondary = LyricLineView(context).apply { visibleIfChanged = false }
 
     var alwaysShowSecondary = false
 
@@ -193,7 +193,7 @@ class RichLyricLineView(
         alwaysShowSecondary = false
 
         if (source == null) {
-            secondary.apply { setLyric(null); visible = false }
+            secondary.apply { setLyric(null); visibleIfChanged = false }
             return
         }
 
@@ -239,7 +239,7 @@ class RichLyricLineView(
                 || newLine.metadata?.getBoolean("translation") == true
                 || newLine.metadata?.getBoolean("roma") == true)
 
-        secondary.visible = alwaysShowSecondary
+        secondary.visibleIfChanged = alwaysShowSecondary
 
         secondary.setLyric(newLine)
         secondary.syllable.isScrollOnly = isGenerated && !enableRelativeProgressHighlight

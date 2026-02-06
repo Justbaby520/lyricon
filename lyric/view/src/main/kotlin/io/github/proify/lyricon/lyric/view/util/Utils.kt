@@ -33,12 +33,12 @@ internal fun View.show() {
     if (visibility != View.VISIBLE) visibility = View.VISIBLE
 }
 
-internal inline var View.visible: Boolean
+internal inline var View.visibleIfChanged: Boolean
     get() = isVisible
     set(value) {
-        val newVisibility = if (value) View.VISIBLE else View.GONE
-        if (visibility != newVisibility) visibility = newVisibility
+        if (isVisible != value) isVisible = value
     }
+
 
 internal inline val Int.dp: Int
     get() = toFloat().dp.roundToInt()

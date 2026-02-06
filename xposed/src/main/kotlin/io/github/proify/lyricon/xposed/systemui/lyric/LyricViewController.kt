@@ -29,7 +29,7 @@ object LyricViewController : ActivePlayerListener, Handler.Callback,
     NotificationCoverHelper.OnCoverUpdateListener {
 
     private const val TAG = "LyricViewController"
-    private const val DEBUG = false
+    private const val DEBUG = true
 
     private const val MSG_PROVIDER_CHANGED = 1
     private const val MSG_SONG_CHANGED = 2

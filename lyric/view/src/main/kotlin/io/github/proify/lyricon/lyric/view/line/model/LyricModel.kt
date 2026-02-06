@@ -9,6 +9,7 @@ package io.github.proify.lyricon.lyric.view.line.model
 
 import android.graphics.Paint
 import io.github.proify.lyricon.lyric.model.LyricLine
+import io.github.proify.lyricon.lyric.model.LyricMetadata
 import io.github.proify.lyricon.lyric.model.LyricWord
 import io.github.proify.lyricon.lyric.model.extensions.TimingNavigator
 
@@ -19,6 +20,7 @@ data class LyricModel(
     val text: String,
     val words: List<WordModel>,
     val isAlignedRight: Boolean = false,
+    var metadata: LyricMetadata? = null,
 ) {
     var width: Float = 0f
         private set
@@ -51,7 +53,8 @@ internal fun LyricLine.createModel(): LyricModel = LyricModel(
     duration = end - begin,
     text = text.orEmpty(),
     words = words?.toWordModels() ?: emptyList(),
-    isAlignedRight = isAlignedRight
+    isAlignedRight = isAlignedRight,
+    metadata = metadata
 )
 
 /**

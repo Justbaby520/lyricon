@@ -293,7 +293,7 @@ class LyricLineView(context: Context, attrs: AttributeSet? = null) :
     }
 
     fun isPlayStarted(): Boolean = if (isMarqueeMode()) {
-        !marquee.isAnimationFinished()
+        true
     } else {
         syllable.isStarted
     }
