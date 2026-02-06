@@ -40,6 +40,8 @@ class RichLyricLineView(
     val main = LyricLineView(context)
     val secondary = LyricLineView(context).apply { visible = false }
 
+    var alwaysShowSecondary = false
+
     var renderScale = 1.0f
         private set
 
@@ -188,6 +190,8 @@ class RichLyricLineView(
     }
 
     private fun setSecondaryLine(source: IRichLyricLine?) {
+        alwaysShowSecondary = false
+
         if (source == null) {
             secondary.apply { setLyric(null); visible = false }
             return
@@ -230,10 +234,12 @@ class RichLyricLineView(
         }
 
         val hasContent = newLine.text?.isNotBlank() == true || !newLine.words.isNullOrEmpty()
-        secondary.visible = hasContent
+        alwaysShowSecondary = hasContent
                 && (newLine.words?.isEmpty() == true
                 || newLine.metadata?.getBoolean("translation") == true
                 || newLine.metadata?.getBoolean("roma") == true)
+
+        secondary.visible = alwaysShowSecondary
 
         secondary.setLyric(newLine)
         secondary.syllable.isScrollOnly = isGenerated && !enableRelativeProgressHighlight

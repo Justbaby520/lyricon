@@ -53,9 +53,16 @@ open class LyricPlayerView(
 
     var song: Song? = null
         set(value) {
-            reset()
             textMode = false
             if (value != null) {
+                val curFirstLine = activeLines.firstOrNull()
+                val isExitingPlaceholder =
+                    curFirstLine.isTitleLine() && getSongTitle(value) == curFirstLine?.text
+
+                if (!isExitingPlaceholder) {
+                    reset()
+                }
+
                 val newSong = fillGapAtStart(value)
                 var previous: RichLyricLineModel? = null
                 lineModels = newSong.lyrics?.map {
@@ -65,11 +72,13 @@ open class LyricPlayerView(
                         previous = this
                     }
                 }
-                timingNavigator = TimingNavigator(lineModels?.toTypedArray() ?: emptyArray())
+                lyricNavigator = TimingNavigator(lineModels?.toTypedArray() ?: emptyArray())
             } else {
+                reset()
                 lineModels = null
-                timingNavigator = emptyTimingNavigator()
+                lyricNavigator = emptyTimingNavigator()
             }
+
             field = value
         }
 
@@ -101,7 +110,7 @@ open class LyricPlayerView(
     private val tempViewsToAdd = mutableListOf<IRichLyricLine>()
     private val tempFindActiveLines = mutableListOf<RichLyricLineModel>()
 
-    private var timingNavigator: TimingNavigator<RichLyricLineModel> = emptyTimingNavigator()
+    private var lyricNavigator: TimingNavigator<RichLyricLineModel> = emptyTimingNavigator()
     private var interludeState: InterludeState? = null
 
     private var layoutTransitionX: LayoutTransitionX? = null
@@ -216,7 +225,7 @@ open class LyricPlayerView(
         if (textMode) return
 
         tempFindActiveLines.clear()
-        timingNavigator.forEachAtOrPrevious(position) { tempFindActiveLines.add(it) }
+        lyricNavigator.forEachAtOrPrevious(position) { tempFindActiveLines.add(it) }
 
         val matches = tempFindActiveLines
         updateActiveViews(matches)
@@ -299,8 +308,12 @@ open class LyricPlayerView(
             // 模式：聚焦当前 (V0 Main 正常)
             v0.main.visibilityIfChanged = VISIBLE
             v0.main.setTextSize(pSize)
-            // 如果不是过渡模式，且有内容，暂时允许显示（稍后可能会被 Phase 3 挤掉）
-            v0.secondary.visibilityIfChanged = if (v0HasSecContent) VISIBLE else GONE
+
+            v0.secondary.visibilityIfChanged =
+                if (v0.alwaysShowSecondary
+                    || (v0HasSecContent && v0.secondary.isPlayStarted())
+                ) VISIBLE else GONE
+
             v0.secondary.setTextSize(sSize)
         }
 
@@ -347,7 +360,6 @@ open class LyricPlayerView(
                         secVis = GONE
                     }
                 }
-
 
                 // 如果容器内全被隐藏了，容器本身也隐藏
                 val allGone = mainVis != VISIBLE && secVis != VISIBLE
@@ -509,5 +521,5 @@ open class LyricPlayerView(
     }
 }
 
-fun IRichLyricLine.isTitleLine(): Boolean =
-    metadata?.getBoolean(LyricPlayerView.KEY_SONG_TITLE_LINE, false) == true
+fun IRichLyricLine?.isTitleLine(): Boolean =
+    this?.metadata?.getBoolean(LyricPlayerView.KEY_SONG_TITLE_LINE, false) == true
