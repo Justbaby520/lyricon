@@ -1,3 +1,4 @@
+<!--suppress HtmlDeprecatedAttribute -->
 <p align="center">
   <img src="resources/logo.svg" width="100" alt="Lyricon Logo"/>
 </p>
@@ -60,10 +61,10 @@
 
 ## 🧩 Plugin Ecosystem
 
-| Category       | Resource                                                                                           | Description                                                  |
-|:---------------|:---------------------------------------------------------------------------------------------------|:-------------------------------------------------------------|
-| **Library**    | [LyricProvider Repo](https://github.com/proify/LyricProvider)                                      | A collection of plugins for major music streaming platforms. |
-| **Developers** | [Dev Documentation](https://github.com/proify/lyricon/blob/master/lyric/bridge/provider/README.md) | Guidelines for developers to adapt new players.              |
+| Category       | Resource                                                                                                   | Description                                                  |
+|:---------------|:-----------------------------------------------------------------------------------------------------------|:-------------------------------------------------------------|
+| **Library**    | [LyricProvider Repo](https://github.com/proify/LyricProvider)                                              | A collection of plugins for major music streaming platforms. |
+| **Developers** | [Dev Documentation](https://github.com/proify/lyricon/blob/master/lyric/bridge/provider/README-English.md) | Guidelines for developers to adapt new players.              |
 
 ### 💡 Natively Supported Apps
 
@@ -73,12 +74,6 @@
 ---
 
 ## 👥 Community & Contribution
-
-<p align="left">
-  <a href="https://qm.qq.com/q/IXif8Zi0Iq">
-    <img src="https://img.shields.io/badge/QQ_Group-Join_Community-0084FF?style=flat&logo=tencent-qq&logoColor=white" alt="QQ Group">
-  </a>
-</p>
 
 * **Feedback**: Found a bug or have a suggestion? Please open
   an [Issue](https://github.com/proify/lyricon/issues).
