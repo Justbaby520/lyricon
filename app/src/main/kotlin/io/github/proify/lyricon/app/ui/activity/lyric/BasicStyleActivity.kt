@@ -182,6 +182,36 @@ class BasicLyricStyleActivity : AbstractLyricActivity() {
                 },
                 title = stringResource(R.string.item_base_lockscreen_hidden),
             )
+
+            val hideWhenNoLyricAfterSeconds = rememberStringPreference(
+                preferences,
+                "lyric_style_base_hide_when_no_lyric_after_seconds",
+                BasicStyle.Defaults.HIDE_WHEN_NO_LYRIC_AFTER_SECONDS.toString()
+            )
+            val hideWhenNoLyricAfterSecondsInt = remember(hideWhenNoLyricAfterSeconds.value) {
+                hideWhenNoLyricAfterSeconds.value?.toIntOrNull()
+                    ?: BasicStyle.Defaults.HIDE_WHEN_NO_LYRIC_AFTER_SECONDS
+            }
+            val hideWhenNoLyricSummary = remember(hideWhenNoLyricAfterSecondsInt) {
+                hideWhenNoLyricAfterSecondsInt
+            }.let { seconds ->
+                if (seconds <= 0) {
+                    stringResource(R.string.option_no_lyric_timeout_never)
+                } else {
+                    stringResource(R.string.format_no_lyric_timeout_seconds, seconds)
+                }
+            }
+
+            InputPreference(
+                sharedPreferences = preferences,
+                key = "lyric_style_base_hide_when_no_lyric_after_seconds",
+                leftAction = { IconActions(painterResource(R.drawable.ic_stop_circle)) },
+                inputType = InputType.INTEGER,
+                minValue = 0.0,
+                maxValue = 3600.0,
+                title = stringResource(R.string.item_base_hide_when_no_lyric_after_seconds),
+                summary = hideWhenNoLyricSummary
+            )
         }
 
         Card(

@@ -11,6 +11,7 @@ import android.annotation.SuppressLint
 import android.app.KeyguardManager
 import android.content.Context
 import android.graphics.Color
+import android.os.SystemClock
 import android.util.Log
 import android.view.Gravity
 import android.view.View
@@ -86,6 +87,11 @@ class StatusBarLyric(
     private var isOplusCapsuleShowing: Boolean = false
     private var lastLogoGravity: Int = -114
     private var pendingDataWhileAsleep: PendingData? = null
+    private var hasLyricContent: Boolean = false
+    private var noLyricSinceUptimeMs: Long? = null
+    private var noLyricTimeoutReached: Boolean = false
+    private var noLyricTimeoutToken: Int = 0
+    private var noLyricTimeoutRunnable: Runnable? = null
 
     // --- 辅助组件 ---
 
@@ -138,6 +144,7 @@ class StatusBarLyric(
         updateLogoLocation()
         textView.applyStyle(style)
         updateLayoutConfig(style)
+        updateNoLyricState(hasLyricContent)
         requestLayout()
     }
 
@@ -155,6 +162,7 @@ class StatusBarLyric(
      */
     fun setPlaying(playing: Boolean) {
         this.isPlaying = playing
+        updateNoLyricState(hasLyricContent)
         updateVisibility()
     }
 
@@ -164,7 +172,8 @@ class StatusBarLyric(
     fun updateVisibility() {
         val isLocked = keyguardManager.isKeyguardLocked
         val hideOnLockScreen = currentStyle.basicStyle.hideOnLockScreen && isLocked
-        val shouldShow = isPlaying && !hideOnLockScreen && textView.isNotEmpty()
+        val shouldShow =
+            isPlaying && !hideOnLockScreen && textView.isNotEmpty() && !noLyricTimeoutReached
 
         visibilityIfChanged = if (shouldShow) VISIBLE else GONE
     }
@@ -174,6 +183,8 @@ class StatusBarLyric(
      */
     fun setSong(song: Song?) {
         textView.song = song
+        hasLyricContent = !(song?.lyrics.isNullOrEmpty())
+        updateNoLyricState(hasLyricContent)
     }
 
     /**
@@ -181,6 +192,8 @@ class StatusBarLyric(
      */
     fun updateText(text: String?) {
         textView.text = text
+        hasLyricContent = !text.isNullOrBlank()
+        updateNoLyricState(hasLyricContent)
     }
 
     /**
@@ -286,6 +299,52 @@ class StatusBarLyric(
     private fun triggerSingleTransition() {
         singleLayoutTransition.enableTransitionType(LayoutTransition.CHANGING)
         layoutTransition = singleLayoutTransition
+    }
+
+    private fun updateNoLyricState(hasLyric: Boolean) {
+        val timeoutSeconds = currentStyle.basicStyle.hideWhenNoLyricAfterSeconds
+
+        if (!isPlaying || timeoutSeconds <= 0 || hasLyric) {
+            noLyricTimeoutReached = false
+            clearNoLyricTimeout()
+            updateVisibility()
+            return
+        }
+
+        if (noLyricSinceUptimeMs == null) {
+            noLyricSinceUptimeMs = SystemClock.uptimeMillis()
+        }
+
+        val deadlineMs = noLyricSinceUptimeMs!! + timeoutSeconds * 1000L
+        val remainingMs = deadlineMs - SystemClock.uptimeMillis()
+
+        if (remainingMs <= 0L) {
+            noLyricTimeoutReached = true
+            clearNoLyricTimeout()
+            updateVisibility()
+            return
+        }
+
+        scheduleNoLyricTimeout(remainingMs)
+        updateVisibility()
+    }
+
+    private fun scheduleNoLyricTimeout(delayMs: Long) {
+        val token = ++noLyricTimeoutToken
+        noLyricTimeoutRunnable?.let { removeCallbacks(it) }
+        noLyricTimeoutRunnable = Runnable {
+            if (token != noLyricTimeoutToken) return@Runnable
+            noLyricTimeoutReached = true
+            updateVisibility()
+        }
+        postDelayed(noLyricTimeoutRunnable, delayMs)
+    }
+
+    private fun clearNoLyricTimeout() {
+        noLyricSinceUptimeMs = null
+        noLyricTimeoutToken++
+        noLyricTimeoutRunnable?.let { removeCallbacks(it) }
+        noLyricTimeoutRunnable = null
     }
 
     /**
