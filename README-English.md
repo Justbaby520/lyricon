@@ -64,7 +64,7 @@
 
 | Category       | Resource                                                                                                   | Description                                                  |
 |:---------------|:-----------------------------------------------------------------------------------------------------------|:-------------------------------------------------------------|
-| **Library**    | [LyricProvider Repo](https://github.com/proify/LyricProvider)                                              | A collection of plugins for major music streaming platforms. |
+| **Library**    | [LyricProvider Repo](https://github.com/proify/LyricProvider/blob/master/README-English.md)                | A collection of plugins for major music streaming platforms. |
 | **Developers** | [Dev Documentation](https://github.com/proify/lyricon/blob/master/lyric/bridge/provider/README-English.md) | Guidelines for developers to adapt new players.              |
 
 ### 💡 Natively Supported Apps
