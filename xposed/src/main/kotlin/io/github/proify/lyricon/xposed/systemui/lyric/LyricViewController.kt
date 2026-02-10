@@ -11,7 +11,6 @@ import android.os.Looper
 import android.os.Message
 import android.os.SystemClock
 import com.highcapable.yukihookapi.hook.log.YLog
-import io.github.proify.android.extensions.setColorAlpha
 import io.github.proify.lyricon.central.provider.player.ActivePlayerListener
 import io.github.proify.lyricon.lyric.model.Song
 import io.github.proify.lyricon.provider.ProviderInfo
@@ -19,13 +18,11 @@ import io.github.proify.lyricon.statusbarlyric.StatusBarLyric
 import io.github.proify.lyricon.statusbarlyric.SuperLogo
 import io.github.proify.lyricon.xposed.systemui.util.LyricPrefs
 import io.github.proify.lyricon.xposed.systemui.util.NotificationCoverHelper
-import io.github.proify.lyricon.xposed.systemui.util.OnColorChangeListener
 import io.github.proify.lyricon.xposed.systemui.util.OplusCapsuleHooker
-import io.github.proify.lyricon.xposed.systemui.util.StatusBarColorMonitor
 import java.io.File
 
 object LyricViewController : ActivePlayerListener, Handler.Callback,
-    OnColorChangeListener, OplusCapsuleHooker.CapsuleStateChangeListener,
+    OplusCapsuleHooker.CapsuleStateChangeListener,
     NotificationCoverHelper.OnCoverUpdateListener {
 
     private const val TAG = "LyricViewController"
@@ -59,7 +56,6 @@ object LyricViewController : ActivePlayerListener, Handler.Callback,
     private var lastPostTime = 0L
 
     init {
-        StatusBarColorMonitor.registerListener(this)
         OplusCapsuleHooker.registerListener(this)
         NotificationCoverHelper.registerListener(this)
     }
@@ -193,17 +189,6 @@ object LyricViewController : ActivePlayerListener, Handler.Callback,
     }
 
     ////////// 非UI线程方法结束 /////////
-
-    override fun onColorChanged(color: Int, lightMode: Boolean) {
-        // if (DEBUG) YLog.debug(tag = TAG, msg = "onColorChanged: $color, $lightMode")
-        forViewEach {
-            setStatusBarColor(currentStatusColor.apply {
-                this.color = color
-                this.lightMode = lightMode
-                translucentColor = color.setColorAlpha(0.5f)
-            })
-        }
-    }
 
     override fun onCapsuleVisibilityChanged(isShowing: Boolean) {
         forViewEach {

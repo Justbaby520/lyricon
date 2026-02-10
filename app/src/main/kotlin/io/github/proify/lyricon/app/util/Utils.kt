@@ -14,11 +14,14 @@ import android.content.SharedPreferences
 import android.os.Process
 import androidx.browser.customtabs.CustomTabColorSchemeParams
 import androidx.browser.customtabs.CustomTabsIntent
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.toArgb
 import androidx.core.content.edit
 import androidx.core.net.toUri
 import io.github.proify.lyricon.app.LyriconApp
 import io.github.proify.lyricon.app.compose.theme.CurrentThemeConfigs
 import io.github.proify.lyricon.app.ui.activity.MainActivity
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 object Utils {
     val isOPlus: Boolean by lazy {
@@ -57,6 +60,15 @@ fun Activity.restartApp() {
     @Suppress("DEPRECATION")
     overridePendingTransition(0, 0)
     Process.killProcess(Process.myPid())
+}
+
+@Composable
+fun Context.LaunchBrowserCompose(
+    url: String,
+    toolbarColor: Int? = MiuixTheme.colorScheme.surface.toArgb(),
+    darkTheme: Boolean = CurrentThemeConfigs.isDark
+) {
+    launchBrowser(url, toolbarColor, darkTheme)
 }
 
 fun Context.launchBrowser(

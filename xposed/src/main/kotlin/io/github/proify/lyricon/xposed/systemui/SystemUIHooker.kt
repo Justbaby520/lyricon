@@ -29,11 +29,13 @@ import io.github.proify.lyricon.xposed.systemui.util.CrashDetector
 import io.github.proify.lyricon.xposed.systemui.util.LyricPrefs
 import io.github.proify.lyricon.xposed.systemui.util.NotificationCoverHelper
 import io.github.proify.lyricon.xposed.systemui.util.OplusCapsuleHooker
-import io.github.proify.lyricon.xposed.systemui.util.StatusBarColorMonitor
+import io.github.proify.lyricon.xposed.systemui.util.StatusBarDisableHooker
+import io.github.proify.lyricon.xposed.systemui.util.StatusBarDisableHooker.OnStatusBarDisableListener
 import io.github.proify.lyricon.xposed.systemui.util.ViewVisibilityTracker
 
+
 object SystemUIHooker : YukiBaseHooker() {
-    private const val TEST_CEASH = false
+    private const val TEST_CRASH = false
 
     private var layoutInflaterResult: YukiMemberHookCreator.MemberHookCreator.Result? = null
     private var safeMode = false
@@ -98,6 +100,22 @@ object SystemUIHooker : YukiBaseHooker() {
         ViewVisibilityTracker.initialize(context.classLoader)
         initDataChannel()
         ActivePlayerDispatcher.addActivePlayerListener(LyricViewController)
+
+        StatusBarDisableHooker.inject(context.classLoader)
+        StatusBarDisableHooker.addListener(object : OnStatusBarDisableListener {
+
+            private var lastDisableStateChanged: Boolean? = null
+            override fun onDisableStateChanged(
+                shouldHide: Boolean,
+                animate: Boolean
+            ) {
+                if (lastDisableStateChanged == shouldHide) return
+                lastDisableStateChanged = shouldHide
+                StatusBarViewManager.forEach {
+                    it.onDisableStateChanged(shouldHide)
+                }
+            }
+        })
     }
 
     private fun initDataChannel() {
@@ -127,8 +145,7 @@ object SystemUIHooker : YukiBaseHooker() {
             val isFirst = StatusBarViewManager.controllers.size == 1
             if (isFirst) {
                 BridgeCentral.sendBootCompleted()
-                StatusBarColorMonitor.hookFromClock(view)
-                if (TEST_CEASH) view.postDelayed({ error("test crash") }, 3000)
+                if (TEST_CRASH) view.postDelayed({ error("test crash") }, 3000)
             }
         }
     }

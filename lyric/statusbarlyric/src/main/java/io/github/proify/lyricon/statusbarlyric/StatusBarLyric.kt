@@ -102,6 +102,13 @@ class StatusBarLyric(
     // 当前生效的超时 Runnable
     private var lyricTimeoutTask: Runnable? = null
 
+    // 跟随系统隐藏状态栏内容
+    var isSystemDisable = false
+        set(value) {
+            field = value
+            updateVisibility()
+        }
+
     // --- 系统 / 辅助组件 ---
 
     private val keyguardManager: KeyguardManager by lazy {
@@ -200,11 +207,15 @@ class StatusBarLyric(
         updateVisibility()
     }
 
+    fun isHideOnLockScreen() =
+        currentStyle.basicStyle.hideOnLockScreen && keyguardManager.isKeyguardLocked
+
     fun updateVisibility() {
-        val isLocked = keyguardManager.isKeyguardLocked
-        val hideOnLockScreen = currentStyle.basicStyle.hideOnLockScreen && isLocked
-        val shouldShow =
-            isPlaying && !hideOnLockScreen && textView.isNotEmpty() && !lyricTimedOut
+        val shouldShow = isPlaying
+                && !isHideOnLockScreen()
+                && textView.isNotEmpty()
+                && !lyricTimedOut
+                && !isSystemDisable
 
         visibleIfChanged = shouldShow
     }

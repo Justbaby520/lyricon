@@ -1,7 +1,6 @@
 /*
  * Copyright 2026 Proify, Tomakino
  * Licensed under the Apache License, Version 2.0
- * http://www.apache.org/licenses/LICENSE-2.0
  */
 
 package io.github.proify.lyricon.app.ui.activity.lyric.provider
@@ -33,15 +32,11 @@ import java.util.Locale
 class LyricProviderViewModel(application: Application) : AndroidViewModel(application) {
 
     private val packageManager: PackageManager = application.packageManager
-
-    // 状态管理
     private val _uiState = MutableStateFlow(ProviderUiState())
     val uiState: StateFlow<ProviderUiState> = _uiState.asStateFlow()
 
-    // 视图模式状态
     var listStyle by mutableIntStateOf(
-        application.defaultSharedPreferences
-            .getInt("activity_provider_list_style", ViewMode.SHORT)
+        application.defaultSharedPreferences.getInt("activity_provider_list_style", ViewMode.SHORT)
     )
 
     var noQueryPermission by mutableStateOf(false)
@@ -49,9 +44,9 @@ class LyricProviderViewModel(application: Application) : AndroidViewModel(applic
     companion object {
         private val CERTIFIED_SIGNATURES = arrayOf(
             "d75a43f76dbe80d816046f952b8d0f5f7abd71c9bd7b57786d5367c488bd5816",
-            "ba86f0c1f52d0f6a24e1b9a63eade0e8b80e7b9e20b8ef068da2e39c7b6e7b49", // trantor.app
-            "8488d67a39978f84fd876510e0acb85e3a0504b90fbd56f11beb2123e285fa78",  // Salt Player
-            "4ca5ff4e5bf8418b45a8ecb46ddb91b6403ab7cc4b1a4de7e58fba12f54278e6" //flamingo player
+            "ba86f0c1f52d0f6a24e1b9a63eade0e8b80e7b9e20b8ef068da2e39c7b6e7b49",
+            "8488d67a39978f84fd876510e0acb85e3a0504b90fbd56f11beb2123e285fa78",
+            "4ca5ff4e5bf8418b45a8ecb46ddb91b6403ab7cc4b1a4de7e58fba12f54278e6"
         )
     }
 
@@ -64,59 +59,40 @@ class LyricProviderViewModel(application: Application) : AndroidViewModel(applic
             _uiState.value = _uiState.value.copy(isLoading = true)
 
             withContext(Dispatchers.IO) {
-                // 1. 获取包列表
-                @Suppress("DEPRECATION") val getSignFlag = if (Build.VERSION.SDK_INT >= 28) {
-                    PackageManager.GET_SIGNING_CERTIFICATES
-                } else {
-                    PackageManager.GET_SIGNATURES
-                }
-                val packageInfos = packageManager.getInstalledPackages(
-                    PackageManager.GET_META_DATA or getSignFlag
-                )
-                if (packageInfos.size <= 1) { // 考虑到部分环境下可能只返回自身
-                    noQueryPermission = true
-                }
+                @Suppress("DEPRECATION")
+                val getSignFlag =
+                    if (Build.VERSION.SDK_INT >= 28) PackageManager.GET_SIGNING_CERTIFICATES else PackageManager.GET_SIGNATURES
 
-                // 2. 筛选目标包 (Lyric Modules)
+                val packageInfos =
+                    packageManager.getInstalledPackages(PackageManager.GET_META_DATA or getSignFlag)
+                if (packageInfos.size <= 1) noQueryPermission = true
+
                 val targetPackages = packageInfos.filter { isValidModule(it) }
-
                 if (targetPackages.isEmpty()) {
-                    withContext(Dispatchers.Main) {
-                        _uiState.value = ProviderUiState(isLoading = false)
-                    }
+                    _uiState.value = ProviderUiState(isLoading = false)
                     return@withContext
                 }
 
-                // 3. 准备本地化排序器
-                // 使用当前系统语言，如果是中文环境，它将按照拼音首字母排序
                 val collator = Collator.getInstance(Locale.getDefault())
-
-                // 4. 分批处理以优化 UI 响应
-                val batchSize = 5
                 val loadedModules = mutableListOf<LyricModule>()
 
-                targetPackages.chunked(batchSize).forEach { batch ->
+                // 分批加载以维持流畅度
+                targetPackages.chunked(6).forEach { batch ->
                     val batchResults = batch.mapNotNull { processPackage(it) }
                     loadedModules.addAll(batchResults)
 
-                    // 5. 本地化排序逻辑
-                    // 排序规则：已认证应用排在前面，同级别下按 Label 本地化字母顺序排序
                     val sortedList = loadedModules.sortedWith { m1, m2 ->
                         if (m1.isCertified != m2.isCertified) {
-                            // 已认证的（true）排在前面
                             m2.isCertified.compareTo(m1.isCertified)
                         } else {
-                            // 使用 Collator 比较 Label
                             collator.compare(m1.label, m2.label)
                         }
                     }
 
-                    withContext(Dispatchers.Main) {
-                        _uiState.value = ProviderUiState(
-                            modules = sortedList,
-                            isLoading = loadedModules.size < targetPackages.size
-                        )
-                    }
+                    _uiState.value = ProviderUiState(
+                        modules = sortedList.toList(),
+                        isLoading = loadedModules.size < targetPackages.size
+                    )
                 }
             }
         }
@@ -124,36 +100,24 @@ class LyricProviderViewModel(application: Application) : AndroidViewModel(applic
 
     private fun isValidModule(packageInfo: PackageInfo): Boolean {
         val appInfo = packageInfo.applicationInfo ?: return false
-
-        // 排除系统应用和更新的系统应用
         val isSystem = (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0
         val isUpdatedSystem = (appInfo.flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0
-
-        if (isSystem || isUpdatedSystem) return false
-
-        return appInfo.metaData?.getBoolean("lyricon_module") == true
+        return !(isSystem || isUpdatedSystem) && appInfo.metaData?.getBoolean("lyricon_module") == true
     }
 
     private fun processPackage(packageInfo: PackageInfo): LyricModule? {
         return try {
             val appInfo = packageInfo.applicationInfo ?: return null
             val metaData = appInfo.metaData ?: return null
-
             val label = appInfo.loadLabel(packageManager).toString()
+
             AppCache.cacheLabel(packageInfo.packageName, label)
+            val isCertified =
+                SignatureValidator.validateSignature(packageInfo, *CERTIFIED_SIGNATURES)
 
-            val isCertified = SignatureValidator.validateSignature(
-                packageInfo,
-                *CERTIFIED_SIGNATURES
-            )
-
-            // 图标缓存逻辑
             if (AppCache.getCachedIcon(packageInfo.packageName) == null) {
-                runCatching {
-                    appInfo.loadIcon(packageManager)?.let { icon ->
-                        AppCache.cacheIcon(packageInfo.packageName, icon)
-                    }
-                }
+                appInfo.loadIcon(packageManager)
+                    ?.let { AppCache.cacheIcon(packageInfo.packageName, it) }
             }
 
             LyricModule(
@@ -173,7 +137,6 @@ class LyricProviderViewModel(application: Application) : AndroidViewModel(applic
 
     private fun extractTags(appInfo: ApplicationInfo, metaData: Bundle): List<ModuleTag> {
         val tagsResId = metaData.getInt("lyricon_module_tags")
-
         val rawTags = if (tagsResId != 0) {
             runCatching {
                 packageManager.getResourcesForApplication(appInfo).getStringArray(tagsResId)
@@ -182,7 +145,6 @@ class LyricProviderViewModel(application: Application) : AndroidViewModel(applic
         } else {
             metaData.getString("lyricon_module_tags")?.let { listOf(it) } ?: emptyList()
         }
-
         return rawTags.mapNotNull { tagKey ->
             if (tagKey.isBlank()) return@mapNotNull null
             ModuleHelper.getPredefinedTag(tagKey) ?: ModuleTag(title = tagKey)

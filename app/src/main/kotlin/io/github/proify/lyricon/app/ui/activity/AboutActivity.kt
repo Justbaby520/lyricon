@@ -7,10 +7,12 @@
 package io.github.proify.lyricon.app.ui.activity
 
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -86,34 +89,50 @@ class AboutActivity : BaseActivity() {
                             .fillMaxWidth(),
                     pressFeedbackType = PressFeedbackType.Sink,
                 ) {
+
                     val drawable =
-                        AppCompatResources.getDrawable(this@AboutActivity, R.mipmap.ic_launcher)
+                        AppCompatResources.getDrawable(
+                            this@AboutActivity,
+                            R.mipmap.ic_launcher
+                        )
                     Box(modifier = Modifier.fillMaxSize()) {
-                        Row(
-                            modifier =
-                                Modifier
-                                    .matchParentSize()
-                                    .blur(200.dp),
-                        ) {
-                            Image(
+
+                        if (Build.VERSION.SDK_INT >= 31) {
+                            Row(
                                 modifier =
                                     Modifier
-                                        .weight(1f)
-                                        .fillMaxWidth()
-                                        .fillMaxHeight()
-                                        .scale(2f)
-                                        .rotate(40.toFloat()),
-                                painter =
-                                    rememberDrawablePainter(
-                                        AppCompatResources.getDrawable(
-                                            this@AboutActivity,
-                                            R.mipmap.ic_launcher,
+                                        .matchParentSize()
+                                        .blur(200.dp),
+                            ) {
+                                Image(
+                                    modifier =
+                                        Modifier
+                                            .weight(1f)
+                                            .fillMaxWidth()
+                                            .fillMaxHeight()
+                                            .scale(2f)
+                                            .rotate(40.toFloat()),
+                                    painter =
+                                        rememberDrawablePainter(
+                                            AppCompatResources.getDrawable(
+                                                this@AboutActivity,
+                                                R.mipmap.ic_launcher,
+                                            ),
                                         ),
-                                    ),
-                                contentDescription = null,
-                                contentScale = ContentScale.Crop,
+                                    contentDescription = null,
+                                    contentScale = ContentScale.Crop,
+                                )
+                            }
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .matchParentSize()
+                                    .background(
+                                        Color(0xFF3582FF).copy(alpha = 0.4f),
+                                    )
                             )
                         }
+
                         Column(
                             modifier =
                                 Modifier
@@ -135,6 +154,8 @@ class AboutActivity : BaseActivity() {
                                 fontSize = 18.sp,
                             )
                         }
+
+
                     }
                 }
             }

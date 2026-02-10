@@ -8,7 +8,7 @@ plugins {
 
 val versionCode: Int = rootProject.extra["appVersionCode"] as Int
 val versionName: String = rootProject.extra["appVersionName"] as String
-val buildTime: Long = rootProject.extra["buildTime"] as Long
+val buildTime: Long = System.currentTimeMillis()
 
 configure<LibraryExtension> {
     namespace = "io.github.proify.lyricon.app"

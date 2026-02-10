@@ -8,121 +8,140 @@ package io.github.proify.lyricon.xposed.systemui.util
 
 import android.annotation.SuppressLint
 import android.view.View
-import android.view.ViewGroup
 import android.widget.TextView
 import com.highcapable.yukihookapi.hook.log.YLog
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XposedBridge
 import de.robv.android.xposed.XposedHelpers
-import io.github.proify.lyricon.common.util.ResourceMapper
+import java.util.WeakHashMap
 import java.util.concurrent.CopyOnWriteArraySet
-import java.util.concurrent.atomic.AtomicBoolean
 
+/**
+ * 状态栏颜色监控工具
+ * * 通过监听 onDarkChanged 实现 View 级别的颜色追踪。
+ * 状态管理基于 View 实例域，支持多实例独立回调。
+ */
 object StatusBarColorMonitor {
     private const val TAG = "StatusBarColorMonitor"
 
-    private val listeners = CopyOnWriteArraySet<OnColorChangeListener>()
+    /** View Tag Key：存储实例上次回调的颜色值，确保 View 域状态隔离 */
+    private const val TAG_KEY_COLOR = 0x7f010001.inv()
+
+    /** 弱引用监听映射：防止 View 销毁导致内存泄漏 */
+    private val listeners = WeakHashMap<View, OnColorChangeListener>()
+
+    /** 已 Hook 类名缓存：避免静态方法重复 Hook */
+    private val hookedClasses = CopyOnWriteArraySet<String>()
+
     private val hookEntries = CopyOnWriteArraySet<XC_MethodHook.Unhook>()
-    private val hooked = AtomicBoolean(false)
 
-    fun registerListener(listener: OnColorChangeListener) = listeners.add(listener)
-    //fun unregisterListener(listener: OnColorChangeListener) = listeners.remove(listener)
+    /**
+     * 注册 View 颜色监听
+     * @param listener 传入 null 则移除监听
+     */
+    fun setListener(view: View, listener: OnColorChangeListener?) {
+        if (listener == null) {
+            listeners.remove(view)
+            return
+        }
 
-    private fun hook(targetClass: Class<out View>) {
-        unhookAll()
-        val methods = targetClass.methods.filter { it.name == "onDarkChanged" }
-        YLog.debug("找到 ${methods.size} 个 onDarkChanged 方法")
+        listeners[view] = listener
 
-        methods.forEach { method ->
-            XposedBridge.hookMethod(method, DarkChangedHookCallback(targetClass.classLoader))
-                .also { hookEntries.add(it) }
-            YLog.debug("已 Hook 方法: $method")
+        val className = view.javaClass.name
+        if (hookedClasses.add(className)) {
+            performHook(view.javaClass)
         }
     }
 
-    fun unhookAll() {
-        hookEntries.forEach { it.unhook() }
-        hookEntries.clear()
-        hooked.set(false)
+    private fun performHook(targetClass: Class<*>) {
+        runCatching {
+            // 兼容 AOSP 及其定制版中所有可能的 onDarkChanged 方法签名
+            val methods = targetClass.declaredMethods.filter { it.name == "onDarkChanged" }
+
+            if (methods.isEmpty()) return@runCatching
+
+            methods.forEach { method ->
+                val callback = DarkChangedHookCallback(targetClass.classLoader)
+                hookEntries.add(XposedBridge.hookMethod(method, callback))
+            }
+        }.onFailure {
+            YLog.error(tag = TAG, msg = "Hook 失败: ${targetClass.name}", e = it)
+            hookedClasses.remove(targetClass.name)
+        }
     }
 
-    fun hookFromClock(view: ViewGroup) {
-        if (hooked.get()) return
-        val clockId = ResourceMapper.getIdByName(view.context, "clock")
-        view.findViewById<View>(clockId)?.let {
-            hook(it.javaClass)
-            hooked.set(true)
-        } ?: YLog.warn(tag = TAG, msg = "找不到时钟控件！")
+    @Suppress("unused")
+    fun release() {
+        hookEntries.forEach { it.unhook() }
+        hookEntries.clear()
+        hookedClasses.clear()
+        listeners.clear()
     }
 
     private class DarkChangedHookCallback(
         private val classLoader: ClassLoader?
     ) : XC_MethodHook() {
 
-        private var nonAdaptedColorAvailable = true
-        private var tintMethodAvailable = true
-        private var darkIconDispatcherClass: Class<*>? = null
-        private var lastColor = 0
+        private var fieldAvailable = true
+        private var methodAvailable = true
+        private var dispatcherClass: Class<*>? = null
 
         override fun afterHookedMethod(param: MethodHookParam) {
+            val view = param.thisObject as? View ?: return
+            val listener = listeners[view] ?: return
+
             try {
-                val darkIntensity = param.args.getOrNull(1) as? Float ?: return run {
-                    YLog.warn(
-                        tag = TAG,
-                        msg = "DarkIconDispatcher.onDarkChanged: Failed to get darkIntensity"
-                    )
-                }
-                val color = extractColor(param, param.thisObject)
-                if (color == 0 || color == lastColor || listeners.isEmpty()) return
+                // darkIntensity: 0.0 (全黑) 到 1.0 (全白/浅色)
+                val darkIntensity = param.args.getOrNull(1) as? Float ?: return
 
-                lastColor = color
-                val lightMode = darkIntensity > 0.5f
+                val color = extractColor(param, view)
+                if (color == 0) return
 
-                listeners.forEach { listener ->
-                    runCatching { listener.onColorChanged(color, lightMode) }
-                        .onFailure { YLog.error("监听器回调失败", it) }
-                }
+                // 检查 View 域颜色缓存，防止同一实例频繁触发相同回调
+                val lastColor = view.getTag(TAG_KEY_COLOR) as? Int
+                if (color == lastColor) return
+
+                view.setTag(TAG_KEY_COLOR, color)
+                listener.onColorChanged(color, darkIntensity > 0.5f)
+
             } catch (e: Exception) {
-                YLog.error(TAG, e)
+                YLog.error(tag = TAG, msg = "颜色回调解析异常", e = e)
             }
         }
 
-        private fun extractColor(param: MethodHookParam, target: Any): Int {
-            return extractNonAdaptedColor(target)
+        private fun extractColor(param: MethodHookParam, target: View): Int {
+            return getNonAdaptedColor(target)
                 .takeIf { it != 0 }
-                ?: extractTintColor(param)
+                ?: getTintColor(param)
                     .takeIf { it != 0 }
-                ?: (target as? TextView)?.currentTextColor ?: 0
+                ?: (target as? TextView)?.currentTextColor
+                ?: 0
         }
 
+        /** 获取非自适应原始颜色 (部分定制 ROM) */
         @SuppressLint("PrivateApi")
-        private fun extractNonAdaptedColor(target: Any): Int {
-            if (!nonAdaptedColorAvailable) return 0
+        private fun getNonAdaptedColor(target: Any): Int {
+            if (!fieldAvailable) return 0
             return runCatching { XposedHelpers.getIntField(target, "mNonAdaptedColor") }
-                .onFailure {
-                    nonAdaptedColorAvailable = false
-                    YLog.warn("mNonAdaptedColor 字段不可用: ${it.message}")
-                }.getOrDefault(0)
+                .onFailure { fieldAvailable = false }
+                .getOrDefault(0)
         }
 
+        /** 调用 DarkIconDispatcher.getTint 静态方法获取计算后的颜色 */
         @SuppressLint("PrivateApi")
-        private fun extractTintColor(param: MethodHookParam): Int {
-            if (!tintMethodAvailable || param.args.size < 3) return 0
+        private fun getTintColor(param: MethodHookParam): Int {
+            if (!methodAvailable || param.args.size < 3) return 0
             return runCatching {
-                val dispatcherClass = darkIconDispatcherClass ?: classLoader
+                val clazz = dispatcherClass ?: classLoader
                     ?.loadClass("com.android.systemui.plugins.DarkIconDispatcher")
-                    ?.also { darkIconDispatcherClass = it }
-                ?: return 0
+                    ?.also { dispatcherClass = it }
+
                 XposedHelpers.callStaticMethod(
-                    dispatcherClass,
-                    "getTint",
-                    param.args[0],
-                    param.thisObject,
-                    param.args[2]
+                    clazz, "getTint",
+                    param.args[0], param.thisObject, param.args[2]
                 ) as Int
             }.onFailure {
-                tintMethodAvailable = false
-                YLog.warn("DarkIconDispatcher.getTint 方法不可用: ${it.message}")
+                methodAvailable = false
             }.getOrDefault(0)
         }
     }

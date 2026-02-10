@@ -18,11 +18,14 @@ import androidx.core.view.doOnAttach
 import androidx.core.view.isVisible
 import com.highcapable.yukihookapi.hook.log.YLog
 import io.github.proify.android.extensions.dp
+import io.github.proify.android.extensions.setColorAlpha
 import io.github.proify.lyricon.common.util.ResourceMapper
 import io.github.proify.lyricon.common.util.ScreenStateMonitor
 import io.github.proify.lyricon.lyric.style.BasicStyle
 import io.github.proify.lyricon.lyric.style.LyricStyle
 import io.github.proify.lyricon.statusbarlyric.StatusBarLyric
+import io.github.proify.lyricon.xposed.systemui.util.OnColorChangeListener
+import io.github.proify.lyricon.xposed.systemui.util.StatusBarColorMonitor
 import io.github.proify.lyricon.xposed.systemui.util.ViewVisibilityController
 
 /**
@@ -44,12 +47,28 @@ class StatusBarViewController(
     private var internalRemoveLyricViewFlag = false
     private var lastHighlightView: View? = null
 
+    private var colorMonitorView: View? = null
+
     // --- 生命周期与初始化 ---
     fun onCreate() {
         statusBarView.addOnAttachStateChangeListener(statusBarAttachListener)
         statusBarView.viewTreeObserver.addOnGlobalLayoutListener(onGlobalLayoutListener)
         lyricView.addOnAttachStateChangeListener(lyricAttachListener)
         ScreenStateMonitor.addListener(this)
+
+        colorMonitorView = getClockView()?.also {
+            StatusBarColorMonitor.setListener(it, object : OnColorChangeListener {
+                override fun onColorChanged(color: Int, isLightMode: Boolean) {
+                    lyricView.apply {
+                        setStatusBarColor(currentStatusColor.apply {
+                            this.color = color
+                            this.lightMode = lightMode
+                            translucentColor = color.setColorAlpha(0.5f)
+                        })
+                    }
+                }
+            })
+        }
 
         statusBarView.doOnAttach { checkLyricViewExists() }
         YLog.info("Lyric view created for $statusBarView")
@@ -60,6 +79,7 @@ class StatusBarViewController(
         statusBarView.viewTreeObserver.removeOnGlobalLayoutListener(onGlobalLayoutListener)
         lyricView.removeOnAttachStateChangeListener(lyricAttachListener)
         ScreenStateMonitor.removeListener(this)
+        colorMonitorView?.let { StatusBarColorMonitor.setListener(it, null) }
         YLog.info("Lyric view destroyed for $statusBarView")
     }
 
@@ -155,17 +175,25 @@ class StatusBarViewController(
     // --- 监听器实现 ---
 
     private val onGlobalLayoutListener = object : ViewTreeObserver.OnGlobalLayoutListener {
-        private var lastPlaying: Boolean = false
+        private var lastVisible: Boolean? = null
 
         override fun onGlobalLayout() {
-            val playing = LyricViewController.isPlaying && lyricView.isVisible
-            if (!lastPlaying && !playing) return
+            val shouldLyricViewVisible = lyricView.isVisible
+
+            var visible = LyricViewController.isPlaying && when {
+                lyricView.isSystemDisable -> !lyricView.isHideOnLockScreen()
+                shouldLyricViewVisible -> true
+                else -> false
+            }
+
+            if (lastVisible == false && !visible) return
 
             visibilityController.applyVisibilityRules(
                 rules = currentLyricStyle.basicStyle.visibilityRules,
-                isPlaying = playing
+                isPlaying = visible
             )
-            lastPlaying = playing
+            lastVisible = visible
+            //YLog.info("applyVisibilityRules: $visible")
         }
     }
 
@@ -204,7 +232,10 @@ class StatusBarViewController(
         lyricView.isSleepMode = false
     }
 
-    // --- 通用重写 ---
+    fun onDisableStateChanged(shouldHide: Boolean) {
+        lyricView.isSystemDisable = shouldHide
+    }
+
     override fun equals(other: Any?): Boolean =
         (this === other) || (other is StatusBarViewController && statusBarView === other.statusBarView)
 
