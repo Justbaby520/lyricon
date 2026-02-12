@@ -27,7 +27,9 @@ data class RichLyricLineConfig(
     var gradientProgressStyle: Boolean = true,
     var scaleInMultiLine: Float = 1f,
     var fadingEdgeLength: Int = 10,
-    var placeholderFormat: String = PlaceholderFormat.NAME_ARTIST
+    var placeholderFormat: String = PlaceholderFormat.NAME_ARTIST,
+    var enableAnim: Boolean = false,
+    var animId: String = "stack_flow"
 )
 
 object PlaceholderFormat {

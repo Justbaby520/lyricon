@@ -6,6 +6,7 @@
 
 package io.github.proify.lyricon.app.ui.activity
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.LocalIndication
@@ -28,7 +29,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import io.github.proify.android.extensions.json
+import com.mikepenz.aboutlibraries.Libs
 import io.github.proify.lyricon.app.R
 import io.github.proify.lyricon.app.compose.AppToolBarListContainer
 import io.github.proify.lyricon.app.compose.custom.miuix.basic.Card
@@ -36,8 +37,6 @@ import io.github.proify.lyricon.app.util.launchBrowser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.decodeFromStream
 import top.yukonga.miuix.kmp.basic.HorizontalDivider
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -46,27 +45,37 @@ class LicensesActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            val licensesState = produceState(emptyList()) {
+            val licensesState = produceState(
+                Libs.Builder()
+                    .withJson("{}")
+                    .build()
+            ) {
                 value = withContext(Dispatchers.IO) { loadLicenses() }
             }
             Content(licensesState.value)
         }
     }
 
+    @SuppressLint("DiscouragedApi")
     @OptIn(ExperimentalSerializationApi::class)
-    private fun loadLicenses(): List<OpenSourceLibrary> {
-        return try {
-            assets.open("open_source_licenses.json").use {
-                json.decodeFromStream<List<OpenSourceLibrary>>(it)
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            emptyList()
-        }
+    private fun loadLicenses(): Libs {
+        val context = this@LicensesActivity
+        val id = context.resources.getIdentifier(
+            "aboutlibraries", "raw", context.packageName
+        )
+        val inputStream = context.resources.openRawResource(id)
+        val jsonString = inputStream.bufferedReader().use { it.readText() }
+
+        return Libs.Builder()
+            .withJson(jsonString)
+            .build()
+
     }
 
     @Composable
-    private fun Content(sourceLibraries: List<OpenSourceLibrary>) {
+    private fun Content(libs: Libs) {
+        val sourceLibraries = libs.libraries
+
         AppToolBarListContainer(
             title = stringResource(R.string.activity_open_source_license),
             canBack = true,
@@ -78,11 +87,11 @@ class LicensesActivity : BaseActivity() {
                 val sourceLibrary = remember(library) {
                     library
                 }
-                val developers = sourceLibrary.developers
-                val url = sourceLibrary.url
+                val developers = sourceLibrary.developers.joinToString { it.name.orEmpty() }
+                val url = sourceLibrary.scm?.url
                 val description = sourceLibrary.description
-                val year = sourceLibrary.version
-                val project = sourceLibrary.project
+                val year = sourceLibrary.artifactVersion
+                val project = sourceLibrary.name
                 val licenses = sourceLibrary.licenses
 
                 val indication = LocalIndication.current
@@ -119,7 +128,7 @@ class LicensesActivity : BaseActivity() {
                             Text(
                                 modifier = Modifier
                                     .weight(1f),
-                                text = project.orEmpty(),
+                                text = project,
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Medium,
                             )
@@ -134,10 +143,10 @@ class LicensesActivity : BaseActivity() {
                             }
                         }
 
-                        if (!developers.isNullOrEmpty()) {
+                        if (developers.isNotEmpty()) {
                             Spacer(modifier = Modifier.height(5.dp))
                             Text(
-                                text = developers.joinToString(),
+                                text = developers,
                                 fontSize = 14.sp,
                                 color = MiuixTheme.colorScheme.onSurfaceSecondary
                             )
@@ -155,15 +164,15 @@ class LicensesActivity : BaseActivity() {
                             )
                         }
 
-                        if (!licenses.isNullOrEmpty()) {
+                        if (licenses.isNotEmpty()) {
                             Spacer(modifier = Modifier.height(10.dp))
                             Column(
                                 modifier = Modifier.fillMaxWidth(),
                             ) {
                                 Text(
                                     text = licenses
-                                        .filter { !it.name.isNullOrBlank() }
-                                        .joinToString { it.name.orEmpty() },
+                                        .filter { it.name.isNotBlank() }
+                                        .joinToString { it.name },
                                     fontSize = 14.sp,
                                 )
                             }
@@ -173,23 +182,4 @@ class LicensesActivity : BaseActivity() {
             }
         }
     }
-
-
-    @Serializable
-    private data class LicenseInfo(
-        val name: String? = null,
-        val url: String? = null
-    )
-
-    @Serializable
-    private data class OpenSourceLibrary(
-        val project: String? = null,
-        val description: String? = null,
-        val version: String? = null,
-        val developers: List<String>? = null,
-        val url: String? = null,
-        val year: String? = null,
-        val licenses: List<LicenseInfo>? = null,
-        val dependency: String? = null
-    )
 }

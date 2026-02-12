@@ -26,6 +26,9 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.yield
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.decodeFromStream
 import java.nio.ByteBuffer
@@ -39,12 +42,14 @@ internal class RemotePlayer(
     companion object {
         private const val TAG = "RemotePlayer"
         private const val MIN_INTERVAL_MS = 16L
+        private const val POSITION_OFFSET = 0
     }
 
     private val recorder = PlayerRecorder(info)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val released = AtomicBoolean(false)
     private val isState2Enabled = AtomicBoolean(false)
+    private val taskMutex = Mutex()
 
     private var positionSharedMemory: SharedMemory? = null
 
@@ -70,20 +75,24 @@ internal class RemotePlayer(
         ScreenStateMonitor.removeListener(this)
         stopPositionUpdate()
 
-        positionReadBuffer?.let { runCatching { SharedMemory.unmap(it) } }
-        positionSharedMemory?.close()
-
-        positionReadBuffer = null
-        positionSharedMemory = null
-        scope.cancel()
+        scope.launch {
+            taskMutex.withLock {
+                positionReadBuffer?.let { runCatching { SharedMemory.unmap(it) } }
+                positionSharedMemory?.close()
+                positionReadBuffer = null
+                positionSharedMemory = null
+                scope.cancel()
+            }
+        }
     }
 
     private fun initSharedMemory() {
         try {
-            val hashHex =
-                Integer.toHexString("${info.providerPackageName}/${info.playerPackageName}/${info.processName}".hashCode())
+            val hashHex = Integer.toHexString(
+                "${info.providerPackageName}/${info.playerPackageName}/${info.processName}".hashCode()
+            )
             positionSharedMemory =
-                SharedMemory.create("lyricon_pos_${hashHex}", Long.SIZE_BYTES).apply {
+                SharedMemory.create("lyricon_pos_$hashHex", Long.SIZE_BYTES).apply {
                     setProtect(OsConstants.PROT_READ or OsConstants.PROT_WRITE)
                     positionReadBuffer = mapReadOnly()
                 }
@@ -93,98 +102,162 @@ internal class RemotePlayer(
     }
 
     private fun computeCurrentPosition(): Long {
-        if (isState2Enabled.get()) {
-            val state = lastPlaybackState ?: return 0L
-            if (state.state != PlaybackState.STATE_PLAYING) return state.position
-            val timeDiff = SystemClock.elapsedRealtime() - state.lastPositionUpdateTime
-            return (state.position + (timeDiff * state.playbackSpeed).toLong()).coerceAtLeast(0L)
+        if (!isState2Enabled.get()) {
+            return readSharedMemoryPosition()
         }
+
+        val state = lastPlaybackState ?: return 0L
+        val basePosition = state.position.coerceAtLeast(0L)
+
+        if (state.state != PlaybackState.STATE_PLAYING) {
+            return basePosition
+        }
+
+        val lastUpdate = state.lastPositionUpdateTime
+        if (lastUpdate <= 0L) {
+            return basePosition
+        }
+
+        val now = SystemClock.elapsedRealtime()
+        val delta = (now - lastUpdate).coerceAtLeast(0L)
+
+        val speed = state.playbackSpeed
+        val advanced = if (speed == 1.0f) {
+            basePosition + delta
+        } else {
+            basePosition + (delta * speed).toLong()
+        }
+
+        return advanced.coerceAtLeast(0L)
+    }
+
+    private fun readSharedMemoryPosition(): Long {
         return try {
-            positionReadBuffer?.getLong(0) ?: 0L
+            positionReadBuffer?.getLong(POSITION_OFFSET)?.coerceAtLeast(0L) ?: 0L
         } catch (_: Throwable) {
             0L
         }
     }
 
-    /**
-     * 开启进度更新。
-     * 仅在屏幕点亮且处于播放状态时运行。
-     */
     private fun startPositionUpdate() {
-        if (released.get() || positionProducerJob?.isActive == true) return
-
-        // 屏幕关闭时不启动更新
+        if (released.get()) return
+        if (positionProducerJob?.isActive == true) return
         if (ScreenStateMonitor.state == ScreenStateMonitor.ScreenState.OFF) return
 
-        val interval = positionUpdateInterval.coerceAtLeast(MIN_INTERVAL_MS)
+        scope.launch {
+            taskMutex.withLock {
+                if (positionProducerJob?.isActive == true) return@withLock
 
-        positionProducerJob = scope.launch {
-            while (isActive) {
-                val pos = computeCurrentPosition().coerceAtLeast(0)
-                recorder.lastPosition = pos
-                playerListener.safeNotify { onPositionChanged(recorder, pos) }
-                delay(interval)
+                positionProducerJob = scope.launch {
+                    val interval = positionUpdateInterval.coerceAtLeast(MIN_INTERVAL_MS)
+                    var nextTick = SystemClock.elapsedRealtime()
+
+                    while (isActive) {
+                        val pos = computeCurrentPosition()
+                        recorder.lastPosition = pos
+                        playerListener.safeNotify {
+                            onPositionChanged(recorder, pos)
+                        }
+
+                        nextTick += interval
+                        val remaining =
+                            nextTick - SystemClock.elapsedRealtime()
+
+                        if (remaining > 0) {
+                            delay(remaining)
+                        } else {
+                            nextTick = SystemClock.elapsedRealtime()
+                            yield()
+                        }
+                    }
+                }
             }
         }
     }
 
     private fun stopPositionUpdate() {
-        positionProducerJob?.cancel()
-        positionProducerJob = null
+        val job = positionProducerJob
+        job?.cancel()
+
+        if (job != null) {
+            scope.launch {
+                taskMutex.withLock {
+                    if (positionProducerJob === job) {
+                        positionProducerJob = null
+                    }
+                }
+            }
+        }
     }
 
     override fun onScreenOn() {
-        // 屏幕亮起时，如果当前是播放状态，恢复更新
         if (recorder.lastIsPlaying) {
             startPositionUpdate()
         }
     }
 
     override fun onScreenOff() {
-        // 屏幕关闭时，立即停止所有计算逻辑
         stopPositionUpdate()
     }
 
-    override fun onScreenUnlocked() {}
-
-    // --- AIDL 接口实现 ---
+    override fun onScreenUnlocked() = Unit
 
     override fun setPositionUpdateInterval(interval: Int) {
         if (released.get()) return
-        positionUpdateInterval = interval.toLong().coerceAtLeast(MIN_INTERVAL_MS)
-        if (positionProducerJob != null) {
-            stopPositionUpdate()
-            startPositionUpdate()
+
+        val newInterval = interval.toLong()
+            .coerceAtLeast(MIN_INTERVAL_MS)
+
+        if (positionUpdateInterval != newInterval) {
+            positionUpdateInterval = newInterval
+            if (recorder.lastIsPlaying) {
+                stopPositionUpdate()
+                startPositionUpdate()
+            }
         }
     }
 
     @OptIn(ExperimentalSerializationApi::class)
     override fun setSong(bytes: ByteArray?) {
         if (released.get()) return
-        val song = bytes?.let {
-            runCatching {
-                json.decodeFromStream(Song.serializer(), it.inflate().inputStream())
-            }.getOrNull()
+
+        scope.launch {
+            val song = bytes?.let {
+                runCatching {
+                    json.decodeFromStream(
+                        Song.serializer(),
+                        it.inflate().inputStream()
+                    )
+                }.getOrNull()
+            }
+
+            val normalized = song?.normalize()
+            recorder.lastSong = normalized
+            playerListener.safeNotify {
+                onSongChanged(recorder, normalized)
+            }
         }
-        val normalized = song?.normalize()
-        recorder.lastSong = normalized
-        playerListener.safeNotify { onSongChanged(recorder, normalized) }
     }
 
     override fun setPlaybackState(isPlaying: Boolean) {
         if (released.get()) return
-        if (isState2Enabled.compareAndSet(true, false)) lastPlaybackState = null
+
+        isState2Enabled.set(false)
+        lastPlaybackState = null
 
         if (recorder.lastIsPlaying != isPlaying) {
             recorder.lastIsPlaying = isPlaying
-            playerListener.safeNotify { onPlaybackStateChanged(recorder, isPlaying) }
-
-            if (isPlaying) startPositionUpdate() else stopPositionUpdate()
+            playerListener.safeNotify {
+                onPlaybackStateChanged(recorder, isPlaying)
+            }
         }
+
+        if (isPlaying) startPositionUpdate() else stopPositionUpdate()
     }
 
     override fun setPlaybackState2(state: PlaybackState?) {
         if (released.get()) return
+
         if (state == null) {
             if (isState2Enabled.compareAndSet(true, false)) {
                 lastPlaybackState = null
@@ -193,54 +266,76 @@ internal class RemotePlayer(
             return
         }
 
+        Log.d(TAG, "setPlaybackState: $state")
+
+        if (state.state == PlaybackState.STATE_BUFFERING) {
+            return
+        }
+
+        val isPlaying =
+            state.state == PlaybackState.STATE_PLAYING
+
         isState2Enabled.set(true)
         lastPlaybackState = state
 
-        when (state.state) {
-            PlaybackState.STATE_PLAYING,
-            PlaybackState.STATE_PAUSED,
-            PlaybackState.STATE_STOPPED -> Unit
-
-            else -> return
-        }
-
-        val isPlaying = state.state == PlaybackState.STATE_PLAYING
         if (recorder.lastIsPlaying != isPlaying) {
             recorder.lastIsPlaying = isPlaying
-            playerListener.safeNotify { onPlaybackStateChanged(recorder, isPlaying) }
+            playerListener.safeNotify {
+                onPlaybackStateChanged(recorder, isPlaying)
+            }
         }
 
-        if (isPlaying) startPositionUpdate() else stopPositionUpdate()
+        if (isPlaying) {
+            startPositionUpdate()
+        } else {
+            stopPositionUpdate()
+        }
     }
 
     override fun seekTo(position: Long) {
         if (released.get()) return
+
         val safe = position.coerceAtLeast(0L)
         recorder.lastPosition = safe
-        playerListener.safeNotify { onSeekTo(recorder, safe) }
+        playerListener.safeNotify {
+            onSeekTo(recorder, safe)
+        }
     }
 
     override fun sendText(text: String?) {
         if (released.get()) return
+
         recorder.lastText = text
-        playerListener.safeNotify { onSendText(recorder, text) }
+        playerListener.safeNotify {
+            onSendText(recorder, text)
+        }
     }
 
     override fun setDisplayTranslation(isDisplayTranslation: Boolean) {
         if (released.get()) return
+
         recorder.lastIsDisplayTranslation = isDisplayTranslation
-        playerListener.safeNotify { onDisplayTranslationChanged(recorder, isDisplayTranslation) }
+        playerListener.safeNotify {
+            onDisplayTranslationChanged(recorder, isDisplayTranslation)
+        }
     }
 
     override fun setDisplayRoma(isDisplayRoma: Boolean) {
         if (released.get()) return
+
         recorder.lastDisplayRoma = isDisplayRoma
-        playerListener.safeNotify { onDisplayRomaChanged(recorder, isDisplayRoma) }
+        playerListener.safeNotify {
+            onDisplayRomaChanged(recorder, isDisplayRoma)
+        }
     }
 
-    override fun getPositionMemory(): SharedMemory? = positionSharedMemory
+    override fun getPositionMemory(): SharedMemory? =
+        positionSharedMemory
 
-    private inline fun PlayerListener.safeNotify(crossinline block: PlayerListener.() -> Unit) {
-        runCatching { block() }.onFailure { Log.e(TAG, "Listener notify failed", it) }
+    private inline fun PlayerListener.safeNotify(
+        crossinline block: PlayerListener.() -> Unit
+    ) {
+        runCatching { block() }
+            .onFailure { Log.e(TAG, "Listener notify failed", it) }
     }
 }

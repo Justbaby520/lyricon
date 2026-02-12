@@ -104,7 +104,7 @@ fun TextPage(scrollBehavior: ScrollBehavior, preferences: SharedPreferences) {
                     title = stringResource(R.string.item_text_fading_edge_length),
                     inputType = InputType.DOUBLE,
                     maxValue = 100.0,
-                    leftAction = { IconActions(painterResource(R.drawable.ic_format_size)) },
+                    leftAction = { IconActions(painterResource(R.drawable.ic_gradient)) },
                 )
                 SwitchPreference(
                     preferences,
@@ -320,7 +320,7 @@ private fun <T> DropdownPreference(
     options: List<String>,
     values: List<T>,
     title: String,
-    iconRes: Int = R.drawable.ic_speed
+    iconRes: Int = R.drawable.ic_settings
 ) {
     val currentValue = preferences.getString(preferenceKey, defaultValue.toString())
     var selectedIndex by remember {
@@ -358,7 +358,8 @@ private fun PlaceholderFormatPreference(preferences: SharedPreferences) {
             TextStyle.PlaceholderFormat.NAME_ARTIST,
             TextStyle.PlaceholderFormat.NAME,
         ),
-        title = stringResource(R.string.item_text_placeholder_format)
+        title = stringResource(R.string.item_text_placeholder_format),
+        iconRes = R.drawable.title_24px
     )
 }
 
@@ -380,6 +381,7 @@ private fun TransitionConfigPreference(preferences: SharedPreferences) {
             TextStyle.TRANSITION_CONFIG_SMOOTH,
             TextStyle.TRANSITION_CONFIG_SLOW
         ),
-        title = stringResource(R.string.item_text_transition_config)
+        title = stringResource(R.string.item_text_transition_config),
+        iconRes = R.drawable.ic_speed
     )
 }

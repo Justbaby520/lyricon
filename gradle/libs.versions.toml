@@ -1,4 +1,5 @@
 [versions]
+aboutlibrariesCore = "13.2.1"
 agp = "9.0.0"
 backdrop = "1.0.5"
 capsuleAndroid = "2.1.1-patch2"
@@ -10,10 +11,10 @@ appcompat = "1.7.1"
 browser = "1.9.0"
 interpolator = "1.0.0"
 lifecycle = "2.10.0"
-activityCompose = "1.12.3"
-composeBom = "2026.01.01"
-composeFoundation = "1.10.2"
-composeUiGraphics = "1.10.2"
+activityCompose = "1.12.4"
+composeBom = "2026.02.00"
+composeFoundation = "1.10.3"
+composeUiGraphics = "1.10.3"
 materialIconsCore = "1.7.8"
 material = "1.13.0"
 accompanistDrawablePainter = "0.37.3"
@@ -29,12 +30,13 @@ xposed = "82"
 yukihookapi = "1.3.1"
 kavaref = "1.0.2"
 androidsvg = "1.4"
-remoteCreationCore = "1.0.0-alpha03"
-activity = "1.12.3"
+remoteCreationCore = "1.0.0-alpha04"
+activity = "1.12.4"
 constraintlayout = "2.2.1"
 
 [libraries]
 # ===== AndroidX =====
+aboutlibraries-core = { module = "com.mikepenz:aboutlibraries-core", version.ref = "aboutlibrariesCore" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 androidx-appcompat-resources = { module = "androidx.appcompat:appcompat-resources", version.ref = "appcompat" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }

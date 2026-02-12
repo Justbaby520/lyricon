@@ -11,6 +11,9 @@ import android.graphics.Typeface
 import android.os.Build
 import android.util.Log
 import android.widget.TextView
+import androidx.core.view.forEach
+import androidx.core.view.isEmpty
+import androidx.core.view.isVisible
 import androidx.core.view.updatePadding
 import io.github.proify.android.extensions.dp
 import io.github.proify.android.extensions.sp
@@ -19,6 +22,7 @@ import io.github.proify.lyricon.lyric.style.TextStyle
 import io.github.proify.lyricon.lyric.view.DefaultMarqueeConfig
 import io.github.proify.lyricon.lyric.view.DefaultSyllableConfig
 import io.github.proify.lyricon.lyric.view.LyricPlayerView
+import io.github.proify.lyricon.lyric.view.RichLyricLineView
 import java.io.File
 import kotlin.math.min
 
@@ -123,6 +127,8 @@ class SuperText(context: Context) : LyricPlayerView(context) {
             scaleInMultiLine = textStyle.scaleInMultiLine
             fadingEdgeLength = textStyle.fadingEdgeLength.coerceAtLeast(0).dp
             placeholderFormat = textStyle.placeholderFormat ?: TextStyle.Defaults.PLACEHOLDER_FORMAT
+            enableAnim = style.packageStyle.anim.enable
+            animId = style.packageStyle.anim.id
         }
 
         setStyle(config)
@@ -240,5 +246,21 @@ class SuperText(context: Context) : LyricPlayerView(context) {
             }
             Typeface.create(baseTypeface, styleFlag)
         }
+    }
+
+    fun shouldShow(): Boolean {
+        if (isEmpty()) return false
+
+        var visibleCount = 0
+        forEach {
+            if (it.isVisible) {
+                if (it is RichLyricLineView) {
+                    if (it.main.isVisible || it.secondary.isVisible) visibleCount++
+                } else {
+                    visibleCount++
+                }
+            }
+        }
+        return visibleCount > 0
     }
 }

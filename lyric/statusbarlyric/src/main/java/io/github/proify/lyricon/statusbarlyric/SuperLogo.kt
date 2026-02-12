@@ -30,7 +30,6 @@ import io.github.proify.lyricon.common.util.SVGHelper
 import io.github.proify.lyricon.lyric.style.LogoStyle
 import io.github.proify.lyricon.lyric.style.LyricStyle
 import io.github.proify.lyricon.lyric.style.RectF
-import io.github.proify.lyricon.lyric.view.util.Interpolates
 import io.github.proify.lyricon.provider.ProviderLogo
 import java.io.File
 import java.util.WeakHashMap
@@ -123,7 +122,7 @@ class SuperLogo(context: Context) : ImageView(context) {
         if (current < duration) {
             progressAnimator = ValueAnimator.ofFloat(startProgress, 1f).apply {
                 this.duration = duration - current
-                interpolator = Interpolates.linear
+                interpolator = LinearInterpolator()
                 addUpdateListener { animator ->
                     progress = animator.animatedValue as Float
                     invalidate()

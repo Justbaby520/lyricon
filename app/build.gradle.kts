@@ -51,6 +51,8 @@ dependencies {
     implementation(project(":bridge"))
     implementation(project(":common"))
     implementation(project(":lyric:style"))
+    implementation(project(":lyric:view"))
+    implementation(libs.aboutlibraries.core)
 
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.core.ktx)
@@ -66,7 +68,9 @@ dependencies {
     implementation(libs.backdrop)
 
     implementation(libs.capsule.android)
-    implementation(libs.lottie.compose)
+    implementation(libs.lottie.compose) {
+        exclude(group = "androidx.appcompat", module = "appcompat")
+    }
 
     // Xposed
     implementation(libs.yukihookapi.api)
@@ -84,6 +88,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.remote.creation.core)
+    implementation(libs.androidx.appcompat.resources)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

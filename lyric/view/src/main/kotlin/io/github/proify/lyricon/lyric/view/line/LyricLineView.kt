@@ -157,7 +157,7 @@ class LyricLineView(context: Context, attrs: AttributeSet? = null) :
 
         animationDriver.stop()
         animationDriver.startIfNoRunning()
-        postInvalidateOnAnimation()
+        invalidate()
     }
 
     fun isSyllableMode(): Boolean = !isMarqueeMode()

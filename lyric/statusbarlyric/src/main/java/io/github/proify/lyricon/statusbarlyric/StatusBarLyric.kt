@@ -18,7 +18,6 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.view.contains
-import androidx.core.view.isNotEmpty
 import androidx.core.view.updatePadding
 import io.github.proify.android.extensions.dp
 import io.github.proify.lyricon.lyric.model.Song
@@ -105,7 +104,7 @@ class StatusBarLyric(
     private var lyricTimeoutTask: Runnable? = null
 
     // 跟随系统隐藏状态栏内容
-    var isSystemDisable = false
+    var isDisabledVisible = false
         set(value) {
             field = value
             updateVisibility()
@@ -233,9 +232,9 @@ class StatusBarLyric(
     fun updateVisibility() {
         val shouldShow = isPlaying
                 && !isHideOnLockScreen()
-                && textView.isNotEmpty()
+                && textView.shouldShow()
                 && !lyricTimedOut
-                && !isSystemDisable
+                && !isDisabledVisible
 
         visibleIfChanged = shouldShow
     }

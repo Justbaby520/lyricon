@@ -43,6 +43,24 @@ class RichLyricLineView(
     var renderScale = 1.0f
         private set
 
+    private var animationTransition: Boolean = false
+    private var pendingLine: IRichLyricLine? = null
+    private var pendingPosition: Long? = null
+
+    fun beginAnimationTransition() {
+        animationTransition = true
+    }
+
+    fun endAnimationTransition() {
+        animationTransition = false
+        if (pendingLine != null) {
+            updateAllLines()
+            pendingPosition?.let { setPosition(it) }
+        }
+        pendingLine = null
+        pendingPosition = null
+    }
+
     private fun updateLayoutTransitionX(config: String? = LayoutTransitionX.TRANSITION_CONFIG_SMOOTH) {
         val layoutTransitionX = LayoutTransitionX(config)
         layoutTransition = layoutTransitionX
@@ -51,7 +69,11 @@ class RichLyricLineView(
     var line: IRichLyricLine? = null
         set(value) {
             field = value
-            updateAllLines()
+            if (animationTransition) {
+                pendingLine = value
+            } else {
+                updateAllLines()
+            }
         }
 
     init {
@@ -102,11 +124,19 @@ class RichLyricLineView(
     fun notifyLineChanged() = updateAllLines()
 
     fun seekTo(position: Long) {
+        if (animationTransition) {
+            pendingPosition = position
+            return
+        }
         main.seekTo(position)
         secondary.seekTo(position)
     }
 
     fun setPosition(position: Long) {
+        if (animationTransition) {
+            pendingPosition = position
+            return
+        }
         main.setPosition(position)
         secondary.setPosition(position)
     }
