@@ -65,8 +65,8 @@ jobs:
       - name: 上传 APK 文件
         uses: actions/upload-artifact@v4
         with:
-          # name: lyricon-${{ github.event.inputs.build_type }}-apk
-          path: build/all-apks/**/*.apk
+          name: lyricon-${{ github.event.inputs.build_type }}-apk
+          path: build/all-apks/**/*arm64-v8a.apk
           # path: lyricon/build/outputs/apk/${{ github.event.inputs.build_type }}/lyricon-${{ github.event.inputs.build_type }}.apk
           if-no-files-found: warn
 
