@@ -69,7 +69,7 @@ jobs:
           path: build/all-apks/**/*arm64-v8a.apk
           # path: lyricon/build/outputs/apk/${{ github.event.inputs.build_type }}/lyricon-${{ github.event.inputs.build_type }}.apk
           if-no-files-found: warn
-          archive: true
+          archive: false
 
       - name: 清理敏感文件
         if: github.event.inputs.build_type == 'release'
