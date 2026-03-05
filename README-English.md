@@ -83,6 +83,8 @@
   an [Issue](https://github.com/tomakino/lyricon/issues).
 - **Contribute**: We welcome any form of Pull Request to help improve the project.
 
+[![Contributors](https://contrib.rocks/image?repo=tomakino/lyricon)](https://github.com/tomakino/lyricon/graphs/contributors)
+
 ---
 
 ## ⭐ Star History
