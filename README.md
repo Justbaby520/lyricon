@@ -6,7 +6,7 @@
 <h1 align="center">词幕</h1>
 
 <p align="center">
-  <b>一款极致简约的 Android 状态栏歌词增强工具</b>
+  <b>Android 状态栏歌词增强工具</b>
 </p>
 
 <p align="center">

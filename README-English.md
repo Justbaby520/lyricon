@@ -6,7 +6,7 @@
 <h1 align="center">Lyricon</h1>
 
 <p align="center">
-  <b>A minimalist Android tool to enhance status bar lyrics</b>
+  <b>Android Status Bar Lyrics Enhancement Tool</b>
 </p>
 
 <p align="center">
@@ -14,27 +14,28 @@
   <a href="https://github.com/tomakino/lyricon/releases"><img src="https://img.shields.io/github/downloads/tomakino/lyricon/total?style=flat&color=orange" alt="Downloads"></a>
   <a href="https://github.com/tomakino/lyricon/commits"><img src="https://img.shields.io/github/last-commit/tomakino/lyricon?style=flat" alt="Last Commit"></a>
   <a href="https://github.com/tomakino/lyricon/blob/main/LICENSE"><img src="https://img.shields.io/github/license/tomakino/lyricon?style=flat" alt="License"></a>
-  <a href="README-English.md"><img src="https://img.shields.io/badge/Document-English-red.svg" alt="EN"></a>
+  <a href="README.md"><img src="https://img.shields.io/badge/Document-中文-red.svg" alt="中文"></a>
 </p>
 
 <p align="center">
+  <a href="https://qm.qq.com/q/IXif8Zi0Iq"><img src="https://img.shields.io/badge/QQ%20Group-0084FF?style=flat&logo=qq&logoColor=white" alt="QQ Group"></a>
   <a href="https://t.me/cslyric"><img src="https://img.shields.io/badge/Telegram-0084FF?style=flat&logo=telegram&logoColor=white" alt="Telegram"></a>
 </p>
 
 <p align="center">
-  <img src="resources/z.gif" alt="Demo animation" width="600"/>
+  <img src="resources/z.gif" alt="Demo Animation" width="600"/>
 </p>
 
 ---
 
 ## ✨ Features
 
-- 🎤 **Rich Display** — Supports word-by-word lyrics, translations, and duet mode for an immersive
-  experience.
-- 🧩 **Modular Extension** — Expand lyric sources infinitely with independent plugins, easily
-  adaptable to various players.
-- 🎨 **Deep Customization** — Adjust fonts, logos, position offsets, and animations to create your
-  own visual style.
+- 🎤 **Multi-Character Display** — Supports word-by-word lyrics, translations, and duet mode for an
+  immersive experience.
+- 🧩 **Modular Expansion** — Infinite expansion of lyric sources through independent plugins, easily
+  adapting to various players.
+- 🎨 **Deep Customization** — Adjust fonts, logos, coordinate offsets, and animations to create a
+  unique visual style.
 
 ---
 
@@ -42,46 +43,42 @@
 
 ### 📋 Requirements
 
-- **System Version**: Android 8.1 (API 27) or higher
-- **Prerequisites**: Device must be **Rooted** and have **LSPosed** framework activated
+- **System Version**: Android 8.1 (API 27) and above
+- **Prerequisites**: Device must be **Rooted** and **LSPosed** framework successfully activated
 
 > [!TIP]
 > It is recommended to use the latest version of LSPosed for optimal compatibility and stability.
 
-### ⚙️ Installation & Setup
+### ⚙️ Installation & Configuration
 
 1. **Download the Core App**: Download and install the Lyricon client
    from [Releases](https://github.com/tomakino/lyricon/releases).
-2. **Activate the Module**: Enable "Lyricon" in the LSPosed manager and ensure **System UI** is
-   checked in scope.
-3. **Reboot to Apply**: Restart System UI or the device to complete the hook injection.
-4. **Install Plugins**:
-   Install the corresponding [lyric plugins](https://github.com/tomakino/LyricProvider) for your
-   music player.
-5. **Customize**: Open the Lyricon app to adjust anchor position, width, and visual style in real
-   time.
-6. **Start Enjoying**: Play music and enjoy lyrics on the status bar.
+2. **Activate the Module**: Enable "Lyricon" in the LSPosed manager and ensure the **System UI**
+   scope is checked.
+3. **Reboot to Apply**: Restart the system UI or device to complete the Hook injection.
+4. **Install Plugins**: Install the
+   corresponding [Lyric Provider](https://github.com/tomakino/LyricProvider) based on your music
+   player.
+5. **Personalize Settings**: Open the Lyricon app to adjust anchor points, width, and visual styles
+   in real time.
+6. **Start Enjoying**: Play music and experience lyrics on the status bar.
 
 ---
 
 ## 🧩 Plugin Ecosystem
 
-| Category       | Link                                                                                                 | Description                                     |
-|:---------------|:-----------------------------------------------------------------------------------------------------|:------------------------------------------------|
-| **Plugins**    | [LyricProvider Repository](https://github.com/tomakino/LyricProvider)                                | Collection of plugins for major music platforms |
-| **Developers** | [Development Guide](https://github.com/tomakino/lyricon/blob/master/lyric/bridge/provider/README.md) | Contributions for new player adapters welcome   |
+| Category        | Resource Link                                                                                                | Description                                       |
+|:----------------|:-------------------------------------------------------------------------------------------------------------|:--------------------------------------------------|
+| **Plugin Repo** | [LyricProvider Repository](https://github.com/tomakino/LyricProvider)                                        | Collection of plugins for major music platforms   |
+| **Developers**  | [Development Documentation](https://github.com/tomakino/lyricon/blob/master/lyric/bridge/provider/README.md) | Contributions for new player adapters are welcome |
 
-### 💡 Natively Supported Apps
+### 💡 Natively Adapted Apps
 
 - [**Cone Music**](https://coneplayer.trantor.ink/)
 
 ---
 
-## 👥 Community & Contribution
-
-- **Report Issues**: Encounter a bug or have a feature request? Submit
-  an [Issue](https://github.com/tomakino/lyricon/issues).
-- **Contribute**: We welcome any form of Pull Request to help improve the project.
+## 👥 Contributors
 
 [![Contributors](https://contrib.rocks/image?repo=tomakino/lyricon)](https://github.com/tomakino/lyricon/graphs/contributors)
 
@@ -101,7 +98,7 @@
 
 ---
 
-### 👀 Visitor Count
+### 👀 Visitor Trends
 
 <p align="center">
   <img src="https://count.getloli.com/get/@tomakino_lyricon?theme=minecraft" alt="Visitor Counter" />
