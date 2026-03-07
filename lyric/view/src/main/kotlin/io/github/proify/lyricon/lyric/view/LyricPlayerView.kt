@@ -24,11 +24,6 @@ import io.github.proify.lyricon.lyric.model.extensions.TimingNavigator
 import io.github.proify.lyricon.lyric.model.interfaces.IRichLyricLine
 import io.github.proify.lyricon.lyric.model.lyricMetadataOf
 import io.github.proify.lyricon.lyric.view.line.LyricLineView
-import io.github.proify.lyricon.lyric.view.model.RichLyricLineModel
-import io.github.proify.lyricon.lyric.view.util.LayoutTransitionX
-import io.github.proify.lyricon.lyric.view.util.getChildAtOrNull
-import io.github.proify.lyricon.lyric.view.util.visibilityIfChanged
-import io.github.proify.lyricon.lyric.view.util.visibleIfChanged
 import io.github.proify.lyricon.lyric.view.yoyo.YoYoPresets
 import io.github.proify.lyricon.lyric.view.yoyo.animateUpdate
 import java.util.concurrent.CopyOnWriteArraySet
@@ -99,9 +94,9 @@ open class LyricPlayerView(
     }
 
     // --- 公开 API  ---
-    var isDisplayTranslation = false
+    var isDisplayTranslation = true
         private set
-    var isDisplayRoma = false
+    var isDisplayRoma = true
         private set
 
     var song: Song? = null
@@ -335,7 +330,6 @@ open class LyricPlayerView(
             )
         }
     }
-
 
     fun updateViewsVisibility() {
         doUpdateViewsVisibility()

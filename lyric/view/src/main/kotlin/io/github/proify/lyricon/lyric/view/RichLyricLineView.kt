@@ -19,16 +19,14 @@ import io.github.proify.lyricon.lyric.model.interfaces.ILyricTiming
 import io.github.proify.lyricon.lyric.model.interfaces.IRichLyricLine
 import io.github.proify.lyricon.lyric.model.lyricMetadataOf
 import io.github.proify.lyricon.lyric.view.line.LyricLineView
-import io.github.proify.lyricon.lyric.view.util.LayoutTransitionX
-import io.github.proify.lyricon.lyric.view.util.visibleIfChanged
 
 @SuppressLint("ViewConstructor")
 class RichLyricLineView(
     context: Context,
-    var displayTranslation: Boolean = false,
+    var displayTranslation: Boolean = true,
     var enableRelativeProgress: Boolean = false,
     var enableRelativeProgressHighlight: Boolean = false,
-    var displayRoma: Boolean = false
+    var displayRoma: Boolean = true
 ) : LinearLayout(context), UpdatableColor {
 
     companion object {
@@ -259,10 +257,14 @@ class RichLyricLineView(
         }
 
         val hasContent = newLine.text?.isNotBlank() == true || !newLine.words.isNullOrEmpty()
+        val isPlainText = newLine.words?.isEmpty() == true
+
         alwaysShowSecondary = hasContent
-                && (newLine.words?.isEmpty() == true
+                && (isPlainText
                 || newLine.metadata?.getBoolean("translation") == true
-                || newLine.metadata?.getBoolean("roma") == true)
+                || newLine.metadata?.getBoolean("roma") == true
+                || newLine.words?.first()?.begin?.let { (it - source.begin) < 500 } == true
+                )
 
         secondary.visibleIfChanged = alwaysShowSecondary
 

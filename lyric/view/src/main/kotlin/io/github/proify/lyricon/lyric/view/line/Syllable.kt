@@ -300,6 +300,7 @@ class Syllable(private val view: LyricLineView) {
         override fun onHighlightUpdate(highlightWidth: Float) {
             this@SoftwareRenderer.highlightWidth = highlightWidth
         }
+
         override fun invalidate() {}
         override fun draw(canvas: Canvas, scrollX: Float) {
             textRenderer.draw(
@@ -350,6 +351,7 @@ class Syllable(private val view: LyricLineView) {
                 this@HardwareRenderer.highlightWidth = highlightWidth; isDirty = true
             }
         }
+
         override fun draw(canvas: Canvas, scrollX: Float) {
             if (isDirty) {
                 val rc = renderNode.beginRecording(width, height)
@@ -457,7 +459,7 @@ class Syllable(private val view: LyricLineView) {
                                 )
                             }
 
-                            val maskShader = getOrCreateAlphaMaskShader(highlightWidth)
+                            val maskShader = getOrCreateAlphaMaskShader(model.width, highlightWidth)
                             hlPaint.shader =
                                 ComposeShader(baseShader, maskShader, PorterDuff.Mode.DST_IN)
                         } else {
@@ -496,13 +498,15 @@ class Syllable(private val view: LyricLineView) {
          * 获取或创建透明度遮罩。
          * 关键：它负责高亮边缘 90% -> 100% 的淡出效果。
          */
-        private fun getOrCreateAlphaMaskShader(highlightWidth: Float): Shader {
+        private fun getOrCreateAlphaMaskShader(totalWidth: Float, highlightWidth: Float): Shader {
+            val edgePosition = max(highlightWidth / totalWidth, minEdgePosition)
+
             if (cachedAlphaMaskShader == null || abs(lastHighlightWidth - highlightWidth) > 0.1f) {
                 // 使用从不透明到透明的渐变
                 cachedAlphaMaskShader = LinearGradient(
                     0f, 0f, highlightWidth, 0f,
                     intArrayOf(Color.BLACK, Color.BLACK, Color.TRANSPARENT),
-                    floatArrayOf(0f, minEdgePosition, 1f),
+                    floatArrayOf(0f, edgePosition, 1f),
                     Shader.TileMode.CLAMP
                 )
                 lastHighlightWidth = highlightWidth

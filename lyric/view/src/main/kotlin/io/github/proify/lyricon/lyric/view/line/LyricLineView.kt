@@ -21,11 +21,11 @@ import android.view.View
 import io.github.proify.lyricon.lyric.model.LyricLine
 import io.github.proify.lyricon.lyric.view.LyricLineConfig
 import io.github.proify.lyricon.lyric.view.UpdatableColor
+import io.github.proify.lyricon.lyric.view.dp
 import io.github.proify.lyricon.lyric.view.line.model.LyricModel
 import io.github.proify.lyricon.lyric.view.line.model.createModel
 import io.github.proify.lyricon.lyric.view.line.model.emptyLyricModel
-import io.github.proify.lyricon.lyric.view.util.dp
-import io.github.proify.lyricon.lyric.view.util.sp
+import io.github.proify.lyricon.lyric.view.sp
 import java.lang.ref.WeakReference
 
 open class LyricLineView(context: Context, attrs: AttributeSet? = null) :

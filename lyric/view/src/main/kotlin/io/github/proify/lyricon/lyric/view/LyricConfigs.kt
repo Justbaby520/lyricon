@@ -8,8 +8,6 @@ package io.github.proify.lyricon.lyric.view
 
 import android.graphics.Color
 import android.graphics.Typeface
-import io.github.proify.lyricon.lyric.view.util.dp
-import io.github.proify.lyricon.lyric.view.util.sp
 
 open class LyricLineConfig(
     var text: TextConfig,

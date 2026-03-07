@@ -25,9 +25,10 @@ import io.github.proify.lyricon.lyric.model.interfaces.IRichLyricLine
 import io.github.proify.lyricon.lyric.style.BasicStyle
 import io.github.proify.lyricon.lyric.style.LogoStyle
 import io.github.proify.lyricon.lyric.style.LyricStyle
+import io.github.proify.lyricon.lyric.view.LayoutTransitionX
 import io.github.proify.lyricon.lyric.view.LyricPlayerView
-import io.github.proify.lyricon.lyric.view.util.LayoutTransitionX
-import io.github.proify.lyricon.lyric.view.util.visibleIfChanged
+import io.github.proify.lyricon.lyric.view.ViewGesture
+import io.github.proify.lyricon.lyric.view.visibleIfChanged
 import io.github.proify.lyricon.statusbarlyric.StatusBarLyric.LyricType.NONE
 import io.github.proify.lyricon.statusbarlyric.StatusBarLyric.LyricType.SONG
 import io.github.proify.lyricon.statusbarlyric.StatusBarLyric.LyricType.TEXT
@@ -42,6 +43,32 @@ class StatusBarLyric(
     companion object {
         const val VIEW_TAG: String = "lyricon:lyric_view"
         private const val TAG = "StatusBarLyric"
+    }
+
+    val gesture: ViewGesture = run {
+        ViewGesture(
+            view = this@StatusBarLyric,
+            initialConfig = ViewGesture.GestureConfig(
+                mode = ViewGesture.CoexistMode.SMART,  // 使用智能模式
+                systemPriorityTop = 0.3f,                  // 顶部30%区域让给系统
+                horizontalPriority = true,                  // 水平滑动优先处理
+                tapAsync = true,                            // 点击异步处理
+                enableEventCloning = true                    // 启用事件克隆
+            )
+        )
+    }
+
+    fun getStatusBarHeight(context: Context): Int {
+        var result = 0
+        val resourceId = context.resources.getIdentifier(
+            "status_bar_height",  // 资源名称
+            "dimen",              // 资源类型
+            "android"             // 包名
+        )
+        if (resourceId > 0) {
+            result = context.resources.getDimensionPixelSize(resourceId)
+        }
+        return result
     }
 
     val logoView: SuperLogo = SuperLogo(context).apply {
@@ -59,6 +86,25 @@ class StatusBarLyric(
                 logoView.clearProgress()
             }
         }
+
+        gesture.listener = object : ViewGesture.OnGestureListener {
+            override fun onClick() {
+                println("点击")
+            }
+
+            override fun onLongPress() {
+                println("长按")
+            }
+
+            override fun onSwipe(direction: ViewGesture.Direction, triggered: Boolean) {
+                println("滑动: $direction, triggered=$triggered")
+            }
+
+            fun println(msg: String) {
+                Log.d(TAG, msg)
+            }
+        }
+        //gesture.apply()
     }
 
     // --- 对外状态 ---
@@ -209,9 +255,10 @@ class StatusBarLyric(
 
     fun setPlaying(playing: Boolean) {
         if (lastPlaying == playing) return
-        lastPlaying = playing
 
-        this.isPlaying = playing
+        lastPlaying = playing
+        isPlaying = playing
+
         if (!playing) {
             textView.reset()
         } else {

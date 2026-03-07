@@ -10,7 +10,7 @@ import android.content.res.Resources
 import android.graphics.Canvas
 import android.view.animation.LinearInterpolator
 import androidx.core.graphics.withTranslation
-import io.github.proify.lyricon.lyric.view.util.dp
+import io.github.proify.lyricon.lyric.view.dp
 import java.lang.ref.WeakReference
 
 class Marquee(private val viewRef: WeakReference<LyricLineView>) {

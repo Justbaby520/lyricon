@@ -6,7 +6,7 @@
 
 @file:Suppress("unused")
 
-package io.github.proify.lyricon.lyric.view.util
+package io.github.proify.lyricon.lyric.view
 
 import android.content.res.Resources
 import android.util.TypedValue
@@ -41,6 +41,9 @@ inline var View.visibleIfChanged: Boolean
 
 internal inline val Int.dp: Int
     get() = toFloat().dp.roundToInt()
+
+internal inline val Int.dpf
+    get() = toFloat().dp
 
 internal inline val Float.dp: Float
     get() = TypedValue.applyDimension(
