@@ -224,6 +224,7 @@ class RichLyricLineView(
         val newLine = LyricLine().apply {
             begin = source.begin
             end = source.end
+            duration = source.duration
             isAlignedRight = source.isAlignedRight
 
             when {
@@ -251,6 +252,12 @@ class RichLyricLineView(
 
                 displayRoma -> {
                     text = source.roma
+                    words = calculateRelativeProgressWords(
+                        source,
+                        source.roma,
+                        null
+                    )
+                    isGenerated = true
                     metadata = lyricMetadataOf("roma" to "true")
                 }
             }
@@ -286,7 +293,7 @@ class RichLyricLineView(
                     text = text,
                     begin = timing.begin,
                     end = timing.end,
-                    duration = timing.end - timing.begin
+                    duration = timing.duration
                 )
             )
         } else words

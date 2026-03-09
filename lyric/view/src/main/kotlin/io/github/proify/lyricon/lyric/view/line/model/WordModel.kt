@@ -9,6 +9,7 @@
 package io.github.proify.lyricon.lyric.view.line.model
 
 import android.graphics.Paint
+import io.github.proify.lyricon.lyric.model.LyricMetadata
 import io.github.proify.lyricon.lyric.model.interfaces.ILyricTiming
 
 /**
@@ -33,6 +34,7 @@ data class WordModel(
     override var end: Long,
     override var duration: Long,
     val text: String,
+    val metadata: LyricMetadata? = null,
 ) : ILyricTiming {
 
     /** 前一个单词 */

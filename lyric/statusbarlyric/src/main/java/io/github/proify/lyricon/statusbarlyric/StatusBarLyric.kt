@@ -18,6 +18,7 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.view.contains
+import androidx.core.view.isVisible
 import androidx.core.view.updatePadding
 import io.github.proify.android.extensions.dp
 import io.github.proify.lyricon.lyric.model.Song
@@ -27,7 +28,6 @@ import io.github.proify.lyricon.lyric.style.LogoStyle
 import io.github.proify.lyricon.lyric.style.LyricStyle
 import io.github.proify.lyricon.lyric.view.LayoutTransitionX
 import io.github.proify.lyricon.lyric.view.LyricPlayerView
-import io.github.proify.lyricon.lyric.view.ViewGesture
 import io.github.proify.lyricon.lyric.view.visibleIfChanged
 import io.github.proify.lyricon.statusbarlyric.StatusBarLyric.LyricType.NONE
 import io.github.proify.lyricon.statusbarlyric.StatusBarLyric.LyricType.SONG
@@ -45,32 +45,6 @@ class StatusBarLyric(
         private const val TAG = "StatusBarLyric"
     }
 
-    val gesture: ViewGesture = run {
-        ViewGesture(
-            view = this@StatusBarLyric,
-            initialConfig = ViewGesture.GestureConfig(
-                mode = ViewGesture.CoexistMode.SMART,  // 使用智能模式
-                systemPriorityTop = 0.3f,                  // 顶部30%区域让给系统
-                horizontalPriority = true,                  // 水平滑动优先处理
-                tapAsync = true,                            // 点击异步处理
-                enableEventCloning = true                    // 启用事件克隆
-            )
-        )
-    }
-
-    fun getStatusBarHeight(context: Context): Int {
-        var result = 0
-        val resourceId = context.resources.getIdentifier(
-            "status_bar_height",  // 资源名称
-            "dimen",              // 资源类型
-            "android"             // 包名
-        )
-        if (resourceId > 0) {
-            result = context.resources.getDimensionPixelSize(resourceId)
-        }
-        return result
-    }
-
     val logoView: SuperLogo = SuperLogo(context).apply {
         this.linkedTextView = linkedTextView
     }
@@ -86,25 +60,6 @@ class StatusBarLyric(
                 logoView.clearProgress()
             }
         }
-
-        gesture.listener = object : ViewGesture.OnGestureListener {
-            override fun onClick() {
-                println("点击")
-            }
-
-            override fun onLongPress() {
-                println("长按")
-            }
-
-            override fun onSwipe(direction: ViewGesture.Direction, triggered: Boolean) {
-                println("滑动: $direction, triggered=$triggered")
-            }
-
-            fun println(msg: String) {
-                Log.d(TAG, msg)
-            }
-        }
-        //gesture.apply()
     }
 
     // --- 对外状态 ---
@@ -226,6 +181,8 @@ class StatusBarLyric(
 
         textView.setOnHierarchyChangeListener(textHierarchyChangeListener)
         textView.lyricCountChangeListeners += lyricCountChangeListener
+
+
     }
 
     // --- 公开 API ---
@@ -255,6 +212,7 @@ class StatusBarLyric(
 
     fun setPlaying(playing: Boolean) {
         if (lastPlaying == playing) return
+        Log.d(TAG, "setPlaying: $playing")
 
         lastPlaying = playing
         isPlaying = playing
@@ -284,6 +242,9 @@ class StatusBarLyric(
                 && !isDisabledVisible
 
         visibleIfChanged = shouldShow
+
+        Log.d(TAG, "updateVisibility: $shouldShow")
+        Log.d(TAG, "textVisibility: ${textView.isVisible}")
     }
 
     fun setSong(song: Song?) {
@@ -381,9 +342,10 @@ class StatusBarLyric(
     }
 
     private fun updateWidthInternal(style: LyricStyle) {
-        ensureMarginLayoutParams().width =
-            calculateTargetWidth(style.basicStyle).dp
+        val width = calculateTargetWidth(style.basicStyle).dp
+        ensureMarginLayoutParams().width = width
         requestLayout()
+        Log.d(TAG, "updateWidthInternal: $width")
     }
 
     private fun calculateTargetWidth(basicStyle: BasicStyle): Float {

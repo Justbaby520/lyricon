@@ -15,9 +15,9 @@ import android.widget.LinearLayout
 import androidx.annotation.CallSuper
 import androidx.core.view.contains
 import androidx.core.view.forEach
+import androidx.core.view.forEachIndexed
 import androidx.core.view.isNotEmpty
 import androidx.core.view.isVisible
-import io.github.proify.lyricon.lyric.model.LyricLine
 import io.github.proify.lyricon.lyric.model.RichLyricLine
 import io.github.proify.lyricon.lyric.model.Song
 import io.github.proify.lyricon.lyric.model.extensions.TimingNavigator
@@ -36,6 +36,7 @@ open class LyricPlayerView(
     companion object {
         internal const val KEY_SONG_TITLE_LINE: String = "TitleLine"
         private const val MIN_GAP_DURATION: Long = 8 * 1000
+        private const val TAG = "LyricPlayerView"
     }
 
     // ---------- 私有常量 / 状态 ----------
@@ -53,7 +54,7 @@ open class LyricPlayerView(
 
     // 视图缓存与临时集合
     private val activeLyricLines = mutableListOf<IRichLyricLine>()
-    private val textRecycleLineView by lazy { LyricLineView(context) }
+    private val textRecycleLineView by lazy { RichLyricLineView(context) }
     private val defaultLayoutParams =
         LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT)
 
@@ -146,21 +147,36 @@ open class LyricPlayerView(
                 addView(textRecycleLineView, defaultLayoutParams)
                 updateTextLineViewStyle(styleConfig)
             }
-            val old = textRecycleLineView.lyric
+            val old = textRecycleLineView.line
 
             val preset = YoYoPresets.getById(styleConfig.animId)
+
+            fun buildLine(text: String): RichLyricLine {
+                val lines = text.lines()
+                val main = lines.first()
+                val sub = lines.getOrNull(1)
+
+                val line = RichLyricLine(
+                    text = main,
+                    translation = sub,
+                )
+                return line
+            }
+
+            val line = buildLine(value)
+
             if (styleConfig.enableAnim && preset != null) {
                 animateUpdate(preset) {
-                    textRecycleLineView.setLyric(LyricLine(text = value, end = Long.MAX_VALUE))
-                    textRecycleLineView.post { textRecycleLineView.startMarquee() }
+                    textRecycleLineView.line = line
+                    textRecycleLineView.post { textRecycleLineView.tryStartMarquee() }
                 }
             } else {
-                textRecycleLineView.setLyric(LyricLine(text = value, end = Long.MAX_VALUE))
-                textRecycleLineView.post { textRecycleLineView.startMarquee() }
+                textRecycleLineView.line = line
+                textRecycleLineView.post { textRecycleLineView.tryStartMarquee() }
             }
 
             lyricCountChangeListeners.forEach {
-                it.onLyricTextChanged(old.text, value)
+                it.onLyricTextChanged(old?.text ?: "", value)
             }
         }
 
@@ -201,6 +217,8 @@ open class LyricPlayerView(
         displayTranslation: Boolean = isDisplayTranslation,
         displayRoma: Boolean = isDisplayRoma
     ) {
+        Log.d(TAG, "updateDisplayTranslation: $displayTranslation, $displayRoma")
+
         isDisplayTranslation = displayTranslation
         isDisplayRoma = displayRoma
         forEach {
@@ -218,20 +236,26 @@ open class LyricPlayerView(
     fun setPosition(position: Long) = updatePosition(position)
 
     fun reset() {
+        Log.d(TAG, "reset")
         removeAllViews()
         activeLyricLines.clear()
         if (isEnteringInterludeMode) exitInterludeMode()
     }
 
     override fun removeAllViews() {
+        Log.d(TAG, "removeAllViews")
         layoutTransition = null // 移除时禁用动画防止闪烁
         super.removeAllViews()
     }
 
+    private var lastColorHash = -114
     override fun updateColor(primary: IntArray, background: IntArray, highlight: IntArray) {
-        val needsUpdate = !primary.contentEquals(styleConfig.primary.textColor) ||
-                !highlight.contentEquals(styleConfig.syllable.highlightColor)
-        if (!needsUpdate) return
+        //Log.d(TAG, "updateColor: $primary, $background, $highlight")
+        var hash = primary.contentHashCode()
+        hash = hash * 31 + background.contentHashCode()
+        hash = hash * 31 + highlight.contentHashCode()
+
+        if (lastColorHash == hash) return; lastColorHash = hash
 
         styleConfig.apply {
             this.primary.textColor = primary
@@ -239,12 +263,15 @@ open class LyricPlayerView(
             syllable.highlightColor = highlight
             syllable.backgroundColor = background
         }
+
         forEach {
-            if (it is UpdatableColor) it.updateColor(
-                primary,
-                background,
-                highlight
-            )
+            if (it is UpdatableColor) {
+                it.updateColor(
+                    primary,
+                    background,
+                    highlight
+                )
+            }
         }
     }
 
@@ -328,6 +355,19 @@ open class LyricPlayerView(
                 viewsToAddTemp,
                 viewsToRemoveTemp.mapNotNull(RichLyricLineView::line)
             )
+        }
+
+        printViewsState()
+    }
+
+    private fun printViewsState() {
+        forEachIndexed { index, view ->
+            if (view is RichLyricLineView) {
+                val main = view.main
+                val secondary = view.secondary
+                Log.d("LyricPlayerView", "#$index: main=$main")
+                Log.d("LyricPlayerView", "#$index: secondary=$secondary")
+            }
         }
     }
 
@@ -488,13 +528,7 @@ open class LyricPlayerView(
 
     private fun updateTextLineViewStyle(config: RichLyricLineConfig) {
         textRecycleLineView.setStyle(
-            LyricLineConfig(
-                config.primary,
-                config.marquee,
-                config.syllable,
-                config.gradientProgressStyle,
-                config.fadingEdgeLength
-            )
+            config
         )
     }
 
@@ -596,12 +630,14 @@ open class LyricPlayerView(
 
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
+        Log.d(TAG, "onDetachedFromWindow")
         viewTreeObserver.removeOnGlobalLayoutListener(viewTreeObserverListener)
         reset()
     }
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
+        Log.d(TAG, "onAttachedToWindow")
         viewTreeObserver.addOnGlobalLayoutListener(viewTreeObserverListener)
     }
 

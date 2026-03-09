@@ -64,6 +64,7 @@ class SuperText(context: Context) : LyricPlayerView(context) {
 
     init {
         tag = VIEW_TAG
+        //setBackgroundColor(Color.CYAN)
     }
 
     // --- 生命周期/重写方法 ---
@@ -256,5 +257,9 @@ class SuperText(context: Context) : LyricPlayerView(context) {
             }
         }
         return visibleCount > 0
+    }
+
+    override fun onDetachedFromWindow() {
+        super.onDetachedFromWindow()
     }
 }

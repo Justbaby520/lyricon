@@ -141,12 +141,18 @@ object OplusCapsuleHooker {
             val view = param.thisObject as View
             val name = view.javaClass.getSimpleName()
 
-            if ("CapsuleContainer" == name) {
-                trackView(capsuleContainers, view)
-            } else if ("CapsuleView" == name) {
-                trackView(capsuleViews, view)
-            } else {
-                return
+            when (name) {
+                "CapsuleContainer" -> {
+                    trackView(capsuleContainers, view)
+                }
+
+                "CapsuleView" -> {
+                    trackView(capsuleViews, view)
+                }
+
+                else -> {
+                    return
+                }
             }
 
             val newShowing = anyVisible(capsuleContainers) && anyVisible(capsuleViews)

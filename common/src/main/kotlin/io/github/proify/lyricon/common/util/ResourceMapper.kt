@@ -107,7 +107,6 @@ object ResourceMapper {
      *
      * @throws IllegalArgumentException 如果[resources]为null
      *
-     * @sample
      * ```
      * val resourceName = ResourceMapper.getIdName(R.id.button_submit, resources)
      * // resourceName 可能为 "button_submit"

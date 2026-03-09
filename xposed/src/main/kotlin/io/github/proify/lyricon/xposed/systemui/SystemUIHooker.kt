@@ -33,7 +33,6 @@ import io.github.proify.lyricon.xposed.systemui.util.StatusBarDisableHooker
 import io.github.proify.lyricon.xposed.systemui.util.StatusBarDisableHooker.OnStatusBarDisableListener
 import io.github.proify.lyricon.xposed.systemui.util.ViewVisibilityTracker
 
-
 object SystemUIHooker : YukiBaseHooker() {
     private const val TEST_CRASH = false
 

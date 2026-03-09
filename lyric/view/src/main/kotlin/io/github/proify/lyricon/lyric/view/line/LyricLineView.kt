@@ -18,6 +18,7 @@ import android.util.AttributeSet
 import android.util.Log
 import android.view.Choreographer
 import android.view.View
+import androidx.core.view.isVisible
 import io.github.proify.lyricon.lyric.model.LyricLine
 import io.github.proify.lyricon.lyric.view.LyricLineConfig
 import io.github.proify.lyricon.lyric.view.UpdatableColor
@@ -323,6 +324,10 @@ open class LyricLineView(context: Context, attrs: AttributeSet? = null) :
     } else {
         (syllable.lastPosition >= lyric.end)
                 || syllable.isFinished
+    }
+
+    override fun toString(): String {
+        return "LyricLineView{lyric=$lyric,isVisible=$isVisible, lyricWidth=$lyricWidth, lyricHeight=$measuredHeight, isGradientEnabled=${syllable.isGradientEnabled}, scrollXOffset=$scrollXOffset, isScrollFinished=$isScrollFinished, isPlayFinished=${isPlayFinished()}, isPlaying=${isPlaying()}, isPlayStarted=${isPlayStarted()}, isOverflow=${isOverflow()}, isMarqueeMode=${isMarqueeMode()}, isSyllableMode=${isSyllableMode()}, isAttachedToWindow=$isAttachedToWindow"
     }
 
     internal inner class AnimationDriver : Choreographer.FrameCallback {
