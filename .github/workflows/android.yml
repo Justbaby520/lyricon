@@ -71,6 +71,19 @@ jobs:
           if-no-files-found: warn
           archive: false
 
+      - name: 上传 APK 到 Release
+        run: |
+          TAG="ci-build"
+
+          # 如果 release 不存在就创建
+          gh release view "$TAG" >/dev/null 2>&1 || \
+          gh release create "$TAG" -t "CI Build" -n "Auto build"
+
+          # 上传 APK
+          gh release upload "$TAG" build/all-apks/**/*arm64-v8a.apk --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: 清理敏感文件
         if: github.event.inputs.build_type == 'release'
         run: |
