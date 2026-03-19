@@ -33,7 +33,8 @@ data class BasicStyle(
     var noLyricHideTimeout: Int = Defaults.NO_LYRIC_HIDE_TIMEOUT,
     var noUpdateHideTimeout: Int = Defaults.NO_UPDATE_HIDE_TIMEOUT,
     var keywordHideTimeout: Int = Defaults.KEYWORD_HIDE_TIMEOUT,
-    var keywordHideMatches: List<String> = Defaults.KEYWORD_HIDE_MATCH
+    var keywordHideMatches: List<String> = Defaults.KEYWORD_HIDE_MATCH,
+    var doubleTapSwitchClock: Boolean = Defaults.DOUBLE_TAP_SWITCH_CLOCK
 ) : AbstractStyle(), Parcelable {
 
     @IgnoredOnParcel
@@ -113,6 +114,10 @@ data class BasicStyle(
                 keywordHideMatches = it ?: emptyList()
                 keywordsHidePattern = null
             }
+        doubleTapSwitchClock = preferences.getBoolean(
+            "lyric_style_base_double_tap_switch_clock",
+            Defaults.DOUBLE_TAP_SWITCH_CLOCK
+        )
     }
 
     override fun onWrite(editor: SharedPreferences.Editor) {
@@ -143,6 +148,7 @@ data class BasicStyle(
             keywordHideTimeout
         )
         editor.putString("lyric_style_base_timeout_hide_keywords", keywordHideMatches.toJson())
+        editor.putBoolean("lyric_style_base_double_tap_switch_clock", doubleTapSwitchClock)
     }
 
     object Defaults {
@@ -162,6 +168,7 @@ data class BasicStyle(
         const val NO_UPDATE_HIDE_TIMEOUT = 0
         const val KEYWORD_HIDE_TIMEOUT: Int = 0
         val KEYWORD_HIDE_MATCH: List<String> = listOf()
+        const val DOUBLE_TAP_SWITCH_CLOCK: Boolean = false
     }
 
     companion object {

@@ -24,7 +24,14 @@ import java.util.WeakHashMap
  */
 object XiaomiIslandHooker {
     private const val TAG = "XiaomiIslandHooker"
-    private const val TARGET_ID_NAME = "island_container"
+    private val TARGET_ID_NAMES = setOf(
+        "island_container",
+        "island_music_container",
+        "music_container",
+        "audio_container",
+        "media_container"
+    )
+    private const val TARGET_CLASS_KEYWORD = "miui.systemui.dynamicisland"
 
     private data class ViewState(
         val width: Int,
@@ -141,12 +148,31 @@ object XiaomiIslandHooker {
     }
 
     private fun tryTrackIslandView(view: View): Boolean {
-        if (view.id == View.NO_ID) return false
+        val idName = if (view.id != View.NO_ID) {
+            runCatching { view.resources.getResourceEntryName(view.id) }.getOrNull()
+        } else {
+            null
+        }
+        val normalizedIdName = idName.orEmpty().lowercase()
+        val className = view.javaClass.name.lowercase()
 
-        val idName = runCatching {
-            view.resources.getResourceEntryName(view.id)
-        }.getOrNull() ?: return false
-        if (idName != TARGET_ID_NAME) return false
+        val matchByExactId = normalizedIdName in TARGET_ID_NAMES
+        val matchByIslandId = normalizedIdName.contains("island")
+                && (normalizedIdName.contains("music")
+                || normalizedIdName.contains("audio")
+                || normalizedIdName.contains("media")
+                || normalizedIdName.contains("icon"))
+        val matchByClass = className.contains(TARGET_CLASS_KEYWORD)
+                || (className.contains("island")
+                && (className.contains("dynamic")
+                || className.contains("music")
+                || className.contains("audio")
+                || className.contains("media")
+                || className.contains("icon")
+                || className.contains("capsule")
+                || className.contains("bubble")))
+
+        if (!matchByExactId && !matchByIslandId && !matchByClass) return false
 
         val iterator = islandViews.iterator()
         var exists = false
@@ -160,7 +186,7 @@ object XiaomiIslandHooker {
         }
         if (!exists) {
             islandViews.add(WeakReference(view))
-            YLog.info(tag = TAG, msg = "Tracked island_container: $view")
+            YLog.info(tag = TAG, msg = "Tracked island view: id=$idName class=${view.javaClass.name} view=$view")
         }
         return true
     }

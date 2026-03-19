@@ -85,6 +85,9 @@ class StatusBarLyric(
     private var currentStyle: LyricStyle = initialStyle
     private var isPlaying: Boolean = false
     private var isOplusCapsuleShowing: Boolean = false
+    private var userHideLyric: Boolean = false
+
+    var onPlayingChanged: ((Boolean) -> Unit)? = null
 
     // 上一次 Logo gravity，用于避免重复重排
     private var lastLogoGravity: Int = -114
@@ -216,6 +219,7 @@ class StatusBarLyric(
 
         lastPlaying = playing
         isPlaying = playing
+        onPlayingChanged?.invoke(playing)
 
         if (!playing) {
             textView.reset()
@@ -239,12 +243,19 @@ class StatusBarLyric(
                 && !isHideOnLockScreen()
                 && textView.shouldShow()
                 && !lyricTimedOut
+                && !userHideLyric
                 && !isDisabledVisible
 
         visibleIfChanged = shouldShow
 
         Log.d(TAG, "updateVisibility: $shouldShow")
         Log.d(TAG, "textVisibility: ${textView.isVisible}")
+    }
+
+    fun setUserHideLyric(hide: Boolean) {
+        if (userHideLyric == hide) return
+        userHideLyric = hide
+        updateVisibility()
     }
 
     fun setSong(song: Song?) {
