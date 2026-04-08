@@ -81,17 +81,34 @@ jobs:
           RELEASE_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
       - name: 上传 APK 文件
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: lyricon-${{ github.event.inputs.build_type }}-apk
           path: lyricon/build/outputs/apk/${{ github.event.inputs.build_type }}/lyricon-*${{ github.event.inputs.build_type }}.apk
           if-no-files-found: warn
+
+      - name: 上传 APK 到 Release
+        run: |
+          TAG="ci-build"
+
+          # 如果 release 不存在就创建
+          gh release view "$TAG" >/dev/null 2>&1 || \
+          gh release create "$TAG" -t "CI Build" -n "Auto build"
+
+          # 上传 APK
+          gh release upload "$TAG" lyricon/build/outputs/apk/${{ github.event.inputs.build_type }}/lyricon-*${{ github.event.inputs.build_type }}.apk --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 清理敏感文件
         if: github.event.inputs.build_type == 'release'
         run: |
           rm -f release.jks
           echo "已清理敏感文件"
+
+      - name: List APK
+        run: find . -name "*.apk"
+
 
   summary:
     runs-on: ubuntu-latest
