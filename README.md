@@ -49,7 +49,7 @@
 
 ### ⚙️ 安装与配置
 
-1. **下载核心服务**：从 [GitHub Core](https://github.com/tomakino/lyricon/releases/tag/core) 下载并安装。
+1. **下载核心服务**：从 [GitHub Core](https://github.com/tomakino/lyricon/releases/tag/core) 下载并安装。（1.0.20及以下版本不要安装）
 2. **下载主体应用**：从 [Releases](https://github.com/tomakino/lyricon/releases) 下载并安装词幕主体。
 3. **激活模块**：在 LSPosed 管理器中启用“词幕”模块，并勾选 **系统界面 (System UI)** 作用域。
 4. **重启生效**：重启系统界面（System UI）或重启设备以完成 Hook 注入。
