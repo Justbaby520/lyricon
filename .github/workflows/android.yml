@@ -1,6 +1,9 @@
 name: Android CI
 
 on:
+  workflow_run:
+    workflows: ["Upstream Sync"]
+    types: [completed]
   workflow_dispatch:
     inputs:
       build_type:
@@ -11,6 +14,8 @@ on:
         options:
           - debug
           - release
+env:
+  BUILD_TYPE: ${{ inputs.build_type || 'release' }}
 
 jobs:
   build:
