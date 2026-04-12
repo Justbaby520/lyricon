@@ -14,10 +14,13 @@ import com.highcapable.kavaref.KavaRef.Companion.resolve
 import com.highcapable.yukihookapi.hook.core.YukiMemberHookCreator
 import com.highcapable.yukihookapi.hook.entity.YukiBaseHooker
 import com.highcapable.yukihookapi.hook.log.YLog
+import de.robv.android.xposed.XSharedPreferences
 import io.github.proify.android.extensions.deflate
 import io.github.proify.android.extensions.json
 import io.github.proify.android.extensions.safeEncode
 import io.github.proify.lyricon.app.bridge.AppBridgeConstants
+import io.github.proify.lyricon.central.BridgeCentral
+import io.github.proify.lyricon.common.PackageNames
 import io.github.proify.lyricon.common.util.ScreenStateMonitor
 import io.github.proify.lyricon.common.util.ViewHierarchyParser
 import io.github.proify.lyricon.subscriber.ConnectionListener
@@ -131,10 +134,36 @@ object SystemUIHooker : YukiBaseHooker() {
         ViewVisibilityTracker.initialize(context.classLoader)
         initDataChannel()
 
-        // 初始化歌词订阅器
-        val subscriber = LyriconFactory.createSubscriber(context)
+        initLyriconService()
+
+        StatusBarDisableHooker.inject(context.classLoader)
+        StatusBarDisableHooker.addListener(object : OnStatusBarDisableListener {
+            private var lastDisableStateChanged: Boolean? = null
+            override fun onDisableStateChanged(shouldHide: Boolean, animate: Boolean) {
+                if (lastDisableStateChanged == shouldHide) return
+                lastDisableStateChanged = shouldHide
+                StatusBarViewManager.forEach { it.onDisableStateChanged(shouldHide) }
+            }
+        })
+
+        ClockColorMonitor.hook()
+        AiTranslationManager.init(context)
+    }
+
+    private fun initLyriconService() {
+        val defaultSp = XSharedPreferences(PackageNames.APPLICATION)
+        val coreServiceDisable = defaultSp.getBoolean("core_service_disable", false)
+        if (!coreServiceDisable) {
+            BridgeCentral.initialize(appContext!!)
+            BridgeCentral.sendBootCompleted()
+        }else{
+            YLog.info("已禁用内置核心服务")
+        }
+
+        val subscriber = LyriconFactory.createSubscriber(appContext!!)
+
         subscriber.subscribeActivePlayer(LyricViewController)
-        subscriber.addConnectionListener(object : ConnectionListener{
+        subscriber.addConnectionListener(object : ConnectionListener {
             override fun onConnected(subscriber: LyriconSubscriber) {
                 YLog.info("lyriconSubscriber onConnected")
             }
@@ -156,20 +185,6 @@ object SystemUIHooker : YukiBaseHooker() {
             delay(2000)
             subscriber.register()
         }
-
-        // 监听状态栏禁用状态，确保在某些界面（如锁屏、全屏）下正确显示/隐藏
-        StatusBarDisableHooker.inject(context.classLoader)
-        StatusBarDisableHooker.addListener(object : OnStatusBarDisableListener {
-            private var lastDisableStateChanged: Boolean? = null
-            override fun onDisableStateChanged(shouldHide: Boolean, animate: Boolean) {
-                if (lastDisableStateChanged == shouldHide) return
-                lastDisableStateChanged = shouldHide
-                StatusBarViewManager.forEach { it.onDisableStateChanged(shouldHide) }
-            }
-        })
-
-        ClockColorMonitor.hook()
-        AiTranslationManager.init(context)
     }
 
     /**
@@ -188,9 +203,10 @@ object SystemUIHooker : YukiBaseHooker() {
         // 获取视图树请求（用于调试或布局分析）
         channel.wait<String>(key = AppBridgeConstants.REQUEST_VIEW_TREE) {
             StatusBarViewManager.forEach { controller ->
-                val data = json.safeEncode(ViewHierarchyParser.buildNodeTree(controller.statusBarView))
-                    .toByteArray(Charsets.UTF_8)
-                    .deflate()
+                val data =
+                    json.safeEncode(ViewHierarchyParser.buildNodeTree(controller.statusBarView))
+                        .toByteArray(Charsets.UTF_8)
+                        .deflate()
                 channel.put(AppBridgeConstants.REQUEST_VIEW_TREE_CALLBACK, data)
                 return@forEach
             }

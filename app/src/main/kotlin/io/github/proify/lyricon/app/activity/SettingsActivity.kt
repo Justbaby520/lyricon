@@ -21,6 +21,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import io.github.proify.android.extensions.defaultSharedPreferences
 import io.github.proify.lyricon.app.AppBackup
 import io.github.proify.lyricon.app.LyriconApp
 import io.github.proify.lyricon.app.R
@@ -28,6 +29,7 @@ import io.github.proify.lyricon.app.compose.AppToolBarListContainer
 import io.github.proify.lyricon.app.compose.IconActions
 import io.github.proify.lyricon.app.compose.custom.miuix.extra.SuperArrow
 import io.github.proify.lyricon.app.compose.custom.miuix.extra.SuperSwitch
+import io.github.proify.lyricon.app.compose.preference.SwitchPreference
 import io.github.proify.lyricon.app.event.SettingChangedEvent
 import io.github.proify.lyricon.app.util.AppLangUtils
 import io.github.proify.lyricon.app.util.AppThemeUtils
@@ -124,12 +126,31 @@ class SettingsActivity : BaseActivity() {
                     ThemeSetting(onSettingsApplied)
                 }
             }
+            item("core_service") {
+                SettingsSectionCard(topPadding = 16.dp) {
+                    CoreServiceSetting()
+                }
+            }
             item("backup") {
                 SettingsSectionCard(topPadding = 16.dp) {
                     BackupSetting(onBackupExport, onBackupImport)
                 }
             }
         }
+    }
+
+    @Composable
+    private fun CoreServiceSetting() {
+        val context = LocalContext.current
+
+        SwitchPreference(
+            preferences = context.defaultSharedPreferences,
+            key = "core_service_disable",
+            defaultValue = false,
+            startAction = { IconActions(painterResource(R.drawable.ic_core_bear)) },
+            title = stringResource(R.string.item_core_service_disable),
+            summary = stringResource(R.string.item_core_service_disable_summary),
+        )
     }
 
     @Composable
