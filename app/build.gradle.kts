@@ -12,6 +12,7 @@ val buildTime: Long = System.currentTimeMillis()
 
 configure<LibraryExtension> {
     namespace = "io.github.proify.lyricon.app"
+
     compileSdk {
         version = release(rootProject.extra.get("compileSdkVersion") as Int) {
             minorApiLevel = 1

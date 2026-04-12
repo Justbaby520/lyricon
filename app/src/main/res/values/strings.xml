@@ -174,7 +174,7 @@
     <string name="item_translation_base_url">接口地址</string>
     <string name="item_translation_custom_prompt">自定义提示词</string>
     <string name="item_translation_only">使用翻译代替歌词</string>
-    <string name="item_translation_clear">清空数据库</string>
+    <string name="item_translation_clear_db">清空数据库</string>
     <string name="alert_dialog_title_translation_clear">清空数据库</string>
     <string name="alert_dialog_message_translation_clear">此操作将清空数据库，请确认是否继续？</string>
 
@@ -185,4 +185,6 @@
     <string name="add_color">添加</string>
     <string name="delete_current_color">删除当前颜色</string>
     <string name="item_base_blocked_words_regex">歌词屏蔽正则</string>
+    <string name="item_core_service_disable">禁用内置服务</string>
+    <string name="item_core_service_disable_summary">如果你安装了外置词幕服务，请禁用内置服务。需重启系统界面。</string>
 </resources>

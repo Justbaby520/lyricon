@@ -23,6 +23,7 @@ import io.github.proify.lyricon.xposed.systemui.Directory
 import java.io.File
 import java.util.concurrent.CopyOnWriteArrayList
 
+//fuck spotify
 object NotificationCoverHelper {
     private var unhooks: MutableSet<XC_MethodHook.Unhook>? = null
     private val listeners = CopyOnWriteArrayList<OnCoverUpdateListener>()
@@ -45,8 +46,7 @@ object NotificationCoverHelper {
         for (className in NOTIFICATION_LISTENER_CLASS_CANDIDATES) {
             try {
                 return classLoader.loadClass(className)
-            } catch (_: ClassNotFoundException) {
-                // ignored
+            } catch (_: Exception) {
             }
         }
         return null
