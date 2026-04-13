@@ -123,6 +123,21 @@ open class LyricPlayerView(
                     }
                 }
                 timingNavigator = TimingNavigator(lineModelList?.toTypedArray() ?: emptyArray())
+
+                //更新占位符
+                if (firstActiveLine.isTitleLine()) {
+                    val line = lineModelList?.firstOrNull()
+                    if (line != null && line.isTitleLine()) {
+                        activeLyricLines[0] = line
+                        val view = getChildAtOrNull(0)
+                        if (view != null && view is RichLyricLineView) {
+                            if (view.line.isTitleLine() && view.line != line) {
+                                view.line = line
+                            }
+                        }
+                    }
+                }
+
             } else {
                 reset()
                 lineModelList = null
