@@ -186,4 +186,9 @@
     <string name="item_base_blocked_words_regex">Lyrics blocking regex</string>
     <string name="item_core_service_disable">Disable built-in services</string>
     <string name="item_core_service_disable_summary">If you have installed an external lyrics service, please disable the built-in services. System UI restart is required.</string>
+
+    <string name="item_base_chinese_conversion_title">Chinese Conversion Mode</string>
+    <string name="item_base_chinese_conv_off">Disabled</string>
+    <string name="item_base_chinese_conv_simplified">To Simplified Chinese</string>
+    <string name="item_base_chinese_conv_traditional">To Traditional Chinese</string>
 </resources>

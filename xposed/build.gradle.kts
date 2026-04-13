@@ -47,6 +47,8 @@ configure<LibraryExtension> {
 }
 
 dependencies {
+    //implementation(libs.opencc4j)
+
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.core.ktx)
 
