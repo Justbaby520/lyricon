@@ -20,6 +20,7 @@ composeBom = "2026.03.01"
 composeFoundation = "1.10.6"
 composeUiGraphics = "1.10.6"
 navigationCompose = "2.9.7"
+opencc4j = "1.14.0"
 remoteCreationCore = "1.0.0-alpha08"
 
 # Material
@@ -111,6 +112,7 @@ miuix-icons = { module = "top.yukonga.miuix.kmp:miuix-icons", version.ref = "miu
 # ===== Hook / Reflection =====
 kavaref-core = { module = "com.highcapable.kavaref:kavaref-core", version.ref = "kavaref" }
 kavaref-extension = { module = "com.highcapable.kavaref:kavaref-extension", version.ref = "kavaref" }
+opencc4j = { module = "com.github.houbb:opencc4j", version.ref = "opencc4j" }
 xposed-api = { module = "de.robv.android.xposed:api", version.ref = "xposed" }
 yukihookapi-api = { module = "com.highcapable.yukihookapi:api", version.ref = "yukihookapi" }
 yukihookapi-ksp-xposed = { module = "com.highcapable.yukihookapi:ksp-xposed", version.ref = "yukihookapi" }

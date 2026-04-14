@@ -186,4 +186,9 @@
     <string name="item_base_blocked_words_regex">歌詞屏蔽正則</string>
     <string name="item_core_service_disable">禁用內置服務</string>
     <string name="item_core_service_disable_summary">如果你安裝了外置詞幕服務，請禁用內置服務。需重啟系統界面。</string>
+
+    <string name="item_base_chinese_conversion_title">中文簡繁轉換</string>
+    <string name="item_base_chinese_conv_off">保持原樣</string>
+    <string name="item_base_chinese_conv_simplified">轉換為簡体</string>
+    <string name="item_base_chinese_conv_traditional">轉換為繁體</string>
 </resources>

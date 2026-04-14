@@ -22,7 +22,6 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArraySet
 
 /**
- *
  *  **系统级媒体监听工具类**
  *
  * 该类通过 [MediaSessionManager] 实现对系统活动媒体会话的全局监听。
