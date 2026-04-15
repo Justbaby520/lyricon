@@ -4,21 +4,12 @@
  * http://www.apache.org/licenses/LICENSE-2.0
  */
 
-package io.github.proify.lyricon.xposed.systemui.lyric
+package io.github.proify.lyricon.xposed.systemui.util
 
 import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
-import com.aallam.openai.api.chat.ChatCompletionRequest
-import com.aallam.openai.api.chat.ChatMessage
-import com.aallam.openai.api.chat.ChatResponseFormat
-import com.aallam.openai.api.chat.ChatRole
-import com.aallam.openai.api.http.Timeout
-import com.aallam.openai.api.model.ModelId
-import com.aallam.openai.client.OpenAI
-import com.aallam.openai.client.OpenAIConfig
-import com.aallam.openai.client.OpenAIHost
 import io.github.proify.android.extensions.json
 import io.github.proify.lyricon.lyric.model.Song
 import io.github.proify.lyricon.lyric.style.AiTranslationConfigs
@@ -29,26 +20,30 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import java.io.OutputStreamWriter
+import java.net.HttpURLConnection
+import java.net.URL
 import java.security.MessageDigest
 import java.util.Collections
 import java.util.Locale
-import kotlin.time.Duration.Companion.seconds
 
 /**
- * AI 歌词翻译管理器，支持内存与 SQLite 数据库二级缓存
+ * AI 歌词翻译管理器
+ * * 职责：负责歌词的 AI 翻译，具备内存与 SQLite 双级缓存。
+ * 技术栈：Kotlin Coroutines, kotlinx.serialization, Java HttpURLConnection。
  */
-object AiTranslationManager {
+object AITranslator {
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private const val MAX_CACHE_SIZE = 1000
 
     private val dbMutex = Mutex()
     private var dbHelper: DatabaseHelper? = null
-    private val clientMutex = Mutex()
 
-    @Volatile
-    private var cachedClient: Pair<String, OpenAI>? = null
-
+    /**
+     * 内存 LruCache 容器，存储已翻译的行数据
+     */
     private val songLevelCache: MutableMap<String, List<TranslationItem>> =
         Collections.synchronizedMap(
             object : LinkedHashMap<String, List<TranslationItem>>(MAX_CACHE_SIZE, 0.75f, true) {
@@ -60,6 +55,9 @@ object AiTranslationManager {
 
     private val DEFAULT_PROMPT = AiTranslationConfigs.USER_PROMPT
 
+    /**
+     * 初始化数据库
+     */
     fun init(context: Context) {
         if (dbHelper == null) {
             synchronized(this) {
@@ -70,44 +68,47 @@ object AiTranslationManager {
         }
     }
 
-    fun translateSongIfNeededAsync(
+    /**
+     * 同步翻译整首歌（挂起函数）
+     */
+    suspend fun translateSongSync(
         song: Song,
-        settings: AiTranslationConfigs,
-        callback: (Song?) -> Unit
-    ) {
-        if (!settings.isUsable || song.lyrics.isNullOrEmpty()) {
-            callback(song)
-            return
+        configs: AiTranslationConfigs,
+    ): Song {
+        if (!configs.isUsable || song.lyrics.isNullOrEmpty()) {
+            return song
         }
 
-        scope.launch {
-            val result = runCatching { translateSong(song, settings) }
-                .getOrElse {
-                    it.printStackTrace()
-                    song
-                }
-            withContext(Dispatchers.Main) {
-                callback(result)
+        return runCatching { translateSong(song, configs) }
+            .getOrElse {
+                it.printStackTrace()
+                song
             }
-        }
     }
 
-    private suspend fun translateSong(song: Song, settings: AiTranslationConfigs): Song {
+    /**
+     * 核心翻译逻辑：查找缓存 -> 发起请求 -> 保存缓存
+     */
+    private suspend fun translateSong(song: Song, configs: AiTranslationConfigs): Song {
         val currentLyrics = song.lyrics ?: return song
         val originalLines = currentLyrics.map { it.text?.trim() ?: "" }
 
-        val songContentId = calculateSongId(configs = settings, song = song, lines = originalLines)
+        // 计算唯一标识，包含配置、歌曲信息及歌词原文，防止配置变更导致错误的缓存命中
+        val songContentId = calculateSongId(configs = configs, song = song, lines = originalLines)
 
+        // 1. 内存查找
         val cached = songLevelCache[songContentId]
         if (cached != null) return applyTranslation(song, cached)
 
+        // 2. 数据库查找
         val dbItems = getFromDb(songContentId)
         if (dbItems != null) {
             songLevelCache[songContentId] = dbItems
             return applyTranslation(song, dbItems)
         }
 
-        val apiResults = doOpenAiRequest(settings, song, originalLines)
+        // 3. 网络请求
+        val apiResults = doOpenAiRequest(configs, song, originalLines)
         if (!apiResults.isNullOrEmpty()) {
             songLevelCache[songContentId] = apiResults
             saveToDb(songContentId, apiResults)
@@ -117,15 +118,13 @@ object AiTranslationManager {
         return song
     }
 
+    /**
+     * 将翻译结果应用回 Song 对象
+     */
     private fun applyTranslation(song: Song, transItems: List<TranslationItem>): Song {
-        /// val itemsMap = transItems.associateBy { it.index }
-
         return song.apply {
             lyrics = lyrics?.mapIndexed { index, line ->
-
-                val transItem = transItems.find {
-                    it.index == index
-                }
+                val transItem = transItems.find { it.index == index }
                 val transText = transItem?.trans?.trim()
 
                 if (!transText.isNullOrBlank()
@@ -138,6 +137,9 @@ object AiTranslationManager {
         }
     }
 
+    /**
+     * 生成基于原文和配置的 MD5 ID
+     */
     private fun calculateSongId(
         configs: AiTranslationConfigs,
         song: Song,
@@ -152,57 +154,72 @@ object AiTranslationManager {
         return md.digest().joinToString("") { "%02x".format(it) }
     }
 
-    private suspend fun getOpenAIClient(configs: AiTranslationConfigs): OpenAI =
-        clientMutex.withLock {
-            val key = "${configs.apiKey}_${configs.baseUrl}"
-            val existing = cachedClient
-            if (existing != null && existing.first == key) {
-                return@withLock existing.second
-            }
-
-            val newClient = OpenAI(
-                OpenAIConfig(
-                    token = configs.apiKey.orEmpty(),
-                    timeout = Timeout(socket = 60.seconds),
-                    host = configs.baseUrl?.takeIf { it.isNotBlank() }?.let { OpenAIHost(it) }
-                        ?: OpenAIHost.OpenAI
-                )
-            )
-            cachedClient = key to newClient
-            return@withLock newClient
-        }
-
+    /**
+     * 使用 Java HttpURLConnection 发起 API 请求
+     */
     suspend fun doOpenAiRequest(
         configs: AiTranslationConfigs,
         song: Song? = null,
         texts: List<String>
-    ): List<TranslationItem>? {
-        if (configs.apiKey.isNullOrBlank()) return null
+    ): List<TranslationItem>? = withContext(Dispatchers.IO) {
+        if (configs.apiKey.isNullOrBlank()) return@withContext null
 
-        val client = getOpenAIClient(configs)
-        val requestIndices = texts.indices.toSet()
+        val baseUrl = configs.baseUrl?.removeSuffix("/") ?: "https://api.openai.com/v1"
+        val apiUrl = "$baseUrl/chat/completions"
+
         val payload = texts.mapIndexed { index, s -> RequestItem(index = index, text = s) }
+        val requestIndices = texts.indices.toSet()
 
-        val request = ChatCompletionRequest(
-            model = ModelId(configs.model.orEmpty()),
+        // 构造 OpenAI 协议标准的请求体
+        val chatRequest = OpenAiChatRequest(
+            model = configs.model.orEmpty(),
             messages = listOf(
-                ChatMessage(ChatRole.System, buildSystemPrompt(configs, song)),
-                ChatMessage(ChatRole.User, json.encodeToString(payload))
+                ChatMessage("system", buildSystemPrompt(configs, song)),
+                ChatMessage("user", json.encodeToString(payload))
             ),
-            responseFormat = ChatResponseFormat.JsonObject
+            responseFormat = ResponseFormat("json_object")
         )
 
-        return try {
-            val response = client.chatCompletion(request)
-            val content = response.choices.firstOrNull()?.message?.content?.run {
-                AiTranslationConfigs.cleanLlmOutput(this)
-            } ?: return null
-            val result = json.decodeFromString<List<TranslationItem>>(content)
+        var connection: HttpURLConnection? = null
+        try {
+            val url = URL(apiUrl)
+            connection = (url.openConnection() as HttpURLConnection).apply {
+                requestMethod = "POST"
+                connectTimeout = 15000
+                readTimeout = 60000
+                doOutput = true
+                setRequestProperty("Content-Type", "application/json")
+                setRequestProperty("Authorization", "Bearer ${configs.apiKey}")
+            }
 
-            result.filter { it.index in requestIndices }
+            // 发送数据
+            OutputStreamWriter(connection.outputStream).use {
+                it.write(
+                    json.encodeToString(
+                        chatRequest
+                    )
+                )
+            }
+
+            // 处理响应
+            if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+                val responseBody = connection.inputStream.bufferedReader().use { it.readText() }
+                val responseObj = json.decodeFromString<OpenAiChatResponse>(responseBody)
+
+                val content = responseObj.choices.firstOrNull()?.message?.content?.run {
+                    AiTranslationConfigs.cleanLlmOutput(this)
+                } ?: return@withContext null
+
+                val result = json.decodeFromString<List<TranslationItem>>(content)
+                result.filter { it.index in requestIndices }
+            } else {
+                null
+            }
         } catch (e: Exception) {
             e.printStackTrace()
             null
+        } finally {
+            connection?.disconnect()
         }
     }
 
@@ -217,7 +234,7 @@ object AiTranslationManager {
             target,
             title,
             artist,
-            userPrompt = prompt
+            prompt
         )
     }
 
@@ -260,17 +277,21 @@ object AiTranslationManager {
         }
     }
 
-    fun clearCache() {
+    fun clearCache(callback: () -> Unit) {
         songLevelCache.clear()
         scope.launch {
             dbMutex.withLock {
                 runCatching {
                     dbHelper?.writableDatabase?.delete(DatabaseHelper.TABLE_NAME, null, null)
+                    callback()
                 }
             }
         }
     }
 
+    /**
+     * 内部 SQLite 辅助类
+     */
     private class DatabaseHelper(context: Context) :
         SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
@@ -302,9 +323,39 @@ object AiTranslationManager {
         }
     }
 
+    // --- 数据模型定义 (Internal DTOs) ---
+
     @Serializable
     private data class RequestItem(val index: Int, val text: String)
 
     @Serializable
     data class TranslationItem(val index: Int, val trans: String)
+
+    @Serializable
+    private data class OpenAiChatRequest(
+        val model: String,
+        val messages: List<ChatMessage>,
+        @SerialName("response_format") val responseFormat: ResponseFormat? = null
+    )
+
+    @Serializable
+    private data class ChatMessage(
+        val role: String,
+        val content: String
+    )
+
+    @Serializable
+    private data class ResponseFormat(
+        val type: String
+    )
+
+    @Serializable
+    private data class OpenAiChatResponse(
+        val choices: List<Choice>
+    )
+
+    @Serializable
+    private data class Choice(
+        val message: ChatMessage
+    )
 }

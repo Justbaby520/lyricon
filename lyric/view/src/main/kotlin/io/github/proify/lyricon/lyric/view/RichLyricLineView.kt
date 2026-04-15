@@ -30,7 +30,7 @@ class RichLyricLineView(
 ) : LinearLayout(context), UpdatableColor {
 
     companion object {
-        private val EMPTY_LYRIC_LINE = LyricLine()
+        private val EMPTY_LYRIC_LINE get() = LyricLine()
     }
 
     val main = LyricLineView(context)
@@ -44,6 +44,16 @@ class RichLyricLineView(
     private var animationTransition: Boolean = false
     private var pendingLine: IRichLyricLine? = null
     private var pendingPosition: Long? = null
+
+    fun reset() {
+        line = null
+        renderScale = 1.0f
+        animationTransition = false
+        pendingLine = null
+        pendingPosition = null
+        alwaysShowSecondary = false
+        updateAllLines()
+    }
 
     fun beginAnimationTransition() {
         animationTransition = true
@@ -66,9 +76,13 @@ class RichLyricLineView(
         layoutTransition = layoutTransitionX
     }
 
-    var line: IRichLyricLine? = null
+    var rawLine: IRichLyricLine? = null
+
+    var line: IRichLyricLine?
+        get() = rawLine
         set(value) {
-            field = value
+            rawLine = value
+            requestStartMarquee = false
             if (animationTransition) {
                 pendingLine = value
             } else {
@@ -141,9 +155,11 @@ class RichLyricLineView(
         secondary.setPosition(position)
     }
 
-    fun tryStartMarquee() {
-        if (main.isMarqueeMode()) main.startMarquee()
-        if (secondary.isMarqueeMode()) secondary.startMarquee()
+    private var requestStartMarquee = false
+    fun requestStartMarquee() {
+        requestStartMarquee = true
+        main.reqStartMarquee()
+        secondary.reqStartMarquee()
     }
 
     fun setStyle(config: RichLyricLineConfig) {
@@ -177,9 +193,17 @@ class RichLyricLineView(
 
     // --- 内部逻辑处理 ---
 
+    private var oldline: IRichLyricLine? = null
     private fun updateAllLines() {
+        if (oldline === line && oldline.isTitleLine()) return
+        oldline = line
+
         setMainLine(line)
         setSecondaryLine(line)
+
+        if (requestStartMarquee) {
+            requestStartMarquee()
+        }
     }
 
     private fun setMainLine(source: IRichLyricLine?) {
@@ -216,7 +240,10 @@ class RichLyricLineView(
         alwaysShowSecondary = false
 
         if (source == null) {
-            secondary.apply { setLyric(null); visibleIfChanged = false }
+            secondary.apply {
+                setLyric(null)
+                visibleIfChanged = false
+            }
             return
         }
 
@@ -325,4 +352,10 @@ class RichLyricLineView(
     ) {
         secondary.setStyle(LyricLineConfig(cfg, mar, syl, grad, fadingEdgeLength))
     }
+
+    override fun onDetachedFromWindow() {
+        super.onDetachedFromWindow()
+        reset()
+    }
+
 }
