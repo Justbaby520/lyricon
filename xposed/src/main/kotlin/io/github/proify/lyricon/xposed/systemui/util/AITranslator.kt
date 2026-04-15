@@ -53,7 +53,7 @@ object AITranslator {
             }
         )
 
-    private val DEFAULT_PROMPT = AiTranslationConfigs.Companion.USER_PROMPT
+    private val DEFAULT_PROMPT = AiTranslationConfigs.USER_PROMPT
 
     /**
      * 初始化数据库

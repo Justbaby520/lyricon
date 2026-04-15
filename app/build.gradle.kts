@@ -65,9 +65,7 @@ dependencies {
     implementation(libs.androidx.browser)
     implementation(libs.chrisbanes.haze)
     implementation(libs.bonsai.core)
-    implementation(libs.androidx.compose.material.icons.core)
-
-    implementation(libs.backdrop)
+    //implementation(libs.androidx.compose.material.icons.core)
 
     implementation(libs.capsule.android)
     implementation(libs.lottie.compose) {
@@ -79,7 +77,7 @@ dependencies {
     implementation(libs.kavaref.core)
     implementation(libs.kavaref.extension)
 
-    implementation(libs.androidx.navigation.compose)
+   // implementation(libs.androidx.navigation.compose)
 
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
