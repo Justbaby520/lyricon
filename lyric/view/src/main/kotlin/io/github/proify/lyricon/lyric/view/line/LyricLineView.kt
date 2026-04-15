@@ -18,6 +18,7 @@ import android.util.AttributeSet
 import android.util.Log
 import android.view.Choreographer
 import android.view.View
+import androidx.core.view.doOnAttach
 import androidx.core.view.isVisible
 import io.github.proify.lyricon.lyric.model.LyricLine
 import io.github.proify.lyricon.lyric.view.LyricLineConfig
@@ -210,6 +211,8 @@ open class LyricLineView(context: Context, attrs: AttributeSet? = null) :
         if (isSyllableMode()) {
             syllable.seek(position)
             animationDriver.startIfNoRunning()
+        } else if (isMarqueeMode()) {
+            startMarqueeInternal()
         }
     }
 
@@ -223,6 +226,8 @@ open class LyricLineView(context: Context, attrs: AttributeSet? = null) :
             if (syllable.isPlaying && !syllable.isFinished) {
                 animationDriver.startIfNoRunning()
             }
+        } else if (isMarqueeMode()) {
+            startMarqueeInternal()
         }
     }
 
@@ -303,14 +308,15 @@ open class LyricLineView(context: Context, attrs: AttributeSet? = null) :
         return (remaining / edgeL).coerceIn(0f, 1f)
     }
 
-    override fun onMeasure(wSpec: Int, hSpec: Int) {
-        val w = MeasureSpec.getSize(wSpec)
-        val textHeight = (textPaint.descent() - textPaint.ascent()).toInt()
-        setMeasuredDimension(w, resolveSize(textHeight, hSpec))
-    }
+    fun setLyric(rawLine: LyricLine?) {
+        val line = if (rawLine?.text.isNullOrBlank()) null else rawLine
 
-    fun setLyric(line: LyricLine?) {
+        Log.d(TAG, "setLyric: ${hashCode()} :$line")
         reset()
+
+        unlockMarquee = false
+        isMarqueeStarted = false
+
         lyric = line?.normalize()?.createModel() ?: emptyLyricModel()
 
         refreshModelSizes()
@@ -318,14 +324,30 @@ open class LyricLineView(context: Context, attrs: AttributeSet? = null) :
         invalidate()
     }
 
-    fun startMarquee() {
-        if (isMarqueeMode()) {
-            scrollXOffset = 0f
-            post {
-                marquee.start()
-                animationDriver.stop()
-                animationDriver.startIfNoRunning()
-            }
+    private var unlockMarquee = false
+    private var isMarqueeStarted = false
+    fun reqStartMarquee() {
+        doOnAttach {
+            unlockMarquee = true
+        }
+    }
+
+    private fun startMarqueeInternal() {
+        if (!isMarqueeMode()) {
+            return
+        }
+
+        if (!unlockMarquee) return
+
+        if (isMarqueeStarted) return
+        isMarqueeStarted = true
+
+        scrollXOffset = 0f
+        post {
+            marquee.reset()
+            marquee.start()
+            animationDriver.stop()
+            animationDriver.startIfNoRunning()
         }
     }
 
@@ -435,5 +457,11 @@ open class LyricLineView(context: Context, attrs: AttributeSet? = null) :
             Shader.TileMode.CLAMP
         )
         return shader
+    }
+
+    override fun onMeasure(wSpec: Int, hSpec: Int) {
+        val w = MeasureSpec.getSize(wSpec)
+        val textHeight = (textPaint.descent() - textPaint.ascent()).toInt()
+        setMeasuredDimension(w, resolveSize(textHeight, hSpec))
     }
 }

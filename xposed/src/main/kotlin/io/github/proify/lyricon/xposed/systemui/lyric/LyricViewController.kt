@@ -6,354 +6,132 @@
 
 package io.github.proify.lyricon.xposed.systemui.lyric
 
-import android.os.Handler
-import android.os.Handler.Callback
-import android.os.HandlerThread
-import android.os.Looper
-import android.os.Message
-import android.os.SystemClock
 import com.highcapable.yukihookapi.hook.log.YLog
 import io.github.proify.lyricon.lyric.model.Song
-import io.github.proify.lyricon.lyric.style.BasicStyle
 import io.github.proify.lyricon.lyric.style.LyricStyle
 import io.github.proify.lyricon.statusbarlyric.StatusBarLyric
 import io.github.proify.lyricon.statusbarlyric.SuperLogo
 import io.github.proify.lyricon.subscriber.ActivePlayerListener
 import io.github.proify.lyricon.subscriber.ProviderInfo
-import io.github.proify.lyricon.xposed.systemui.util.ChineseConverter.toSimplified
-import io.github.proify.lyricon.xposed.systemui.util.ChineseConverter.toTraditional
 import io.github.proify.lyricon.xposed.systemui.util.NotificationCoverHelper
 import io.github.proify.lyricon.xposed.systemui.util.OplusCapsuleHooker
 import java.io.File
-import java.util.concurrent.atomic.AtomicInteger
 
 /**
- * 歌词视图控制器
+ * 歌词视图控制器 (UI 表现层)
  *
- * 状态分层：
- * 1. rawSong：播放器原始数据
- * 2. aiTranslatedSong：AI 翻译后的数据
- * 3. displaySong：最终展示给视图的数据
- *
- * 处理原则：
- * - AI 翻译只吃 rawSong
- * - 屏蔽词、简繁转换、translationOnly 只作用于展示层
- * - 任何样式变化都通过统一的展示重建入口处理
+ * 职责：
+ * 1. 订阅 [LyricDataHub] 分发的已加工歌词数据并驱动 UI 刷新。
+ * 2. 处理 SystemUI 特有的视图逻辑（如 Logo 颜色提取、Visibility 协调）。
+ * 3. 监听外部配置变更并通知调度中心重走加工流程。
  */
-object LyricViewController : ActivePlayerListener, Callback,
+object LyricViewController : ActivePlayerListener,
     OplusCapsuleHooker.CapsuleStateChangeListener,
     NotificationCoverHelper.OnCoverUpdateListener {
 
     private const val TAG = "LyricViewController"
     private const val DEBUG = true
 
-    private const val WHAT_PLAYER_CHANGED = 1
-    private const val WHAT_SONG_CHANGED = 2
-    private const val WHAT_PLAYBACK_STATE_CHANGED = 3
-    private const val WHAT_POSITION_CHANGED = 4
-    private const val WHAT_SEEK_TO = 5
-    private const val WHAT_TEXT_RECEIVED = 6
-    private const val WHAT_TRANSLATION_TOGGLE = 7
-    private const val WHAT_ROMA_TOGGLE = 8
-    private const val WHAT_AI_TRANSLATION_FINISHED = 9
-
-    private const val TOKEN_PROCESS_SONG = "ProcessSong"
-
+    /** 当前播放状态缓存 */
     @Volatile
     var isPlaying: Boolean = false
         private set
 
+    /** 当前激活的播放器包名 */
     @Volatile
     var activePackage: String = ""
         private set
 
-    @Volatile
-    var providerInfo: ProviderInfo? = null
-        private set
-
+    /** 翻译显示开关状态 */
     @Volatile
     private var isDisplayTranslation: Boolean = true
 
+    /** 罗马音显示开关状态 */
     @Volatile
     private var isDisplayRoma: Boolean = true
 
-    @Volatile
-    private var rawSong: Song? = null
-
-    @Volatile
-    private var aiTranslatedSong: Song? = null
-
-    @Volatile
-    private var displaySong: Song? = null
-
-    private var translationSettingSignature = ""
-    private var lastChineseConversionMode: Int = BasicStyle.CHINESE_CONVERSION_OFF
-    private var songStateVersion: Int = 0
-    private var lastLyricStyle: LyricStyle? = null
-
-    private val uiHandler by lazy { Handler(Looper.getMainLooper(), this) }
-    private val workerThread = HandlerThread("LyricViewController").apply { start() }
-    private val workerHandler = Handler(workerThread.looper)
-    private val displayProcessingVersion = AtomicInteger(0)
-
     init {
-        if (DEBUG) YLog.debug(tag = TAG, msg = "Initializing LyricViewController")
+        if (DEBUG) YLog.debug(tag = TAG, msg = "Initializing LyricViewController...")
+
+        // 注册到数据调度中心
+        LyricDataHub.addListener(this)
+
+        // 注册系统级 UI 状态监听
         OplusCapsuleHooker.registerListener(this)
         NotificationCoverHelper.registerListener(this)
     }
 
-    override fun onActiveProviderChanged(providerInfo: ProviderInfo?) {
-        uiHandler.obtainMessage(WHAT_PLAYER_CHANGED, providerInfo).sendToTarget()
+    // --- ActivePlayerListener 实现 (数据驱动 UI) ---
+
+    /**
+     * 当加工完毕的歌词数据到达时触发渲染
+     * 注：此方法可能会被调用两次（Pre-processing 后一次，Post-processing 全部完成后一次）
+     */
+    override fun onSongChanged(song: Song?) {
+        if (DEBUG) YLog.debug(tag = TAG, msg = "Rendering UI for song: ${song?.name ?: "None"}")
+        updateAllControllers {
+            lyricView.setSong(song)
+            refreshTranslationVisibility(lyricView)
+        }
     }
 
-    override fun onSongChanged(song: Song?) {
-        if (song == null) {
-            clearCurrentSongState()
-            sendClearDisplaySong()
-            return
+    override fun onActiveProviderChanged(providerInfo: ProviderInfo?) {
+        this.activePackage = providerInfo?.playerPackageName.orEmpty()
+        LyricPrefs.activePackageName = this.activePackage
+
+        updateAllControllers {
+            resetViewForNewPlayer(this, providerInfo)
         }
-
-        songStateVersion++
-        rawSong = song
-        aiTranslatedSong = null
-
-        requestDisplaySongRebuild()
-        maybeStartAiTranslationTask()
     }
 
     override fun onPlaybackStateChanged(isPlaying: Boolean) {
-        uiHandler.obtainMessage(WHAT_PLAYBACK_STATE_CHANGED, if (isPlaying) 1 else 0, 0)
-            .sendToTarget()
+        this.isPlaying = isPlaying
+        updateAllControllers { lyricView.setPlaying(isPlaying) }
     }
 
     override fun onPositionChanged(position: Long) {
-        uiHandler.removeMessages(WHAT_POSITION_CHANGED)
-        sendLongMessage(WHAT_POSITION_CHANGED, position)
+        updateAllControllers { lyricView.setPosition(position) }
     }
 
     override fun onSeekTo(position: Long) {
-        sendLongMessage(WHAT_SEEK_TO, position)
+        updateAllControllers { lyricView.seekTo(position) }
     }
 
     override fun onReceiveText(text: String?) {
-        uiHandler.obtainMessage(WHAT_TEXT_RECEIVED, text).sendToTarget()
+        updateAllControllers { lyricView.setText(text) }
     }
 
     override fun onDisplayTranslationChanged(isDisplayTranslation: Boolean) {
         this.isDisplayTranslation = isDisplayTranslation
-        uiHandler.obtainMessage(WHAT_TRANSLATION_TOGGLE, if (isDisplayTranslation) 1 else 0, 0)
-            .sendToTarget()
-
-        requestDisplaySongRebuild()
-        if (isDisplayTranslation) {
-            maybeStartAiTranslationTask()
-        }
+        updateAllControllers { refreshTranslationVisibility(lyricView) }
     }
 
     override fun onDisplayRomaChanged(isDisplayRoma: Boolean) {
         this.isDisplayRoma = isDisplayRoma
-        uiHandler.obtainMessage(WHAT_ROMA_TOGGLE, if (isDisplayRoma) 1 else 0, 0)
-            .sendToTarget()
+        updateAllControllers { lyricView.updateDisplayTranslation(displayRoma = isDisplayRoma) }
     }
 
-    override fun handleMessage(msg: Message): Boolean {
-        when (msg.what) {
-            WHAT_PLAYER_CHANGED -> {
-                handlePlayerChanged(msg.obj as? ProviderInfo)
-                dispatchToControllers(msg)
-            }
+    // --- 业务配置变更 API ---
 
-            WHAT_SONG_CHANGED -> handleDisplaySongChanged(msg)
+    /**
+     * 应用新的歌词样式配置
+     * 当用户在设置页面修改了颜色、字体、翻译开关、繁简模式等，应调用此方法。
+     *
+     * @param style 最新的样式配置对象
+     */
+    fun applyConfigurationUpdate(style: LyricStyle) {
+        // 1. 同步非内容类的 UI 样式（如颜色、大小、边距）
+        updateAllControllers { updateLyricStyle(style) }
 
-            WHAT_PLAYBACK_STATE_CHANGED -> {
-                isPlaying = msg.arg1 == 1
-                dispatchToControllers(msg)
-            }
-
-            WHAT_AI_TRANSLATION_FINISHED -> handleAiTranslationFinished(msg)
-
-            WHAT_POSITION_CHANGED,
-            WHAT_SEEK_TO,
-            WHAT_TEXT_RECEIVED,
-            WHAT_TRANSLATION_TOGGLE,
-            WHAT_ROMA_TOGGLE -> dispatchToControllers(msg)
-        }
-        return true
+        // 2. 通知数据中心重走流水线（处理内容层面的变更，如繁简切换、AI 开关）
+        LyricDataHub.reprocessCurrentSong()
     }
 
-    private fun handlePlayerChanged(provider: ProviderInfo?) {
-        clearCurrentSongState()
+    // --- 内部 UI 辅助逻辑 ---
 
-        providerInfo = provider
-        activePackage = provider?.playerPackageName.orEmpty()
-        LyricPrefs.activePackageName = activePackage
-    }
-
-    private fun handleDisplaySongChanged(msg: Message) {
-        if (msg.arg1 != displayProcessingVersion.get()) return
-
-        displaySong = msg.obj as? Song
-        dispatchDisplaySongToControllers(displaySong)
-    }
-
-    private fun handleAiTranslationFinished(msg: Message) {
-        if (msg.arg1 != songStateVersion) return
-
-        aiTranslatedSong = msg.obj as? Song
-        requestDisplaySongRebuild()
-    }
-
-    private fun clearCurrentSongState() {
-        songStateVersion++
-        rawSong = null
-        aiTranslatedSong = null
-        displaySong = null
-
-        displayProcessingVersion.incrementAndGet()
-        workerHandler.removeCallbacksAndMessages(TOKEN_PROCESS_SONG)
-    }
-
-    private fun sendClearDisplaySong() {
-        val version = displayProcessingVersion.incrementAndGet()
-        workerHandler.removeCallbacksAndMessages(TOKEN_PROCESS_SONG)
-        uiHandler.obtainMessage(WHAT_SONG_CHANGED, version, 0, null).sendToTarget()
-    }
-
-    private fun requestDisplaySongRebuild() {
-        val source = resolveDisplaySourceSong()
-        if (source == null) {
-            sendClearDisplaySong()
-            return
-        }
-        scheduleDisplaySongRebuild(source)
-    }
-
-    private fun resolveDisplaySourceSong(): Song? {
-        val style = LyricPrefs.activePackageStyle
-        val canUseAiTranslation =
-            isDisplayTranslation &&
-                    !style.text.isDisableTranslation &&
-                    style.text.isAiTranslationEnable
-
-        return when {
-            canUseAiTranslation -> aiTranslatedSong ?: rawSong
-            else -> rawSong
-        }
-    }
-
-    private fun scheduleDisplaySongRebuild(songToProcess: Song) {
-        val version = displayProcessingVersion.incrementAndGet()
-
-        workerHandler.removeCallbacksAndMessages(TOKEN_PROCESS_SONG)
-
-        workerHandler.postAtTime({
-            val startTime = SystemClock.elapsedRealtime()
-
-            val processed = songToProcess.deepCopy()
-                .let(::filterBlockedWords)
-                .let(::processSimpleAndTraditionalChinese)
-                .let(::applyTranslationStyleToSong)
-
-            if (DEBUG) {
-                YLog.debug(
-                    tag = TAG,
-                    msg = "Display song rebuild finished in ${SystemClock.elapsedRealtime() - startTime} ms"
-                )
-            }
-
-            if (version != displayProcessingVersion.get()) return@postAtTime
-
-            uiHandler.obtainMessage(WHAT_SONG_CHANGED, version, 0, processed).sendToTarget()
-        }, TOKEN_PROCESS_SONG, SystemClock.uptimeMillis())
-    }
-
-    fun updateLyricViewStyle(style: LyricStyle) {
-        lastLyricStyle = style
-
-        forEachController { updateLyricStyle(style) }
-
-        val translationChanged = evaluateTranslationSettings(style)
-        val baseChanged = evaluateBaseSettings(style.basicStyle)
-
-        if (translationChanged) {
-            forEachController { refreshTranslationVisibility(lyricView) }
-            maybeStartAiTranslationTask()
-        }
-
-        if (translationChanged || baseChanged) {
-            requestDisplaySongRebuild()
-        }
-    }
-
-    private fun evaluateBaseSettings(baseStyle: BasicStyle): Boolean {
-        val newMode = baseStyle.chineseConversionMode
-        if (lastChineseConversionMode == newMode) return false
-
-        lastChineseConversionMode = newMode
-
-        if (DEBUG) {
-            YLog.debug(tag = TAG, msg = "Base setting changed: ChineseConversionMode = $newMode")
-        }
-        return true
-    }
-
-    private fun evaluateTranslationSettings(style: LyricStyle): Boolean {
-        val textStyle = style.packageStyle.text
-        val signature =
-            "${textStyle.isAiTranslationEnable}|${textStyle.isTranslationOnly}|${textStyle.isDisableTranslation}"
-
-        if (translationSettingSignature == signature) return false
-        translationSettingSignature = signature
-
-        if (DEBUG) {
-            YLog.debug(tag = TAG, msg = "Translation setting changed: $signature")
-        }
-        return true
-    }
-
-    fun notifyTranslationDbChange() {
-        translationSettingSignature = ""
-        lastLyricStyle?.let { style ->
-            val changed = evaluateTranslationSettings(style)
-            if (changed) {
-                forEachController { refreshTranslationVisibility(lyricView) }
-                maybeStartAiTranslationTask()
-                requestDisplaySongRebuild()
-            }
-        }
-    }
-
-    private fun dispatchToControllers(msg: Message) {
-        forEachController {
-            try {
-                val view = lyricView
-                when (msg.what) {
-                    WHAT_PLAYER_CHANGED -> resetViewForNewPlayer(this, msg.obj as? ProviderInfo)
-                    WHAT_PLAYBACK_STATE_CHANGED -> view.setPlaying(isPlaying)
-                    WHAT_POSITION_CHANGED -> view.setPosition(unpackLong(msg.arg1, msg.arg2))
-                    WHAT_SEEK_TO -> view.seekTo(unpackLong(msg.arg1, msg.arg2))
-                    WHAT_TEXT_RECEIVED -> view.setText(msg.obj as? String)
-                    WHAT_TRANSLATION_TOGGLE -> refreshTranslationVisibility(view)
-                    WHAT_ROMA_TOGGLE -> view.updateDisplayTranslation(displayRoma = isDisplayRoma)
-                }
-            } catch (e: Throwable) {
-                YLog.error(tag = TAG, msg = "Dispatch WHAT_${msg.what} failed", e = e)
-            }
-        }
-    }
-
-    private fun dispatchDisplaySongToControllers(song: Song?) {
-        forEachController {
-            try {
-                val view = lyricView
-                view.setSong(song)
-                refreshTranslationVisibility(view)
-            } catch (e: Throwable) {
-                YLog.error(tag = TAG, msg = "Dispatch display song failed", e = e)
-            }
-        }
-    }
-
+    /**
+     * 当切换播放器源时，重置所有视图状态并刷新 Logo 封面
+     */
     private fun resetViewForNewPlayer(
         controller: StatusBarViewController,
         provider: ProviderInfo?
@@ -361,44 +139,28 @@ object LyricViewController : ActivePlayerListener, Callback,
         val view = controller.lyricView
         view.setSong(null)
         view.setPlaying(false)
+
+        // 加载当前包名的特定样式
         controller.updateLyricStyle(LyricPrefs.getLyricStyle())
         view.updateVisibility()
 
+        // 更新 Logo 与封面
         view.logoView.apply {
-            this.activePackage = this@LyricViewController.activePackage
-            val activePackage = this@LyricViewController.activePackage
+            val activePackage = provider?.playerPackageName.orEmpty()
+            this.activePackage = activePackage
 
-            val cover =
-                if (activePackage.isBlank()) null else NotificationCoverHelper.getCoverFile(
-                    activePackage
-                )
-
-            coverFile = cover
+            val cover = if (activePackage.isBlank()) null else NotificationCoverHelper.getCoverFile(
+                activePackage
+            )
+            this.coverFile = cover
             controller.updateCoverThemeColors(cover)
-            post { providerLogo = provider?.logo }
+            post { this.providerLogo = provider?.logo }
         }
     }
 
-    private fun applyTranslationStyleToSong(song: Song?): Song? {
-        val style = LyricPrefs.activePackageStyle
-        if (song == null || !style.text.isTranslationOnly) return song
-
-        return song.deepCopy().copy(
-            lyrics = song.lyrics?.map { line ->
-                if (!line.translation.isNullOrBlank()) {
-                    line.copy(
-                        text = line.translation,
-                        words = null,
-                        translation = null,
-                        translationWords = null
-                    )
-                } else {
-                    line
-                }
-            }
-        )
-    }
-
+    /**
+     * 根据全局开关和当前包名配置刷新翻译行的可见性
+     */
     private fun refreshTranslationVisibility(view: StatusBarLyric) {
         val style = LyricPrefs.activePackageStyle
         val shouldShow = isDisplayTranslation &&
@@ -408,99 +170,33 @@ object LyricViewController : ActivePlayerListener, Callback,
         view.updateDisplayTranslation(displayTranslation = shouldShow)
     }
 
-    private fun maybeStartAiTranslationTask() {
-        val song = rawSong ?: return
-        if (aiTranslatedSong != null) return
-
-        startAiTranslationTask(song.deepCopy(), songStateVersion)
-    }
-
-    private fun startAiTranslationTask(song: Song, version: Int) {
-        val style = LyricPrefs.activePackageStyle
-        val config = style.text.aiTranslationConfigs
-
-        if (!isDisplayTranslation) return
-        if (style.text.isDisableTranslation) return
-        if (!style.text.isAiTranslationEnable) return
-        if (config?.isUsable != true) return
-        if (song.isTranslated()) return
-
-        AiTranslationManager.translateSongIfNeededAsync(song, config) { translated ->
-            uiHandler.obtainMessage(WHAT_AI_TRANSLATION_FINISHED, version, 0, translated)
-                .sendToTarget()
-        }
-    }
-
-    private fun Song.isTranslated(): Boolean =
-        lyrics.orEmpty().all { !it.translation.isNullOrBlank() }
-
-    private fun sendLongMessage(what: Int, value: Long) {
-        uiHandler.obtainMessage(what, (value shr 32).toInt(), (value and 0xFFFFFFFFL).toInt())
-            .sendToTarget()
-    }
-
-    private fun unpackLong(high: Int, low: Int): Long =
-        (high.toLong() shl 32) or (low.toLong() and 0xFFFFFFFFL)
-
-    private inline fun forEachController(crossinline block: StatusBarViewController.() -> Unit) {
-        StatusBarViewManager.forEach {
-            runCatching { it.block() }.onFailure { e ->
-                YLog.error(tag = TAG, msg = "Iteration error", e = e)
+    /**
+     * 遍历所有状态栏实例并确保在 UI 线程执行
+     */
+    private inline fun updateAllControllers(crossinline block: StatusBarViewController.() -> Unit) {
+        StatusBarViewManager.forEach { controller ->
+            runCatching {
+                controller.lyricView.post { controller.block() }
+            }.onFailure { e ->
+                YLog.error(tag = TAG, msg = "Dispatch UI update failed", e = e)
             }
         }
     }
 
+    // --- 系统事件回调实现 ---
+
     override fun onColorOsCapsuleVisibilityChanged(isShowing: Boolean) {
-        forEachController { lyricView.setOplusCapsuleVisibility(isShowing) }
+        updateAllControllers { lyricView.setOplusCapsuleVisibility(isShowing) }
     }
 
     override fun onCoverUpdated(packageName: String, coverFile: File) {
         if (packageName != activePackage) return
-
-        forEachController {
+        updateAllControllers {
             lyricView.logoView.apply {
                 this.coverFile = coverFile
                 (strategy as? SuperLogo.CoverStrategy)?.updateContent()
             }
             updateCoverThemeColors(coverFile)
         }
-    }
-
-    fun filterBlockedWords(songToProcess: Song?): Song? {
-        val style = LyricPrefs.baseStyle
-        val regex = style.blockedWordsRegex ?: return songToProcess
-
-        val lyrics = songToProcess?.lyrics?.mapNotNull { line ->
-            val text = line.text ?: return@mapNotNull null
-            if (regex.containsMatchIn(text)) null else line
-        }
-
-        return songToProcess?.copy(lyrics = lyrics)
-    }
-
-    fun processSimpleAndTraditionalChinese(song: Song?): Song? {
-        val style = LyricPrefs.baseStyle
-        val mode = style.chineseConversionMode
-        if (song == null || mode == BasicStyle.CHINESE_CONVERSION_OFF) return song
-
-        val convert: (String?) -> String? = when (mode) {
-            BasicStyle.CHINESE_CONVERSION_TRADITIONAL -> { value -> value?.toTraditional() }
-            BasicStyle.CHINESE_CONVERSION_SIMPLIFIED -> { value -> value?.toSimplified() }
-            else -> { value -> value }
-        }
-
-        val lyrics = song.lyrics?.map { line ->
-            line.copy(
-                words = line.words?.map { it.copy(text = convert(it.text)) },
-                secondaryWords = line.secondaryWords?.map { it.copy(text = convert(it.text)) },
-                translationWords = line.translationWords?.map { it.copy(text = convert(it.text)) }
-            )
-        }
-
-        return song.copy(
-            name = convert(song.name),
-            artist = convert(song.artist),
-            lyrics = lyrics
-        ).normalize()
     }
 }

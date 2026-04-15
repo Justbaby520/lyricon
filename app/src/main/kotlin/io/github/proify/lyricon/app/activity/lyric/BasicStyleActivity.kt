@@ -236,10 +236,9 @@ class BasicLyricStyleActivity : AbstractLyricActivity() {
                         }
                     )
 
-                    //ChineseConversionPreference()
+                   // ChineseConversionPreference()
                 }
             }
-
 
             item(key = "visibility") {
                 Card(
@@ -404,6 +403,7 @@ class BasicLyricStyleActivity : AbstractLyricActivity() {
         RegexInput()
     }
 
+    @Suppress("unused")
     @Composable
     private fun ChineseConversionPreference() {
         // 读取当前保存的模式，默认为 OFF (0)

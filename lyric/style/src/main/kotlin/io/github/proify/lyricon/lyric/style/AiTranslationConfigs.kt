@@ -87,12 +87,12 @@ TARGET=zh-CN
             target: String,
             title: String,
             artist: String,
-            userPrompt: String = USER_PROMPT
+            prompt: String = USER_PROMPT
         ): String {
             fun escape(s: String) = s.replace("\n", " ").replace("\r", " ")
 
             return BASE_PROMPT
-                .replace("{user_prompt}", userPrompt)
+                .replace("{user_prompt}", prompt)
                 .replace("{title}", escape(title))
                 .replace("{artist}", escape(artist))
                 .replace("{target}", escape(target))

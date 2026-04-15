@@ -68,11 +68,10 @@ dependencies {
 
     implementation(project(":lyric:bridge:central"))
 
-    implementation(libs.openai.client)
-    implementation(libs.androidx.palette.ktx)
+    //implementation(libs.openai.client)
 
-    implementation(libs.ktor.client.okhttp)
-    testImplementation(libs.ktor.client.okhttp)
+    //implementation(libs.ktor.client.okhttp)
+    //testImplementation(libs.ktor.client.okhttp)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
