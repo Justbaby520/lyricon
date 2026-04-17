@@ -4,18 +4,21 @@ on:
   workflow_run:
     workflows: ["Upstream Sync"]
     types: [completed]
+
   workflow_dispatch:
     inputs:
       build_type:
         description: '构建类型'
         required: true
-        default: 'debug'
+        default: 'release'
         type: choice
         options:
           - debug
           - release
+
 env:
-  BUILD_TYPE: ${{ github.event.inputs.build_type || 'release' }}
+  # 关键：统一入口 + 防空字符串
+  BUILD_TYPE: ${{ github.event.inputs.build_type != '' && github.event.inputs.build_type || 'release' }}
 
 jobs:
   build:
@@ -36,11 +39,10 @@ jobs:
         run: |
           echo "检查并删除 Gradle 守护进程 JDK 配置..."
           if [ -f "gradle/gradle-daemon-jvm.properties" ]; then
-            echo "找到配置文件, 正在删除..."
             rm -f gradle/gradle-daemon-jvm.properties
-            echo "✅ 已删除 Gradle 守护进程 JDK 配置"
+            echo "✅ 已删除"
           else
-            echo "✅ 没有找到配置文件, 无需删除"
+            echo "✅ 无需删除"
           fi
 
       - name: 授予 Gradle 执行权限
@@ -48,15 +50,14 @@ jobs:
 
       - name: 修正 Gradle 配置文件
         run: |
-          echo "正在修正 gradle.properties..."
           if [ -f "gradle.properties" ]; then
             sed -i 's/-XX:+CMSClassUnloadingEnabled//g' gradle.properties
             sed -i 's/-Xmx8g/-Xmx4g/g' gradle.properties
             sed -i 's/-XX:MaxMetaspaceSize=2g/-XX:MaxMetaspaceSize=1g/g' gradle.properties
-            echo "✅ 修正完成"
+            echo "✅ gradle.properties 已优化"
           fi
 
-      - name: 缓存 Gradle 依赖
+      - name: 缓存 Gradle
         uses: actions/cache@v4
         with:
           path: |
@@ -67,14 +68,16 @@ jobs:
             ${{ runner.os }}-gradle-
 
       - name: 解码签名密钥
-        if: github.event.inputs.build_type == 'release'
+        if: env.BUILD_TYPE == 'release'
         run: |
           echo "${{ secrets.SIGNING_KEY }}" | base64 -d > release.jks
-          echo "密钥已保存到 release.jks"
+          echo "✅ 签名文件已生成"
 
-      - name: 构建 ${{ github.event.inputs.build_type }} APK
+      - name: 构建 APK
         run: |
-          if [ "${{ github.event.inputs.build_type }}" == "debug" ]; then
+          echo "当前构建类型: $BUILD_TYPE"
+
+          if [ "$BUILD_TYPE" == "debug" ]; then
             ./gradlew :lyricon:assembleDebug
           else
             ./gradlew :lyricon:assembleRelease
@@ -85,33 +88,31 @@ jobs:
           RELEASE_KEY_ALIAS: ${{ secrets.ALIAS }}
           RELEASE_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
-      - name: 上传 APK 文件
-        uses: actions/upload-artifact@v7
+      - name: 上传 APK（Artifacts）
+        uses: actions/upload-artifact@v4
         with:
-          name: lyricon-${{ github.event.inputs.build_type }}-apk
-          path: lyricon/build/outputs/apk/${{ github.event.inputs.build_type }}/lyricon-*${{ github.event.inputs.build_type }}.apk
+          name: lyricon-${{ env.BUILD_TYPE }}-apk
+          path: lyricon/build/outputs/apk/${{ env.BUILD_TYPE }}/lyricon-*${{ env.BUILD_TYPE }}.apk
           if-no-files-found: warn
 
-      - name: 上传 APK 到 Release
+      - name: 上传到 Release
         run: |
           TAG="ci-build"
 
-          # 如果 release 不存在就创建
           gh release view "$TAG" >/dev/null 2>&1 || \
           gh release create "$TAG" -t "CI Build" -n "Auto build"
 
-          # 上传 APK
-          gh release upload "$TAG" lyricon/build/outputs/apk/${{ github.event.inputs.build_type }}/lyricon-*${{ github.event.inputs.build_type }}.apk --clobber
+          gh release upload "$TAG" lyricon/build/outputs/apk/${BUILD_TYPE}/lyricon-*${BUILD_TYPE}.apk --clobber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 清理敏感文件
-        if: github.event.inputs.build_type == 'release'
+        if: env.BUILD_TYPE == 'release'
         run: |
           rm -f release.jks
-          echo "已清理敏感文件"
+          echo "✅ 已清理签名文件"
 
-      - name: List APK
+      - name: 列出 APK
         run: find . -name "*.apk"
 
 
@@ -127,7 +128,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **分支**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
           echo "- **提交**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **构建类型**: ${{ github.event.inputs.build_type }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **构建类型**: ${{ env.BUILD_TYPE }}" >> $GITHUB_STEP_SUMMARY
           echo "- **构建编号**: ${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "APK 文件已上传到 Artifacts，可在 Actions 页面下载。" >> $GITHUB_STEP_SUMMARY
+          echo "APK 已上传到 Artifacts 和 Release。" >> $GITHUB_STEP_SUMMARY
