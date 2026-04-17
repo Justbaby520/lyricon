@@ -15,7 +15,7 @@ on:
           - debug
           - release
 env:
-  BUILD_TYPE: ${{ inputs.build_type || 'release' }}
+  BUILD_TYPE: ${{ github.event.inputs.build_type || 'release' }}
 
 jobs:
   build:
