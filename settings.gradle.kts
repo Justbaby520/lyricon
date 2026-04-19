@@ -45,4 +45,4 @@ include(":lyric:style")
 include(":lyric:viewAppTest")
 include(":lyric:statusbarlyric")
 
-rootProject.name = "LyriconProject"
+rootProject.name = "lyricon"
