@@ -1,8 +1,5 @@
 @file:Suppress("UnstableApiUsage")
 
-include(":lyric:bridge:subscriber")
-
-
 pluginManagement {
     repositories {
         mavenLocal()
@@ -38,6 +35,7 @@ include(
 
 include(":lyric:bridge:central")
 include(":lyric:bridge:provider")
+include(":lyric:bridge:subscriber")
 include(":lyric:bridge:centralapp")
 include(":lyric:bridge:localcentralapp")
 
@@ -47,4 +45,4 @@ include(":lyric:style")
 include(":lyric:viewAppTest")
 include(":lyric:statusbarlyric")
 
-rootProject.name = "LyriconProject"
+rootProject.name = "lyricon"

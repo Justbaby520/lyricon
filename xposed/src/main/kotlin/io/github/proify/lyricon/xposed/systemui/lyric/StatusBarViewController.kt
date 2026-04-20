@@ -16,7 +16,6 @@ import android.widget.TextView
 import androidx.core.graphics.toColorInt
 import androidx.core.view.doOnAttach
 import androidx.core.view.isVisible
-import com.highcapable.yukihookapi.hook.log.YLog
 import io.github.proify.android.extensions.dp
 import io.github.proify.android.extensions.setColorAlpha
 import io.github.proify.android.extensions.toBitmap
@@ -27,7 +26,8 @@ import io.github.proify.lyricon.common.util.ScreenStateMonitor
 import io.github.proify.lyricon.lyric.style.BasicStyle
 import io.github.proify.lyricon.lyric.style.LyricStyle
 import io.github.proify.lyricon.statusbarlyric.StatusBarLyric
-import io.github.proify.lyricon.xposed.systemui.util.ClockColorMonitor
+import io.github.proify.lyricon.xposed.logger.YLog
+import io.github.proify.lyricon.xposed.systemui.hook.ClockColorMonitor
 import io.github.proify.lyricon.xposed.systemui.util.OnColorChangeListener
 import io.github.proify.lyricon.xposed.systemui.util.ViewVisibilityController
 import java.io.File
@@ -40,6 +40,9 @@ class StatusBarViewController(
     val statusBarView: ViewGroup,
     var currentLyricStyle: LyricStyle
 ) : ScreenStateMonitor.ScreenStateListener {
+    companion object {
+        const val TAG = "StatusBarViewController"
+    }
 
     val context: Context = statusBarView.context.applicationContext
     val visibilityController = ViewVisibilityController(statusBarView)
@@ -83,7 +86,7 @@ class StatusBarViewController(
         }
 
         statusBarView.doOnAttach { checkLyricViewExists() }
-        YLog.info("Lyric view created for $statusBarView")
+        YLog.info(tag = TAG, "Lyric view created for $statusBarView")
     }
 
     fun onDestroy() {
@@ -93,7 +96,7 @@ class StatusBarViewController(
         ScreenStateMonitor.removeListener(this)
         lyricView.onPlayingChanged = null
         colorMonitorView?.let { ClockColorMonitor.setListener(it, null) }
-        YLog.info("Lyric view destroyed for $statusBarView")
+        YLog.info(tag = TAG, "Lyric view destroyed for $statusBarView")
     }
 
     // --- 核心业务逻辑 ---
@@ -159,7 +162,10 @@ class StatusBarViewController(
                 || !lyricView.isAttachedToWindow
 
         if (needUpdateLocation) {
-            YLog.info("Lyric location changed: ${basicStyle.anchor}, order ${basicStyle.insertionOrder}")
+            YLog.info(
+                TAG,
+                "Lyric location changed: ${basicStyle.anchor}, order ${basicStyle.insertionOrder}"
+            )
             updateLocation(basicStyle)
         }
         lyricView.updateStyle(lyricStyle)
@@ -177,7 +183,7 @@ class StatusBarViewController(
                 bitmap.recycle()
             }
         } catch (e: Exception) {
-            YLog.error("Failed to extract cover theme colors", e)
+            YLog.error(TAG, "Failed to extract cover theme colors", e)
         }
     }
 
@@ -188,11 +194,11 @@ class StatusBarViewController(
         val anchor = baseStyle.anchor
         val anchorId = context.resources.getIdentifier(anchor, "id", context.packageName)
         val anchorView = statusBarView.findViewById<View>(anchorId) ?: return run {
-            YLog.error("Lyric anchor view $anchor not found")
+            YLog.error(TAG, "Lyric anchor view $anchor not found")
         }
 
         val anchorParent = anchorView.parent as? ViewGroup ?: return run {
-            YLog.error("Lyric anchor parent not found")
+            YLog.error(TAG, "Lyric anchor parent not found")
         }
 
         // 标记内部移除，避免触发冗余的 detach 逻辑
@@ -216,7 +222,7 @@ class StatusBarViewController(
         lastInsertionOrder = baseStyle.insertionOrder
         internalRemoveLyricViewFlag = false
 
-        YLog.info("Lyric injected: anchor $anchor, index $targetIndex")
+        YLog.info(TAG, "Lyric injected: anchor $anchor, index $targetIndex")
     }
 
     fun checkLyricViewExists() {
@@ -249,6 +255,8 @@ class StatusBarViewController(
         StatusBarLyric(context, style, getClockView() as? TextView)
 
     fun highlightView(idName: String?) {
+        YLog.info(TAG, "Highlighting view id:$idName")
+
         lastHighlightView?.background = null
         if (idName.isNullOrBlank()) return
 
@@ -260,20 +268,20 @@ class StatusBarViewController(
                 cornerRadius = 20.dp.toFloat()
             }
             lastHighlightView = view
-        } ?: YLog.error("Highlight target $idName not found")
+        } ?: YLog.error(TAG, "Highlight target $idName not found")
     }
 
     private val lyricAttachListener = object : View.OnAttachStateChangeListener {
         override fun onViewAttachedToWindow(v: View) {
-            YLog.info("LyricView attached")
+            YLog.info(TAG, "LyricView attached")
         }
 
         override fun onViewDetachedFromWindow(v: View) {
-            YLog.info("LyricView detached")
+            YLog.info(TAG, "LyricView detached")
             if (!internalRemoveLyricViewFlag) {
                 checkLyricViewExists()
             } else {
-                YLog.info("LyricView detached by internal flag")
+                YLog.info(TAG, "LyricView detached by internal flag")
             }
         }
     }
@@ -303,7 +311,7 @@ class StatusBarViewController(
     }
 
     override fun equals(other: Any?): Boolean =
-        (this === other) || (other is StatusBarViewController && statusBarView === other.statusBarView)
+        (this === other) || (other is StatusBarViewController && statusBarView == other.statusBarView)
 
     override fun hashCode(): Int = 31 * 17 + statusBarView.hashCode()
 
