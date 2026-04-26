@@ -9,8 +9,10 @@
 package io.github.proify.lyricon.app.bridge
 
 import android.content.Context
+import android.os.Environment
 import androidx.annotation.Keep
 import io.github.proify.lyricon.common.Constants
+import io.github.proify.lyricon.common.JsonSharedPreferences
 import java.io.File
 
 /**
@@ -22,8 +24,18 @@ object AppBridge {
     @Keep
     fun isModuleActive(): Boolean = false
 
-    @Keep
-    fun getPreferenceDirectory(context: Context): File = context.dataDir.resolve("shared_prefs")
+    fun getSharedPreferences(context: Context, fileName: String): JsonSharedPreferences {
+        return JsonSharedPreferences(getPreferenceFile(context, fileName))
+    }
+
+    fun getPreferenceFile(context: Context, fileName: String): File {
+        return File(getPreferenceDirectory(context), fileName)
+    }
+
+    fun getPreferenceDirectory(context: Context): File {
+        return Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
+            .resolve("lyricon/shared_prefs")
+    }
 
     object LyricStylePrefs {
         const val DEFAULT_PACKAGE_NAME: String = Constants.APP_PACKAGE_NAME

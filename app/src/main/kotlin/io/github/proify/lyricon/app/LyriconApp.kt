@@ -25,6 +25,7 @@ class LyriconApp : Application() {
         super.attachBaseContext(AppLangUtils.wrapContext(base))
     }
 
+    @Deprecated("This function is deprecated. Please use getSharedPreferences(String, Int, Class) instead.")
     override fun getSharedPreferences(name: String?, mode: Int): SharedPreferences =
         super.getSharedPreferences(name, mode).safe()
 

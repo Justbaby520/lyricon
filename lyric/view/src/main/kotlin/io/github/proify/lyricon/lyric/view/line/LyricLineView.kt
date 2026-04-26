@@ -329,6 +329,7 @@ open class LyricLineView(context: Context, attrs: AttributeSet? = null) :
     fun reqStartMarquee() {
         doOnAttach {
             unlockMarquee = true
+            if (isMarqueeMode()) startMarqueeInternal()
         }
     }
 

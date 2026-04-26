@@ -8,9 +8,7 @@ package io.github.proify.lyricon.app
 
 import android.content.SharedPreferences
 import android.util.Log
-import io.github.proify.android.extensions.defaultSharedPreferencesName
 import io.github.proify.android.extensions.deflate
-import io.github.proify.android.extensions.getWorldReadableSharedPreferences
 import io.github.proify.android.extensions.inflate
 import io.github.proify.lyricon.app.bridge.AppBridge
 import io.github.proify.lyricon.app.util.editCommit
@@ -67,18 +65,16 @@ object AppBackup {
     private fun collectAllPrefs(): Map<String, Map<String, *>> {
         val app = LyriconApp.get()
         val dir = AppBridge.getPreferenceDirectory(app)
-        val defaultName = app.defaultSharedPreferencesName
 
         val result = mutableMapOf<String, Map<String, *>>()
 
-        //跳过默认
         val files = dir.listFiles { f ->
-            f.isFile && f.extension == "xml" && f.nameWithoutExtension != defaultName
+            f.isFile
         } ?: return emptyMap()
 
         files.forEach { file ->
             val name = file.nameWithoutExtension
-            val prefs = app.getWorldReadableSharedPreferences(name)
+            val prefs = AppBridge.getSharedPreferences(app, name)
             val entries = prefs.all
             if (entries.isNotEmpty()) {
                 result[name] = entries
@@ -102,12 +98,11 @@ object AppBackup {
     }
 
     private fun applyJsonToPrefs(root: JSONObject) {
-        val app = LyriconApp.get()
         val names = root.keys()
         while (names.hasNext()) {
             val prefsName = names.next()
             val prefsJson = root.optJSONObject(prefsName) ?: continue
-            val prefs = app.getWorldReadableSharedPreferences(prefsName)
+            val prefs = AppBridge.getSharedPreferences(LyriconApp.get(), prefsName)
             writeJsonToPrefs(prefs, prefsJson)
         }
     }
