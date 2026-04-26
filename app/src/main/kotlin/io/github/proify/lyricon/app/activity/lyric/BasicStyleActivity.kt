@@ -43,7 +43,7 @@ import top.yukonga.miuix.kmp.preference.OverlaySpinnerPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 
 class BasicLyricStyleActivity : AbstractLyricActivity() {
-    private val preferences by lazy { LyricPrefs.basicStylePrefs }
+    private val preferences by lazy { LyricPrefs.globalBasicStylePrefs }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -161,17 +161,6 @@ class BasicLyricStyleActivity : AbstractLyricActivity() {
                             IconActions(painterResource(R.drawable.ic_width_normal))
                         },
                     )
-
-                    //                    SwitchPreference(
-//                        preferences = preferences,
-//                        key = "lyric_style_base_dynamic_width_enabled",
-//                        defaultValue = BasicStyle.Defaults.DYNAMIC_WIDTH_ENABLED,
-//                        title = stringResource(R.string.item_base_dynamic_width),
-//                        summary = stringResource(R.string.item_base_dynamic_width_summary),
-//                        startAction = {
-//                            IconActions(painterResource(R.drawable.ic_visibility_off))
-//                        },
-//                    )
 
 //                    SwitchPreference(
 //                        preferences = preferences,

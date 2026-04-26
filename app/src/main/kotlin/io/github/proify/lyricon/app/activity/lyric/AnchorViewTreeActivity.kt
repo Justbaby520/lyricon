@@ -23,7 +23,7 @@ import io.github.proify.lyricon.common.util.ViewTreeNode
 import io.github.proify.lyricon.lyric.style.BasicStyle
 
 class AnchorViewTreeActivity : ViewTreeActivity() {
-    val preferences: SharedPreferences by lazy { LyricPrefs.basicStylePrefs }
+    val preferences: SharedPreferences by lazy { LyricPrefs.globalBasicStylePrefs }
     private var currentAnchor: String = BasicStyle.Defaults.ANCHOR
 
     override fun onCreate(savedInstanceState: Bundle?) {

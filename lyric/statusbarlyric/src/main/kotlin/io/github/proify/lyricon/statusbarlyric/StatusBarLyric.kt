@@ -340,7 +340,7 @@ class StatusBarLyric(
             rightMargin = margins.right.dp
             bottomMargin = margins.bottom.dp
         }
-        updateTextViewWidthMode(basic)
+        updateTextViewWidthMode()
 
         updatePadding(
             paddings.left.dp,
@@ -358,23 +358,14 @@ class StatusBarLyric(
     }
 
     private fun calculateContainerWidth(basicStyle: BasicStyle): Int {
-        return if (basicStyle.dynamicWidthEnabled) {
-            LayoutParams.WRAP_CONTENT
-        } else {
-            calculateTargetWidth(basicStyle).dp
-        }
+        return calculateTargetWidth(basicStyle).dp
     }
 
-    private fun updateTextViewWidthMode(basicStyle: BasicStyle) {
+    private fun updateTextViewWidthMode() {
         val lp = (textView.layoutParams as? LayoutParams)
             ?: LayoutParams(0, LayoutParams.WRAP_CONTENT)
-        if (basicStyle.dynamicWidthEnabled) {
-            lp.width = LayoutParams.WRAP_CONTENT
-            lp.weight = 0f
-        } else {
-            lp.width = 0
-            lp.weight = 1f
-        }
+        lp.width = 0
+        lp.weight = 1f
         textView.layoutParams = lp
     }
 

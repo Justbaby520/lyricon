@@ -5,10 +5,17 @@
  */
 package io.github.proify.lyricon.app.activity
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
+import android.os.Environment
+import android.provider.Settings
 import android.util.Log
 import androidx.activity.compose.setContent
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -41,7 +48,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.core.content.edit
+import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.lifecycleScope
@@ -62,6 +71,7 @@ import io.github.proify.lyricon.app.compose.custom.miuix.basic.AppBasicComponent
 import io.github.proify.lyricon.app.compose.custom.miuix.extra.SuperDialog
 import io.github.proify.lyricon.app.event.SettingChangedEvent
 import io.github.proify.lyricon.app.util.AppThemeUtils
+import io.github.proify.lyricon.app.util.Toasty
 import io.github.proify.lyricon.app.util.Utils
 import io.github.proify.lyricon.app.util.collectEvent
 import io.github.proify.lyricon.app.util.editCommit
@@ -95,18 +105,26 @@ class MainActivity : BaseActivity() {
 
     private val viewModel: MainViewModel by viewModels()
 
+    /**
+     * 权限申请通过后待执行的任务闭包
+     */
+    private var pendingPermissionAction: (() -> Unit)? = null
+
+    /**
+     * 针对 API 30 以下的常规存储权限申请执行器
+     */
+    private lateinit var legacyStorageLauncher: ActivityResultLauncher<String>
+
+    /**
+     * 针对 API 30 及以上的全文件访问权限申请执行器
+     */
+    private lateinit var manageStorageLauncher: ActivityResultLauncher<Intent>
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        registerPermissionLaunchers()
         super.onCreate(savedInstanceState)
 
-        val sharedPreferences = defaultSharedPreferences
-        val savedVersionCode = sharedPreferences.getLong(PREF_KEY_LAST_VERSION, 0)
-        if (savedVersionCode <= 0) {
-            sharedPreferences.edit {
-                putLong(PREF_KEY_LAST_VERSION, BuildConfig.VERSION_CODE.toLong())
-            }
-        } else if (savedVersionCode < BuildConfig.VERSION_CODE) {
-            viewModel.setWaitingForReboot(true)
-        }
+        handleVersionUpdateLogic()
 
         setContent {
             MainContent(
@@ -117,6 +135,85 @@ class MainActivity : BaseActivity() {
         }
 
         setupEventListeners()
+    }
+
+    /**
+     * 注册权限启动器
+     */
+    private fun registerPermissionLaunchers() {
+        // 常规权限回调
+        legacyStorageLauncher = registerForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { isGranted ->
+            if (isGranted) executePendingAction() else handlePermissionDenied()
+        }
+
+        // 管理所有文件权限回调 (跳转设置页返回)
+        manageStorageLauncher = registerForActivityResult(
+            ActivityResultContracts.StartActivityForResult()
+        ) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                if (Environment.isExternalStorageManager()) {
+                    executePendingAction()
+                } else {
+                    handlePermissionDenied()
+                }
+            }
+        }
+    }
+
+    /**
+     * 版本更新逻辑处理
+     */
+    private fun handleVersionUpdateLogic() {
+        val sharedPreferences = defaultSharedPreferences
+        val savedVersionCode = sharedPreferences.getLong(PREF_KEY_LAST_VERSION, 0)
+        if (savedVersionCode <= 0) {
+            sharedPreferences.edit {
+                putLong(PREF_KEY_LAST_VERSION, BuildConfig.VERSION_CODE.toLong())
+            }
+        } else if (savedVersionCode < BuildConfig.VERSION_CODE) {
+            viewModel.setWaitingForReboot(true)
+        }
+    }
+
+    /**
+     * 检查并运行需要存储权限的操作
+     * @param action 权限就绪后执行的代码逻辑
+     */
+    private fun runWithStoragePermission(action: () -> Unit) {
+        pendingPermissionAction = action
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // Android 11+ 处理
+            if (Environment.isExternalStorageManager()) {
+                executePendingAction()
+            } else {
+                val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
+                    data = "package:${packageName}".toUri()
+                }
+                manageStorageLauncher.launch(intent)
+            }
+        } else {
+            // Android 10- 处理
+            val status =
+                ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            if (status == PackageManager.PERMISSION_GRANTED) {
+                executePendingAction()
+            } else {
+                legacyStorageLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            }
+        }
+    }
+
+    private fun executePendingAction() {
+        pendingPermissionAction?.invoke()
+        pendingPermissionAction = null
+    }
+
+    private fun handlePermissionDenied() {
+        pendingPermissionAction = null
+        Toasty.show(R.string.write_permission_denied)
     }
 
     override fun onResume() {
@@ -165,6 +262,9 @@ class MainActivity : BaseActivity() {
         }
     }
 
+    /**
+     * 界面状态管理层
+     */
     class MainViewModel : ViewModel() {
         private val _safeMode = mutableStateOf(false)
         val showRestartFailDialog: MutableState<Boolean> = mutableStateOf(false)
@@ -174,6 +274,7 @@ class MainActivity : BaseActivity() {
         val isWaitingForReboot: State<Boolean> get() = _isWaitingForReboot
 
         val showPopup: MutableState<Boolean> = mutableStateOf(false)
+
         fun updateSafeMode(isSafe: Boolean) {
             _safeMode.value = isSafe
             LyriconApp.updateSafeMode(isSafe)
@@ -267,14 +368,12 @@ class MainActivity : BaseActivity() {
                 if (model != null) RestartFailDialog(showState = model.showRestartFailDialog)
             }
         ) {
-
             item("status_card") {
                 val cardStatus = determineCardStatus(
                     safeMode = model?.safeMode?.value ?: false,
                     isWaitingForReboot = model?.isWaitingForReboot?.value ?: false,
                     onRestartSystemUI = onRestartSystemUI
                 )
-
                 StatusCardItem(cardStatus)
             }
 
@@ -379,16 +478,14 @@ class MainActivity : BaseActivity() {
         ) {
             ArrowPreference(
                 startAction = {
-                    ColoredIconBox(
-                        Modifier,
-                        MaterialPalette.Teal.Primary,
-                        R.drawable.ic_android
-                    )
+                    ColoredIconBox(Modifier, MaterialPalette.Teal.Primary, R.drawable.ic_android)
                 },
                 title = stringResource(id = R.string.item_base_lyric_style),
                 summary = stringResource(id = R.string.item_summary_base_lyric_style),
                 onClick = {
-                    context.startActivity(Intent(context, BasicLyricStyleActivity::class.java))
+                    runWithStoragePermission {
+                        context.startActivity(Intent(context, BasicLyricStyleActivity::class.java))
+                    }
                 }
             )
             ArrowPreference(
@@ -402,7 +499,9 @@ class MainActivity : BaseActivity() {
                 title = stringResource(id = R.string.item_package_style_manager),
                 summary = stringResource(id = R.string.item_summary_package_style_manager),
                 onClick = {
-                    context.startActivity(Intent(context, PackageStyleActivity::class.java))
+                    runWithStoragePermission {
+                        context.startActivity(Intent(context, PackageStyleActivity::class.java))
+                    }
                 }
             )
         }
@@ -419,11 +518,7 @@ class MainActivity : BaseActivity() {
         ) {
             ArrowPreference(
                 startAction = {
-                    ColoredIconBox(
-                        Modifier,
-                        MaterialPalette.Blue.Primary,
-                        R.drawable.ic_extension
-                    )
+                    ColoredIconBox(Modifier, MaterialPalette.Blue.Primary, R.drawable.ic_extension)
                 },
                 title = stringResource(id = R.string.item_provider_manager),
                 summary = stringResource(id = R.string.item_summary_provider_manager),
@@ -438,7 +533,6 @@ class MainActivity : BaseActivity() {
     @Composable
     private fun OtherSettingsCard() {
         val context = LocalContext.current
-
         Card(
             modifier = Modifier
                 .padding(start = 16.dp, top = 16.dp, end = 16.dp)
@@ -461,11 +555,7 @@ class MainActivity : BaseActivity() {
 
             ArrowPreference(
                 startAction = {
-                    ColoredIconBox(
-                        Modifier,
-                        MaterialPalette.Green.Primary,
-                        R.drawable.ic_info_fill
-                    )
+                    ColoredIconBox(Modifier, MaterialPalette.Green.Primary, R.drawable.ic_info_fill)
                 },
                 title = stringResource(id = R.string.item_about_app),
                 summary = stringResource(id = R.string.item_summary_about_app),
@@ -490,10 +580,7 @@ class MainActivity : BaseActivity() {
                 .size(40.dp)
                 .let {
                     if (viewModel.isMonet) {
-                        it.background(
-                            MiuixTheme.colorScheme.primary,
-                            CircleShape
-                        )
+                        it.background(MiuixTheme.colorScheme.primary, CircleShape)
                     } else {
                         it.background(backgroundColor, CircleShape)
                     }
@@ -532,9 +619,7 @@ class MainActivity : BaseActivity() {
         onRestartApp: () -> Unit
     ) {
         Box(modifier = Modifier.padding(end = 14.dp)) {
-            IconButton(
-                onClick = { showPopup.value = true }
-            ) {
+            IconButton(onClick = { showPopup.value = true }) {
                 Icon(
                     modifier = Modifier.size(24.dp),
                     imageVector = MiuixIcons.Refresh,
@@ -564,14 +649,11 @@ class MainActivity : BaseActivity() {
 
         OverlayListPopup(
             show = showPopup.value,
-            popupModifier = Modifier,
             popupPositionProvider = ListPopupDefaults.DropdownPositionProvider,
             alignment = PopupPositionProvider.Align.TopEnd,
             enableWindowDim = true,
             onDismissRequest = { showPopup.value = false },
-            maxHeight = null,
             minWidth = 200.dp,
-            renderInRootScaffold = true,
             content = {
                 ListPopupColumn {
                     items.forEachIndexed { index, string ->
@@ -580,11 +662,7 @@ class MainActivity : BaseActivity() {
                             optionSize = items.size,
                             isSelected = false,
                             onSelectedIndexChange = {
-                                if (index == 0) {
-                                    onRestartSystemUI()
-                                } else {
-                                    onRestartApp()
-                                }
+                                if (index == 0) onRestartSystemUI() else onRestartApp()
                                 showPopup.value = false
                             },
                             index = index

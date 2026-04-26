@@ -6,16 +6,16 @@
 
 package io.github.proify.lyricon.xposed.systemui.lyric
 
-import de.robv.android.xposed.XSharedPreferences
+import android.app.AndroidAppHelper
 import io.github.proify.lyricon.app.bridge.AppBridge
-import io.github.proify.lyricon.common.PackageNames
+import io.github.proify.lyricon.common.JsonSharedPreferences
 import io.github.proify.lyricon.lyric.style.BasicStyle
 import io.github.proify.lyricon.lyric.style.LyricStyle
 import io.github.proify.lyricon.lyric.style.PackageStyle
 
 object LyricPrefs {
 
-    private val prefsCache = mutableMapOf<String, XSharedPreferences>()
+    private val prefsCache = mutableMapOf<String, JsonSharedPreferences>()
     private val packageStyleCache = mutableMapOf<String, PackageStyleCache>()
 
     @Volatile
@@ -23,8 +23,8 @@ object LyricPrefs {
 
     /* ---------------- base style ---------------- */
 
-    private val baseStylePrefs: XSharedPreferences =
-        createXPrefs(AppBridge.LyricStylePrefs.PREF_NAME_BASE_STYLE)
+    private val baseStylePrefs: JsonSharedPreferences =
+        createPrefs(AppBridge.LyricStylePrefs.PREF_NAME_BASE_STYLE)
 
     val baseStyle: BasicStyle = BasicStyle().apply {
         load(baseStylePrefs)
@@ -39,7 +39,7 @@ object LyricPrefs {
 
     /* ---------------- default package style ---------------- */
 
-    private val defaultPackageStylePrefs: XSharedPreferences by lazy {
+    private val defaultPackageStylePrefs: JsonSharedPreferences by lazy {
         getPackagePrefs(
             AppBridge.LyricStylePrefs.DEFAULT_PACKAGE_NAME
         )
@@ -58,8 +58,8 @@ object LyricPrefs {
 
     /* ---------------- package manager ---------------- */
 
-    private val packageStyleManagerPrefs: XSharedPreferences =
-        createXPrefs(AppBridge.LyricStylePrefs.PREF_PACKAGE_STYLE_MANAGER)
+    private val packageStyleManagerPrefs: JsonSharedPreferences =
+        createPrefs(AppBridge.LyricStylePrefs.PREF_PACKAGE_STYLE_MANAGER)
         get() {
             if (field.hasFileChanged()) {
                 field.reload()
@@ -94,18 +94,18 @@ object LyricPrefs {
     private fun getPackagePrefName(packageName: String): String =
         AppBridge.LyricStylePrefs.getPackageStylePreferenceName(packageName)
 
-    private fun getPackagePrefs(packageName: String): XSharedPreferences {
+    private fun getPackagePrefs(packageName: String): JsonSharedPreferences {
         val prefName = getPackagePrefName(packageName)
         return prefsCache.getOrPut(prefName) {
-            createXPrefs(prefName)
+            createPrefs(prefName)
         }
     }
 
-    private fun createXPrefs(name: String): XSharedPreferences {
-        return XSharedPreferences(PackageNames.APPLICATION, name)
+    private fun createPrefs(name: String): JsonSharedPreferences {
+        return AppBridge.getSharedPreferences(AndroidAppHelper.currentApplication(), name)
     }
 
-    private fun XSharedPreferences.ensureLatest(): XSharedPreferences {
+    private fun JsonSharedPreferences.ensureLatest(): JsonSharedPreferences {
         runCatching { reload() }
         return this
     }
@@ -113,7 +113,7 @@ object LyricPrefs {
     /* ---------------- package style cache ---------------- */
 
     private class PackageStyleCache(
-        private val prefs: XSharedPreferences,
+        private val prefs: JsonSharedPreferences,
         private val style: PackageStyle
     ) {
         fun getStyle(): PackageStyle {
