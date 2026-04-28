@@ -9,6 +9,8 @@ package io.github.proify.lyricon.xposed.systemui.lyric.processor
 import io.github.proify.lyricon.lyric.model.Song
 import io.github.proify.lyricon.lyric.style.LyricStyle
 import io.github.proify.lyricon.xposed.systemui.util.AITranslator
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * AI 翻译加工器的具体实现
@@ -25,6 +27,8 @@ class AITranslationProcessor : PostProcessor {
         val packageStyle = style.packageStyle
         val configs = packageStyle.text.aiTranslationConfigs ?: return song
 
-        return AITranslator.translateSongSync(song, configs)
+        return withContext(Dispatchers.IO) {
+            return@withContext AITranslator.translateSongSync(song, configs)
+        }
     }
 }

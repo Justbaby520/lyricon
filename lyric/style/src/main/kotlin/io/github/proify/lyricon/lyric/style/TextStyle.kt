@@ -93,9 +93,17 @@ data class TextStyle(
         const val AI_TRANSLATION_ENABLED: Boolean = false
         val AI_TRANSLATION_PROVIDER = AiTranslationProvider.OPENAI.provider
         val AI_TRANSLATION_TARGET_LANGUAGE_DISPLAY_NAME: String
-            get() = Locale.forLanguageTag(Locale.getDefault().toLanguageTag()).getDisplayLanguage(
-                Locale.getDefault()
-            )
+            get() {
+                val locale = Locale.getDefault()
+                val language = locale.getDisplayLanguage(locale)
+                val script = locale.getDisplayScript(locale)
+
+                return when {
+                    !script.isNullOrBlank() -> script
+                    else -> language
+                }
+            }
+
         val AI_TRANSLATION_HOST: String by lazy {
             val p = AiTranslationProvider.entries.find {
                 it.provider == AI_TRANSLATION_PROVIDER

@@ -10,7 +10,9 @@ import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import android.util.Log
 import io.github.proify.android.extensions.json
+import io.github.proify.android.extensions.md5
 import io.github.proify.lyricon.lyric.model.Song
 import io.github.proify.lyricon.lyric.style.AiTranslationConfigs
 import kotlinx.coroutines.CoroutineScope
@@ -25,7 +27,6 @@ import kotlinx.serialization.Serializable
 import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.URL
-import java.security.MessageDigest
 import java.util.Collections
 import java.util.Locale
 
@@ -35,6 +36,7 @@ import java.util.Locale
  * 技术栈：Kotlin Coroutines, kotlinx.serialization, Java HttpURLConnection。
  */
 object AITranslator {
+    private const val TAG = "LyriconAITranslator"
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private const val MAX_CACHE_SIZE = 1000
 
@@ -62,6 +64,7 @@ object AITranslator {
         if (dbHelper == null) {
             synchronized(this) {
                 if (dbHelper == null) {
+                    Log.d(TAG, "Initializing database...")
                     dbHelper = DatabaseHelper(context.applicationContext)
                 }
             }
@@ -75,13 +78,17 @@ object AITranslator {
         song: Song,
         configs: AiTranslationConfigs,
     ): Song {
-        if (!configs.isUsable || song.lyrics.isNullOrEmpty()) {
+        if (!configs.isUsable) {
+            Log.w(TAG, "Translation skipped: Configs not usable (missing API Key or disabled).")
+            return song
+        }
+        if (song.lyrics.isNullOrEmpty()) {
             return song
         }
 
         return runCatching { translateSong(song, configs) }
             .getOrElse {
-                it.printStackTrace()
+                Log.e(TAG, "Critical error during translateSongSync: ${it.message}", it)
                 song
             }
     }
@@ -93,26 +100,37 @@ object AITranslator {
         val currentLyrics = song.lyrics ?: return song
         val originalLines = currentLyrics.map { it.text?.trim() ?: "" }
 
-        // 计算唯一标识，包含配置、歌曲信息及歌词原文，防止配置变更导致错误的缓存命中
+        // 计算唯一标识
         val songContentId = calculateSongId(configs = configs, song = song, lines = originalLines)
 
         // 1. 内存查找
         val cached = songLevelCache[songContentId]
-        if (cached != null) return applyTranslation(song, cached)
+        if (cached != null) {
+            Log.d(TAG, "Memory cache hit for: ${song.name} [$songContentId]")
+            return applyTranslation(song, cached)
+        }
 
         // 2. 数据库查找
         val dbItems = getFromDb(songContentId)
         if (dbItems != null) {
+            Log.d(TAG, "Database cache hit for: ${song.name} [$songContentId]")
             songLevelCache[songContentId] = dbItems
             return applyTranslation(song, dbItems)
         }
 
         // 3. 网络请求
+        Log.i(
+            TAG,
+            "Cache miss. Requesting AI translation for: ${song.name} (${originalLines.size} lines)"
+        )
         val apiResults = doOpenAiRequest(configs, song, originalLines)
         if (!apiResults.isNullOrEmpty()) {
+            Log.i(TAG, "Translation received. Saving to cache...")
             songLevelCache[songContentId] = apiResults
             saveToDb(songContentId, apiResults)
             return applyTranslation(song, apiResults)
+        } else {
+            Log.w(TAG, "Failed to get translation from API.")
         }
 
         return song
@@ -122,7 +140,8 @@ object AITranslator {
      * 将翻译结果应用回 Song 对象
      */
     private fun applyTranslation(song: Song, transItems: List<TranslationItem>): Song {
-        return song.apply {
+        var appliedCount = 0
+        val newSong = song.apply {
             lyrics = lyrics?.mapIndexed { index, line ->
                 val transItem = transItems.find { it.index == index }
                 val transText = transItem?.trans?.trim()
@@ -131,10 +150,15 @@ object AITranslator {
                     && line.translation.isNullOrBlank()
                     && transText.lowercase() != line.text?.trim()?.lowercase()
                 ) {
+                    appliedCount++
                     line.copy(translation = transText, translationWords = null)
-                } else line
+                } else {
+                    line
+                }
             }
         }
+        Log.v(TAG, "Applied $appliedCount translation lines to ${song.name}")
+        return newSong
     }
 
     /**
@@ -145,13 +169,14 @@ object AITranslator {
         song: Song,
         lines: List<String>
     ): String {
-        val md = MessageDigest.getInstance("MD5")
-        md.update((configs.model ?: "default").toByteArray())
-        md.update((configs.targetLanguage ?: "default").toByteArray())
-        md.update((song.name ?: "unknown").toByteArray())
-        md.update((song.artist ?: "unknown").toByteArray())
-        lines.forEach { md.update(it.toByteArray()) }
-        return md.digest().joinToString("") { "%02x".format(it) }
+        return buildString {
+            append(configs.provider.orEmpty())
+            append(configs.targetLanguage.orEmpty())
+            append(configs.baseUrl.orEmpty())
+            append(configs.model.orEmpty())
+
+            append(lines.joinToString(""))
+        }.md5()
     }
 
     /**
@@ -162,18 +187,18 @@ object AITranslator {
         song: Song? = null,
         texts: List<String>
     ): List<TranslationItem>? = withContext(Dispatchers.IO) {
-        if (configs.apiKey.isNullOrBlank()) return@withContext null
+        if (configs.apiKey.isNullOrBlank()) {
+            Log.e(TAG, "Request aborted: API Key is null or blank.")
+            return@withContext null
+        }
 
-        val baseUrl = configs.baseUrl
-            ?.removeSuffix("/")
-            ?: "https://api.openai.com/v1"
+        val baseUrl = configs.baseUrl?.removeSuffix("/") ?: "https://api.openai.com/v1"
         val apiUrl =
             if (baseUrl.endsWith("/chat/completions")) baseUrl else "$baseUrl/chat/completions"
 
         val payload = texts.mapIndexed { index, s -> RequestItem(index = index, text = s) }
         val requestIndices = texts.indices.toSet()
 
-        // 构造 OpenAI 协议标准的请求体
         val chatRequest = OpenAiChatRequest(
             model = configs.model.orEmpty(),
             messages = listOf(
@@ -186,40 +211,43 @@ object AITranslator {
         var connection: HttpURLConnection? = null
         try {
             val url = URL(apiUrl)
+            Log.d(TAG, "Connecting to OpenAI compatible API: $apiUrl")
+
             connection = (url.openConnection() as HttpURLConnection).apply {
                 requestMethod = "POST"
-                connectTimeout = 15000
-                readTimeout = 60000
+                connectTimeout = 60 * 1000
+                readTimeout = 120 * 1000
                 doOutput = true
                 setRequestProperty("Content-Type", "application/json")
                 setRequestProperty("Authorization", "Bearer ${configs.apiKey}")
             }
 
-            // 发送数据
             OutputStreamWriter(connection.outputStream).use {
-                it.write(
-                    json.encodeToString(
-                        chatRequest
-                    )
-                )
+                it.write(json.encodeToString(chatRequest))
             }
 
-            // 处理响应
-            if (connection.responseCode == HttpURLConnection.HTTP_OK) {
+            val responseCode = connection.responseCode
+            if (responseCode == HttpURLConnection.HTTP_OK) {
                 val responseBody = connection.inputStream.bufferedReader().use { it.readText() }
                 val responseObj = json.decodeFromString<OpenAiChatResponse>(responseBody)
 
                 val content = responseObj.choices.firstOrNull()?.message?.content?.run {
                     AiTranslationConfigs.cleanLlmOutput(this)
-                } ?: return@withContext null
+                } ?: run {
+                    Log.e(TAG, "Empty content in API response.")
+                    return@withContext null
+                }
 
                 val result = json.decodeFromString<List<TranslationItem>>(content)
+                Log.d(TAG, "API call successful, parsed ${result.size} items.")
                 result.filter { it.index in requestIndices }
             } else {
+                val errorBody = connection.errorStream?.bufferedReader()?.use { it.readText() }
+                Log.e(TAG, "API request failed with code $responseCode: $errorBody")
                 null
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Network or Parsing error in doOpenAiRequest: ${e.message}", e)
             null
         } finally {
             connection?.disconnect()
@@ -233,12 +261,7 @@ object AITranslator {
         val artist = song?.artist ?: "Unknown Artist"
         val prompt = (configs.prompt.takeIf { it.isNotBlank() } ?: DEFAULT_PROMPT)
 
-        return AiTranslationConfigs.getPrompt(
-            target,
-            title,
-            artist,
-            prompt
-        )
+        return AiTranslationConfigs.getPrompt(target, title, artist, prompt)
     }
 
     private suspend fun getFromDb(key: String): List<TranslationItem>? = dbMutex.withLock {
@@ -257,7 +280,10 @@ object AITranslator {
                     json.decodeFromString<List<TranslationItem>>(jsonData)
                 } else null
             }
-        }.getOrNull()
+        }.getOrElse {
+            Log.e(TAG, "DB Query error: ${it.message}")
+            null
+        }
     }
 
     private suspend fun saveToDb(key: String, items: List<TranslationItem>) {
@@ -276,17 +302,23 @@ object AITranslator {
                     values,
                     SQLiteDatabase.CONFLICT_REPLACE
                 )
+            }.onFailure {
+                Log.e(TAG, "Failed to save translation to DB: ${it.message}")
             }
         }
     }
 
     fun clearCache(callback: () -> Unit) {
+        Log.i(TAG, "Clearing all translation caches (Memory & DB)...")
         songLevelCache.clear()
         scope.launch {
             dbMutex.withLock {
                 runCatching {
                     dbHelper?.writableDatabase?.delete(DatabaseHelper.TABLE_NAME, null, null)
-                    callback()
+                    Log.d(TAG, "Database cache cleared.")
+                    withContext(Dispatchers.Main) { callback() }
+                }.onFailure {
+                    Log.e(TAG, "Error clearing database: ${it.message}")
                 }
             }
         }
@@ -308,6 +340,7 @@ object AITranslator {
         }
 
         override fun onCreate(db: SQLiteDatabase) {
+            Log.i(TAG, "Creating translation cache table.")
             db.execSQL(
                 """
                 CREATE TABLE $TABLE_NAME (
@@ -321,6 +354,7 @@ object AITranslator {
         }
 
         override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+            Log.w(TAG, "Upgrading database from $oldVersion to $newVersion. All data will be lost.")
             db.execSQL("DROP TABLE IF EXISTS $TABLE_NAME")
             onCreate(db)
         }

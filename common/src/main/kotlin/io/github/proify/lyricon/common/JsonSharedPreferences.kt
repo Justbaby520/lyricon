@@ -7,56 +7,75 @@
 package io.github.proify.lyricon.common
 
 import android.content.SharedPreferences
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.decodeFromStream
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.longOrNull
 import java.io.File
 import java.util.concurrent.CopyOnWriteArraySet
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
 
 /**
- * 工业级 JsonSharedPreferences 实现。
- * 增强了类型自动转换能力，支持跨类型读取（如 String 转 Int，Long 转 Int 等）。
+ * @property storageFile 存储数据的 JSON 文件路径。
  */
-class JsonSharedPreferences(private val storageFile: File) : SharedPreferences {
+class JsonSharedPreferences(private val storageFile: File) : SharedPreferences,
+    StateSharedPreferences {
 
+    /** 内部标记，用于表示 Editor 中的删除操作 */
     private object REMOVED
 
+    /** 内存缓存快照 */
     @Volatile
     private var jsonCache: Map<String, JsonElement> = emptyMap()
+
+    /** 读写锁，保证 getAll() 和 edit() 之间的原子性 */
     private val lock = ReentrantReadWriteLock()
+
+    /** 变更监听器集合，使用线程安全的 Set */
     private val listeners =
         CopyOnWriteArraySet<SharedPreferences.OnSharedPreferenceChangeListener>()
 
-    private val writerExecutor: ExecutorService = Executors.newSingleThreadExecutor { r ->
-        Thread(r, "JsonSP-Writer").also { it.isDaemon = true }
-    }
+    /** 异步写入使用的协程作用域 */
+    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
+    /** 配置 JSON 解析引擎 */
     private val json = Json {
         prettyPrint = false
         ignoreUnknownKeys = true
-        coerceInputValues = true // 强制输入值转换
+        coerceInputValues = true
+        encodeDefaults = true
     }
 
+    /** 标记数据是否已从磁盘加载 */
     @Volatile
     private var isLoaded = false
 
+    /** 记录文件最后修改时间 */
     @Volatile
     private var lastModifiedTime = 0L
 
+    /** 记录文件最后大小，增强 [hasChanged] 的严谨性 */
+    @Volatile
+    private var lastFileSize = 0L
+
     // ----------------------------------------------------------------
-    // 内部类型转换辅助函数 (Core Improvements)
+    // 类型转换扩展
     // ----------------------------------------------------------------
 
     private fun JsonElement?.asString(): String? = when (this) {
@@ -91,15 +110,30 @@ class JsonSharedPreferences(private val storageFile: File) : SharedPreferences {
     }
 
     // ----------------------------------------------------------------
-    // 核心生命周期
+    // 生命周期管理
     // ----------------------------------------------------------------
 
-    fun hasFileChanged(): Boolean {
-        val ts = if (storageFile.exists()) storageFile.lastModified() else 0L
-        return ts != lastModifiedTime
+    /**
+     * 检测外部进程或手动修改是否导致文件发生变化。
+     * 结合修改时间与文件大小进行双重判定，防止时间戳精度丢失。
+     */
+    override fun hasChanged(): Boolean {
+        val exists = storageFile.exists()
+        if (!exists) {
+            // 如果文件不存在但之前加载过数据，视为已改变
+            return lastModifiedTime != 0L || lastFileSize != 0L
+        }
+        val ts = storageFile.lastModified()
+        val size = storageFile.length()
+        return ts != lastModifiedTime || size != lastFileSize
     }
 
-    fun reload() {
+    /**
+     * 强制重新从磁盘读取数据并刷新缓存。
+     */
+    override fun reload(): Boolean {
+        if (!hasChanged()) return false
+
         val changedKeys: Set<String>
         lock.write {
             val oldCache = jsonCache
@@ -110,38 +144,47 @@ class JsonSharedPreferences(private val storageFile: File) : SharedPreferences {
             }.toSet()
         }
         changedKeys.forEach { notifyListeners(it) }
+        return true
     }
 
+    /**
+     * 懒加载检查，确保读取数据前缓存已就绪。
+     */
     private fun ensureLoaded() {
         if (!isLoaded) {
             lock.write {
                 if (!isLoaded) {
-                    loadFromFileInternal(); isLoaded = true
+                    loadFromFileInternal()
+                    isLoaded = true
                 }
             }
         }
     }
 
+    @OptIn(ExperimentalSerializationApi::class)
     private fun loadFromFileInternal() {
         runCatching {
-            if (storageFile.exists()) {
-                val content = storageFile.readText()
-                jsonCache = if (content.isNotBlank()) {
-                    json.decodeFromString<Map<String, JsonElement>>(content)
-                } else emptyMap()
+            if (storageFile.exists() && storageFile.isFile) {
+                storageFile.inputStream().buffered().use {
+                    jsonCache = json.decodeFromStream<Map<String, JsonElement>>(it)
+                }
                 lastModifiedTime = storageFile.lastModified()
+                lastFileSize = storageFile.length()
             } else {
                 jsonCache = emptyMap()
                 lastModifiedTime = 0L
+                lastFileSize = 0L
             }
         }.onFailure {
+            // 发生异常时回退到空配置，防止崩溃
             jsonCache = emptyMap()
             lastModifiedTime = 0L
+            lastFileSize = 0L
         }
     }
 
     // ----------------------------------------------------------------
-    // 读操作 (符合 SP 标准契约，增强转换)
+    // SharedPreferences 接口实现 (读取)
     // ----------------------------------------------------------------
 
     override fun getAll(): Map<String, *> {
@@ -220,29 +263,29 @@ class JsonSharedPreferences(private val storageFile: File) : SharedPreferences {
         private var mClear = false
 
         override fun putString(key: String, value: String?) = apply { mChanges[key] = value }
-        override fun putStringSet(key: String, values: MutableSet<String>?) =
+        override fun putStringSet(key: String, values: Set<String>?) =
             apply { mChanges[key] = values?.toSet() }
 
         override fun putInt(key: String, value: Int) = apply { mChanges[key] = value }
         override fun putLong(key: String, value: Long) = apply { mChanges[key] = value }
-
-        // 修正：不再使用 Bits 存储，改用原始数值以提升 JSON 可读性
         override fun putFloat(key: String, value: Float) = apply { mChanges[key] = value }
-
         override fun putBoolean(key: String, value: Boolean) = apply { mChanges[key] = value }
         override fun remove(key: String) = apply { mChanges[key] = REMOVED }
         override fun clear() = apply { mClear = true }
 
         override fun commit(): Boolean {
             val keys = applyToMemory()
-            val success = saveToFileSync()
+            val success = runBlocking { saveToFileSync() }
             keys.forEach { notifyListeners(it) }
             return success
         }
 
         override fun apply() {
             val keys = applyToMemory()
-            writerExecutor.execute { saveToFileSync() }
+            scope.launch {
+                val success = saveToFileSync()
+                // 虽然 apply 不关心返回值，但内部状态在 saveToFileSync 中已更新
+            }
             keys.forEach { notifyListeners(it) }
         }
 
@@ -283,22 +326,32 @@ class JsonSharedPreferences(private val storageFile: File) : SharedPreferences {
             else -> JsonNull
         }
 
-        private fun saveToFileSync(): Boolean {
+        private suspend fun saveToFileSync(): Boolean = withContext(Dispatchers.IO) {
             val tmpFile = File("${storageFile.absolutePath}.tmp")
-            return try {
+            try {
                 val content = lock.read { json.encodeToString(jsonCache) }
+
                 storageFile.parentFile?.mkdirs()
-                tmpFile.writeBytes(content.toByteArray(Charsets.UTF_8))
-                if (tmpFile.renameTo(storageFile)) {
-                    lastModifiedTime = storageFile.lastModified()
+                tmpFile.writeText(content, Charsets.UTF_8)
+
+                val success = if (tmpFile.renameTo(storageFile)) {
                     true
                 } else {
-                    if (storageFile.delete()) tmpFile.renameTo(storageFile)
-                    lastModifiedTime = storageFile.lastModified()
-                    true
+                    if (storageFile.exists() && !storageFile.delete()) {
+                        false
+                    } else {
+                        tmpFile.renameTo(storageFile)
+                    }
                 }
+
+                if (success) {
+                    // 更新元数据以同步 hasChanged 状态
+                    lastModifiedTime = storageFile.lastModified()
+                    lastFileSize = storageFile.length()
+                }
+                success
             } catch (_: Exception) {
-                tmpFile.delete()
+                if (tmpFile.exists()) tmpFile.delete()
                 false
             }
         }

@@ -43,7 +43,7 @@ import top.yukonga.miuix.kmp.preference.OverlaySpinnerPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 
 class BasicLyricStyleActivity : AbstractLyricActivity() {
-    private val preferences by lazy { LyricPrefs.globalBasicStylePrefs }
+    private val preferences by lazy { LyricPrefs.basicStylePrefs }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

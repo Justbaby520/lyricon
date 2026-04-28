@@ -39,10 +39,6 @@ object LyricPrefs {
     val basicStylePrefs: SharedPreferences
         get() = getSharedPreferences(LyricStylePrefs.PREF_NAME_BASE_STYLE)
 
-    /** 全局基础样式偏好 SharedPreferences */
-    val globalBasicStylePrefs: SharedPreferences =
-        getSharedPreferences(LyricStylePrefs.PREF_NAME_BASE_STYLE)
-
     /** 获取指定名称的 SharedPreferences*/
     fun getSharedPreferences(name: String): SharedPreferences {
         return AppBridge.getSharedPreferences(LyriconApp.get(), name)

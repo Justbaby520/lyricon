@@ -23,7 +23,7 @@ import io.github.proify.lyricon.common.util.ViewTreeNode
 import io.github.proify.lyricon.lyric.style.BasicStyle
 
 class AnchorViewTreeActivity : ViewTreeActivity() {
-    val preferences: SharedPreferences by lazy { LyricPrefs.globalBasicStylePrefs }
+    val preferences: SharedPreferences by lazy { LyricPrefs.basicStylePrefs }
     private var currentAnchor: String = BasicStyle.Defaults.ANCHOR
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -62,8 +62,8 @@ class AnchorViewTreeActivity : ViewTreeActivity() {
     object : ViewTreeViewModel() {
         override fun handleNodeClick(node: Node<ViewTreeNode>) {
             val value = node.content
-            val id = value.id ?: return
-            if (id == "status_bar" || id == currentAnchor) return
+            val id = value.id
+            if (id.isNullOrBlank() || id == "status_bar" || id == currentAnchor) return
             saveAnchorId(id)
         }
 
