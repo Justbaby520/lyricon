@@ -223,7 +223,7 @@ open class LyricPlayerView(
     }
 
     private val slotEngine: ViewSlotEngine by lazy {
-        ViewSlotEngine(this, { line -> createDoubleLineView(line) }, defaultLp)
+        ViewSlotEngine(this)
     }
 
     private fun syncViews(matches: List<TimedLine>) {
@@ -354,7 +354,7 @@ open class LyricPlayerView(
     private fun resolveTitle(song: Song): String? = when (style.placeholder) {
         TitleSlot.NONE -> null
         TitleSlot.NAME_ARTIST -> {
-            val n = song.name;
+            val n = song.name
             val a = song.artist
             when {
                 !n.isNullOrBlank() && !a.isNullOrBlank() -> "$n - $a"; !n.isNullOrBlank() -> n; else -> null

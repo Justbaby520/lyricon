@@ -172,6 +172,9 @@
     <string name="item_translation_model">Model</string>
     <string name="item_translation_base_url">Base URL</string>
     <string name="item_translation_custom_prompt">Custom Prompt</string>
+    <string name="item_translation_model_api_key_not_set">API key is not configured</string>
+    <string name="item_translation_model_empty">No available models found</string>
+    <string name="item_translation_model_load_failed">Failed to load models: %1$s</string>
     <string name="item_translation_only">Show translation only</string>
     <string name="alert_dialog_message_translation_clear">This action will clear the database. Are you sure you want to continue?</string>
     <string name="item_translation_disable">Hide translation</string>
@@ -190,5 +193,8 @@
     <string name="item_base_chinese_conv_off">Disabled</string>
     <string name="item_base_chinese_conv_simplified">To Simplified Chinese</string>
     <string name="item_base_chinese_conv_traditional">To Traditional Chinese</string>
-    <string name="write_permission_denied">请授予读写权限</string>
+
+    <string name="item_translation_auto_ignore_chinese">Ignore Chinese</string>
+    <string name="item_translation_auto_ignore_chinese_summary">If the entire song is in Chinese, do not translate.</string>
+    <string name="dialog_title_available_models">可用模型</string>
 </resources>

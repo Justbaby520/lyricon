@@ -16,17 +16,21 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import io.github.proify.android.extensions.json
 import io.github.proify.lyricon.app.LyriconApp
 import io.github.proify.lyricon.app.R
 import io.github.proify.lyricon.app.bridge.AppBridgeConstants
@@ -42,18 +46,34 @@ import io.github.proify.lyricon.app.compose.preference.TextColorPreference
 import io.github.proify.lyricon.app.compose.preference.rememberBooleanPreference
 import io.github.proify.lyricon.app.compose.preference.rememberStringPreference
 import io.github.proify.lyricon.app.util.editCommit
+import io.github.proify.lyricon.app.util.toast
 import io.github.proify.lyricon.common.PackageNames
 import io.github.proify.lyricon.lyric.style.TextStyle
 import io.github.proify.lyricon.lyric.style.TextStyle.Companion.KEY_AI_TRANSLATION_API_KEY
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.TextButton
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Search
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.CheckboxLocation
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
+import top.yukonga.miuix.kmp.theme.LocalDismissState
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.overScrollVertical
+import top.yukonga.miuix.kmp.window.WindowBottomSheet
+import java.net.HttpURLConnection
+import java.net.URL
 
 @Composable
 fun TextPage(scrollBehavior: ScrollBehavior, preferences: SharedPreferences) {
@@ -379,16 +399,22 @@ fun TextPage(scrollBehavior: ScrollBehavior, preferences: SharedPreferences) {
                     title = stringResource(R.string.item_translation_enable),
                     startAction = { IconActions(painterResource(R.drawable.translate_24px)) },
                 )
+
+                var isAiTranslationAutoIgnoreChinese by rememberBooleanPreference(
+                    sharedPreferences = preferences,
+                    key = TextStyle.KEY_AI_TRANSLATION_IGNORE_CHINESE,
+                    defaultValue = TextStyle.Defaults.AI_TRANSLATION_IGNORE_CHINESE
+                )
+                SwitchPreference(
+                    checked = isAiTranslationAutoIgnoreChinese,
+                    onCheckedChange = { isAiTranslationAutoIgnoreChinese = it },
+                    title = stringResource(R.string.item_translation_auto_ignore_chinese),
+                    summary = stringResource(R.string.item_translation_auto_ignore_chinese_summary),
+                    startAction = { IconActions(painterResource(R.drawable.translate_24px)) },
+                )
+
                 TranslationTargetLanguagePreference(preferences)
 
-                TranslationApiKeyPreference(preferences)
-                InputPreference(
-                    preferences = preferences,
-                    key = TextStyle.KEY_AI_TRANSLATION_MODEL,
-                    title = stringResource(R.string.item_translation_model),
-                    defaultValue = TextStyle.Defaults.AI_TRANSLATION_MODEL,
-                    startAction = { IconActions(painterResource(R.drawable.psychology_24px)) },
-                )
                 InputPreference(
                     preferences = preferences,
                     key = TextStyle.KEY_AI_TRANSLATION_BASE_URL,
@@ -396,6 +422,10 @@ fun TextPage(scrollBehavior: ScrollBehavior, preferences: SharedPreferences) {
                     defaultValue = TextStyle.Defaults.AI_TRANSLATION_HOST,
                     startAction = { IconActions(painterResource(R.drawable.link_24px)) },
                 )
+
+                TranslationApiKeyPreference(preferences)
+                TranslationModelPreference(preferences)
+
                 InputPreference(
                     preferences = preferences,
                     key = TextStyle.KEY_AI_TRANSLATION_PROMPT,
@@ -499,6 +529,185 @@ fun TextPage(scrollBehavior: ScrollBehavior, preferences: SharedPreferences) {
     }
 }
 
+@Composable
+private fun TranslationModelPreference(preferences: SharedPreferences) {
+    val preferenceKey = TextStyle.KEY_AI_TRANSLATION_MODEL
+    val defaultModel = TextStyle.Defaults.AI_TRANSLATION_MODEL
+    var modelPreference by rememberStringPreference(preferences, preferenceKey, defaultModel)
+    val currentModel = modelPreference ?: defaultModel
+    var models by remember { mutableStateOf<List<String>>(emptyList()) }
+    var showDialog by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
+    val title = stringResource(R.string.item_translation_model)
+    val apiKeyNotSetMessage = stringResource(R.string.item_translation_model_api_key_not_set)
+    val noModelsMessage = stringResource(R.string.item_translation_model_empty)
+    val unknownErrorMessage = stringResource(R.string.unknown)
+
+    InputPreference(
+        preferences = preferences,
+        key = preferenceKey,
+        title = title,
+        defaultValue = defaultModel,
+        startAction = { IconActions(painterResource(R.drawable.psychology_24px)) },
+        endActions = {
+            IconButton(
+                onClick = {
+                    if (isLoading) return@IconButton
+
+                    val apiKey = preferences.getString(KEY_AI_TRANSLATION_API_KEY, null)
+                    if (apiKey.isNullOrBlank()) {
+                        toast(apiKeyNotSetMessage)
+                        return@IconButton
+                    }
+
+                    val baseUrl = preferences.getString(
+                        TextStyle.KEY_AI_TRANSLATION_BASE_URL,
+                        TextStyle.Defaults.AI_TRANSLATION_HOST
+                    ).orEmpty()
+
+                    isLoading = true
+                    coroutineScope.launch {
+                        val result = fetchOpenAiModels(baseUrl, apiKey)
+                        isLoading = false
+
+                        result.onSuccess { fetchedModels ->
+                            if (fetchedModels.isEmpty()) {
+                                toast(noModelsMessage)
+                            } else {
+                                models = (fetchedModels + currentModel)
+                                    .filter { it.isNotBlank() }
+                                    .distinct()
+                                showDialog = true
+                            }
+                        }.onFailure { error ->
+                            if (error is CancellationException) throw error
+                            toast(
+                                LyriconApp.get().getString(
+                                    R.string.item_translation_model_load_failed,
+                                    error.message ?: unknownErrorMessage
+                                ),
+                                true
+                            )
+                        }
+                    }
+                }
+            ) {
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.width(24.dp)
+                    )
+                } else {
+                    Icon(
+                        imageVector = MiuixIcons.Search,
+                        contentDescription = null
+                    )
+                }
+            }
+        }
+    )
+
+    if (showDialog) {
+        WindowBottomSheet(
+            show = showDialog,
+            title = stringResource(R.string.dialog_title_available_models),
+            onDismissRequest = { showDialog = false },
+            backgroundColor = MiuixTheme.colorScheme.surface,
+            insideMargin = DpSize(0.dp, 0.dp),
+        ) {
+
+            val dismiss = LocalDismissState.current
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .overScrollVertical()
+            ) {
+                itemsIndexed(
+                    items = models,
+                    key = { _, it -> it }
+                ) { _, model ->
+
+                    Card(
+                        modifier =
+                            Modifier
+                                .padding(start = 16.dp, top = 0.dp, end = 16.dp, bottom = 16.dp)
+                                .fillMaxWidth()
+                    ) {
+                        CheckboxPreference(
+                            title = model,
+                            checked = currentModel == model,
+                            onCheckedChange = {
+                                modelPreference = model
+                                dismiss?.invoke()
+                            }
+                        )
+                    }
+
+                }
+            }
+        }
+    }
+}
+
+private suspend fun fetchOpenAiModels(
+    baseUrl: String,
+    apiKey: String
+): Result<List<String>> = withContext(Dispatchers.IO) {
+    runCatching {
+        val modelsUrl = buildOpenAiModelsUrl(baseUrl)
+        val connection = (URL(modelsUrl).openConnection() as HttpURLConnection).apply {
+            requestMethod = "GET"
+            connectTimeout = 15 * 1000
+            readTimeout = 30 * 1000
+            setRequestProperty("Authorization", "Bearer $apiKey")
+        }
+
+        try {
+            val responseCode = connection.responseCode
+            val stream = if (responseCode in 200..299) {
+                connection.inputStream
+            } else {
+                connection.errorStream
+            }
+            val body = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
+
+            if (responseCode !in 200..299) {
+                error("HTTP $responseCode ${body.take(160)}".trim())
+            }
+
+            json.decodeFromString<OpenAiModelsResponse>(body)
+                .data
+                .map { it.id }
+                .filter { it.isNotBlank() }
+                .distinct()
+                .sorted()
+        } finally {
+            connection.disconnect()
+        }
+    }
+}
+
+private fun buildOpenAiModelsUrl(baseUrl: String): String {
+    val trimmedUrl = baseUrl.trim().removeSuffix("/")
+    val normalizedBaseUrl = when {
+        trimmedUrl.endsWith("/models") -> return trimmedUrl
+        trimmedUrl.endsWith("/chat/completions") -> trimmedUrl.removeSuffix("/chat/completions")
+        trimmedUrl.isBlank() -> TextStyle.Defaults.AI_TRANSLATION_HOST.removeSuffix("/")
+        else -> trimmedUrl
+    }
+
+    return "$normalizedBaseUrl/models"
+}
+
+@Serializable
+private data class OpenAiModelsResponse(
+    val data: List<OpenAiModel> = emptyList()
+)
+
+@Serializable
+private data class OpenAiModel(
+    val id: String = ""
+)
 
 @Composable
 private fun ClearTranslationDB() {

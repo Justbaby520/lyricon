@@ -53,7 +53,7 @@ object LyricDataHub : ActivePlayerListener {
     private fun runProcessingPipeline(rawSong: Song?) {
         val song = rawSong?.deepCopy()
         val currentVersion = versionCounter.incrementAndGet()
-        //activePipelineJob?.cancel()
+        activePipelineJob?.cancel()
 
         if (song == null) {
             dispatchSong(null)
@@ -72,13 +72,10 @@ object LyricDataHub : ActivePlayerListener {
                 val finalSong =
                     LyricDataProcessor.executePostProcessingPipeline(preProcessed, style)
 
-                if (currentVersion == versionCounter.get()) {
+                if (isCurrentVersion(currentVersion)) {
                     dispatchSong(finalSong)
                 } else {
-                    Log.d(
-                        TAG,
-                        "Pipeline requestVersion:$currentVersion, nowVersion:${versionCounter.get()} skipped. ${finalSong.name}"
-                    )
+                    logOutdatedPipeline(currentVersion, finalSong)
                 }
             } catch (e: CancellationException) {
                 Log.d(TAG, "Pipeline $currentVersion cancelled. $e")
@@ -86,6 +83,15 @@ object LyricDataHub : ActivePlayerListener {
                 Log.e(TAG, "Pipeline $currentVersion error", e)
             }
         }
+    }
+
+    private fun isCurrentVersion(version: Int): Boolean = version == versionCounter.get()
+
+    private fun logOutdatedPipeline(version: Int, song: Song) {
+        Log.d(
+            TAG,
+            "Pipeline requestVersion:$version, nowVersion:${versionCounter.get()} skipped. ${song.name}"
+        )
     }
 
     /**
@@ -99,12 +105,13 @@ object LyricDataHub : ActivePlayerListener {
     // --- ActivePlayerListener 触发点 ---
 
     override fun onSongChanged(song: Song?) {
-        this.cachedRawSong = song
+        this.cachedRawSong = song?.deepCopy()
         runProcessingPipeline(song)
     }
 
     private fun dispatchSong(song: Song?) {
-        listeners.forEach { it.onSongChanged(song) }
+        val normalize = song?.deepCopy()?.normalize()
+        listeners.forEach { it.onSongChanged(normalize) }
     }
 
     // --- 纯状态透传 (不涉及加工) ---

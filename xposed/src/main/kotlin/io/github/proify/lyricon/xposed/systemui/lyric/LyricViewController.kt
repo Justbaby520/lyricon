@@ -81,6 +81,8 @@ object LyricViewController : ActivePlayerListener,
      * @param song 新歌曲对象，若停止播放则为 null
      */
     override fun onSongChanged(song: Song?) {
+        YLog.info(TAG, "onSongChanged: $song")
+
         updateAllControllers {
             lyricView.setSong(song)
             refreshTranslationVisibility(lyricView)
@@ -92,6 +94,8 @@ object LyricViewController : ActivePlayerListener,
      * @param providerInfo 播放器信息
      */
     override fun onActiveProviderChanged(providerInfo: ProviderInfo?) {
+        YLog.info(TAG, "onActiveProviderChanged: $providerInfo")
+
         this.activePackage = providerInfo?.playerPackageName.orEmpty()
         LyricPrefs.activePackageName = this.activePackage
 
@@ -106,6 +110,8 @@ object LyricViewController : ActivePlayerListener,
      */
     override fun onPlaybackStateChanged(isPlaying: Boolean) {
         if (this.isPlaying == isPlaying) return
+        YLog.info(TAG, "onPlaybackStateChanged: $isPlaying")
+
         this.isPlaying = isPlaying
         updateAllControllers { lyricView.setPlaying(isPlaying) }
     }
@@ -134,6 +140,7 @@ object LyricViewController : ActivePlayerListener,
      * @param text 歌词文本内容
      */
     override fun onReceiveText(text: String?) {
+        YLog.info(TAG, "onReceiveText: $text")
         updateAllControllers { lyricView.setText(text) }
     }
 
@@ -142,6 +149,8 @@ object LyricViewController : ActivePlayerListener,
      * @param isDisplayTranslation 是否开启
      */
     override fun onDisplayTranslationChanged(isDisplayTranslation: Boolean) {
+        YLog.info(TAG, "onDisplayTranslationChanged: $isDisplayTranslation")
+
         this.isDisplayTranslation = isDisplayTranslation
         updateAllControllers { refreshTranslationVisibility(lyricView) }
     }
@@ -151,6 +160,8 @@ object LyricViewController : ActivePlayerListener,
      * @param isDisplayRoma 是否开启
      */
     override fun onDisplayRomaChanged(isDisplayRoma: Boolean) {
+        YLog.info(TAG, "onDisplayRomaChanged: $isDisplayRoma")
+
         this.isDisplayRoma = isDisplayRoma
         updateAllControllers { lyricView.updateDisplayTranslation(displayRoma = isDisplayRoma) }
     }
