@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * 歌词数据调度中枢
- * 管理歌词生命周期：获取原始数据 -> Pre 加工 -> 第一次分发 -> Post 加工(等待全部) -> 最终分发。
+ * 管理歌词生命周期：获取原始数据 -> 后台加工 -> 第一次分发 -> 后台增强 -> 最终分发。
  */
 object LyricDataHub : ActivePlayerListener {
     private const val TAG = "LyricDataHub"
@@ -47,7 +47,8 @@ object LyricDataHub : ActivePlayerListener {
     }
 
     /**
-     * 运行加工流水线
+     * 启动后台加工流水线。
+     * 所有歌词加工都在后台协程执行，避免阻塞播放器回调线程。
      * @param rawSong 待加工的原始歌曲
      */
     private fun runProcessingPipeline(rawSong: Song?) {
@@ -55,25 +56,28 @@ object LyricDataHub : ActivePlayerListener {
         val currentVersion = versionCounter.incrementAndGet()
         activePipelineJob?.cancel()
 
-        if (song == null) {
-            dispatchSong(null)
-            return
-        }
-
-        // 1. 同步前置加工：处理繁简等基础显示
-        val preProcessed = LyricDataProcessor.executePreProcessing(song)
-        // 第一次分发：立即响应 UI
-        dispatchSong(preProcessed)
-
-        // 2. 异步后置流水线：处理 AI 翻译等耗时扩展
         activePipelineJob = scope.launch {
             try {
+                if (song == null) {
+                    if (isCurrentVersion(currentVersion)) dispatchSong(null)
+                    return@launch
+                }
+
                 val style = LyricPrefs.getLyricStyle()
+
+                // 1. 后台前置加工：处理繁简、屏蔽词等基础显示数据
+                val preProcessed = LyricDataProcessor.executePreProcessing(song)
+                if (!isCurrentVersion(currentVersion)) return@launch
+
+                // 第一次分发：基础处理完成后尽快刷新 UI
+                dispatchSong(LyricDataProcessor.executeDisplayProcessing(preProcessed, style))
+
+                // 2. 后台后置流水线：处理 AI 翻译等耗时扩展
                 val finalSong =
                     LyricDataProcessor.executePostProcessingPipeline(preProcessed, style)
 
                 if (isCurrentVersion(currentVersion)) {
-                    dispatchSong(finalSong)
+                    dispatchSong(LyricDataProcessor.executeDisplayProcessing(finalSong, style))
                 } else {
                     logOutdatedPipeline(currentVersion, finalSong)
                 }

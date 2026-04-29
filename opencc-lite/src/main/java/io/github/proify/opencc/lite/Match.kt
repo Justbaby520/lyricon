@@ -4,3 +4,9 @@
  * http://www.apache.org/licenses/LICENSE-2.0
  */
 
+package io.github.proify.opencc.lite
+
+internal data class Match(
+    val value: String,
+    val length: Int,
+)

@@ -65,7 +65,7 @@ internal object OpenAiTranslationClient {
             connection = (url.openConnection() as HttpURLConnection).apply {
                 requestMethod = "POST"
                 connectTimeout = 60 * 1000
-                readTimeout = 120 * 1000
+                readTimeout = 3 * (60 * 1000)
                 doOutput = true
                 setRequestProperty("Content-Type", "application/json")
                 setRequestProperty("Authorization", "Bearer ${configs.apiKey}")

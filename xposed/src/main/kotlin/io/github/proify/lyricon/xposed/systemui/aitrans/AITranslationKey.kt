@@ -13,10 +13,10 @@ import io.github.proify.lyricon.lyric.style.AiTranslationConfigs
 internal object AITranslationKey {
     fun calculate(configs: AiTranslationConfigs, song: Song, lines: List<String>): String {
         return buildString {
-            append("provider=").appendLine(configs.provider.orEmpty())
+            //append("provider=").appendLine(configs.provider.orEmpty())
             append("target=").appendLine(configs.targetLanguage.orEmpty())
-            append("baseUrl=").appendLine(configs.baseUrl.orEmpty())
-            append("model=").appendLine(configs.model.orEmpty())
+            //append("baseUrl=").appendLine(configs.baseUrl.orEmpty())
+            //append("model=").appendLine(configs.model.orEmpty())
             append("title=").appendLine(song.name.orEmpty())
             append("artist=").appendLine(song.artist.orEmpty())
             lines.forEachIndexed { index, line ->
