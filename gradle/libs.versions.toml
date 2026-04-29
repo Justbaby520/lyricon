@@ -1,8 +1,8 @@
 [versions]
 # Gradle / Kotlin / KSP
 agp = "9.1.1"
-jetbrainsKotlinJvm = "2.3.20"
-kotlin = "2.3.20"
+jetbrainsKotlinJvm = "2.3.21"
+kotlin = "2.3.21"
 ksp = "2.3.6"
 
 # AndroidX Base
@@ -16,14 +16,14 @@ lifecycle = "2.10.0"
 
 # AndroidX Compose
 activityCompose = "1.13.0"
-composeBom = "2026.03.01"
-composeFoundation = "1.10.6"
+composeBom = "2026.04.01"
+composeFoundation = "1.11.0"
 opencc4j = "1.14.0"
-remoteCreationCore = "1.0.0-alpha08"
+remoteCreationCore = "1.0.0-alpha09"
 
 # Material
 material = "1.13.0"
-material3 = "1.5.0-alpha17"
+material3 = "1.5.0-alpha18"
 
 # Network / Logic / Serialization
 kotlinxSerializationJson = "1.11.0"

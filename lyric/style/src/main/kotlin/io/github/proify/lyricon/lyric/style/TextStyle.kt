@@ -57,6 +57,7 @@ data class TextStyle(
 
     var isAiTranslationEnable: Boolean = false,
     var aiTranslationConfigs: AiTranslationConfigs? = null,
+    var isAiTranslationAutoIgnoreChinese: Boolean = false
 ) : Parcelable, AbstractStyle() {
 
     companion object {
@@ -78,6 +79,9 @@ data class TextStyle(
 
         const val KEY_TEXT_TRANSLATION_ONLY = "lyric_style_text_translation_only"
         const val KEY_TEXT_TRANSLATION_DISABLE = "lyric_style_text_translation_disable"
+        const val KEY_AI_TRANSLATION_IGNORE_CHINESE: String =
+            "lyric_style_text_ai_translation_auto_ignore_chinese"
+
     }
 
     object PlaceholderFormat {
@@ -93,9 +97,17 @@ data class TextStyle(
         const val AI_TRANSLATION_ENABLED: Boolean = false
         val AI_TRANSLATION_PROVIDER = AiTranslationProvider.OPENAI.provider
         val AI_TRANSLATION_TARGET_LANGUAGE_DISPLAY_NAME: String
-            get() = Locale.forLanguageTag(Locale.getDefault().toLanguageTag()).getDisplayLanguage(
-                Locale.getDefault()
-            )
+            get() {
+                val locale = Locale.getDefault()
+                val language = locale.getDisplayLanguage(locale)
+                val script = locale.getDisplayScript(locale)
+
+                return when {
+                    !script.isNullOrBlank() -> script
+                    else -> language
+                }
+            }
+
         val AI_TRANSLATION_HOST: String by lazy {
             val p = AiTranslationProvider.entries.find {
                 it.provider == AI_TRANSLATION_PROVIDER
@@ -105,6 +117,7 @@ data class TextStyle(
 
         val AI_TRANSLATION_MODEL: String = AiTranslationProvider.OPENAI.model
         val AI_TRANSLATION_PROMPT: String = AiTranslationConfigs.USER_PROMPT
+        const val AI_TRANSLATION_IGNORE_CHINESE = false
 
         const val PLACEHOLDER_FORMAT: String = PlaceholderFormat.NAME
         const val TRANSITION_CONFIG: String = TRANSITION_CONFIG_SMOOTH
@@ -249,6 +262,11 @@ data class TextStyle(
         isAiTranslationEnable =
             preferences.getBoolean(KEY_AI_TRANSLATION_ENABLED, Defaults.AI_TRANSLATION_ENABLED)
         aiTranslationConfigs = getAiTranslationConfigs(preferences)
+        isAiTranslationAutoIgnoreChinese =
+            preferences.getBoolean(
+                KEY_AI_TRANSLATION_IGNORE_CHINESE,
+                Defaults.AI_TRANSLATION_IGNORE_CHINESE
+            )
     }
 
     override fun onWrite(editor: SharedPreferences.Editor) {
@@ -317,6 +335,10 @@ data class TextStyle(
             isAiTranslationEnable
         )
         aiTranslationConfigs?.let { writeAiTranslationConfigs(editor, it) }
+        editor.putBoolean(
+            KEY_AI_TRANSLATION_IGNORE_CHINESE,
+            isAiTranslationAutoIgnoreChinese
+        )
     }
 
     private fun getAiTranslationConfigs(preferences: SharedPreferences): AiTranslationConfigs {

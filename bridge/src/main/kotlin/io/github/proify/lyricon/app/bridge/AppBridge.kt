@@ -9,10 +9,14 @@
 package io.github.proify.lyricon.app.bridge
 
 import android.content.Context
-import android.os.Environment
 import androidx.annotation.Keep
+import de.robv.android.xposed.XSharedPreferences
+import de.robv.android.xposed.XposedBridge
+import io.github.proify.android.extensions.getWorldReadableSharedPreferences
 import io.github.proify.lyricon.common.Constants
-import io.github.proify.lyricon.common.JsonSharedPreferences
+import io.github.proify.lyricon.common.PackageNames
+import io.github.proify.lyricon.common.StateSharedPreferences
+import io.github.proify.lyricon.common.StateSharedPreferencesWrapper
 import java.io.File
 
 /**
@@ -21,20 +25,39 @@ import java.io.File
  */
 object AppBridge {
 
+    val isXposedEnv by lazy {
+        try {
+            XposedBridge.getXposedVersion() > 0
+            true
+        } catch (e: Throwable) {
+            false
+        }
+    }
+
     @Keep
     fun isModuleActive(): Boolean = false
 
-    fun getSharedPreferences(context: Context, fileName: String): JsonSharedPreferences {
-        return JsonSharedPreferences(getPreferenceFile(context, fileName))
+    fun getSharedPreferences(context: Context, name: String): StateSharedPreferences {
+        if (isXposedEnv) {
+            return XStateSharedPreferences(
+                XSharedPreferences(PackageNames.APPLICATION, name)
+            )
+        }
+        return StateSharedPreferencesWrapper(context.getWorldReadableSharedPreferences(name))
     }
 
-    fun getPreferenceFile(context: Context, fileName: String): File {
-        return File(getPreferenceDirectory(context), fileName)
+//    fun getPreferenceFile(context: Context, name: String): File {
+//        return File(getPreferenceDirectory(context), name)
+//    }
+
+    private val xpreferencesDirectory: File by lazy {
+        XSharedPreferences(PackageNames.APPLICATION, "tmp").file.parentFile!!
     }
 
     fun getPreferenceDirectory(context: Context): File {
-        return Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
-            .resolve("lyricon/shared_prefs")
+        if (isXposedEnv) return xpreferencesDirectory
+
+        return context.dataDir.resolve("shared_prefs")
     }
 
     object LyricStylePrefs {

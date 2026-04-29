@@ -80,7 +80,7 @@ fun InputPreference(
     summary: String? = null,
     summaryColor: BasicComponentColors = BasicComponentDefaults.summaryColor(),
     startAction: @Composable (() -> Unit)? = null,
-    rightActions: @Composable RowScope.() -> Unit = {},
+    endActions: @Composable RowScope.() -> Unit = {},
     insideMargin: PaddingValues = BasicComponentDefaults.InsideMargin,
     onClick: (() -> Unit)? = null,
     holdDownState: Boolean = false,
@@ -121,7 +121,7 @@ fun InputPreference(
         summary = truncatedSummary,
         summaryColor = summaryColor,
         startAction = startAction,
-        endActions = rightActions,
+        endActions = endActions,
         modifier = modifier,
         insideMargin = insideMargin,
         onClick = {

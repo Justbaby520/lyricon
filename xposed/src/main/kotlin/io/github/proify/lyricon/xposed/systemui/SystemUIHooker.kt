@@ -24,6 +24,7 @@ import io.github.proify.lyricon.subscriber.LyriconFactory
 import io.github.proify.lyricon.subscriber.LyriconSubscriber
 import io.github.proify.lyricon.xposed.PackageHooker
 import io.github.proify.lyricon.xposed.logger.YLog
+import io.github.proify.lyricon.xposed.systemui.aitrans.AITranslator
 import io.github.proify.lyricon.xposed.systemui.hook.ClockColorMonitor
 import io.github.proify.lyricon.xposed.systemui.hook.OplusCapsuleHooker
 import io.github.proify.lyricon.xposed.systemui.hook.StatusBarDisableHooker
@@ -34,7 +35,6 @@ import io.github.proify.lyricon.xposed.systemui.lyric.LyricPrefs
 import io.github.proify.lyricon.xposed.systemui.lyric.LyricViewController
 import io.github.proify.lyricon.xposed.systemui.lyric.StatusBarViewController
 import io.github.proify.lyricon.xposed.systemui.lyric.StatusBarViewManager
-import io.github.proify.lyricon.xposed.systemui.util.AITranslator
 import io.github.proify.lyricon.xposed.systemui.util.CrashDetector
 import io.github.proify.lyricon.xposed.systemui.util.NotificationCoverHelper
 import io.github.proify.lyricon.xposed.systemui.util.SystemUIMediaUtils

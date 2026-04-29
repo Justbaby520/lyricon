@@ -8,6 +8,7 @@ package io.github.proify.lyricon.app
 
 import android.content.SharedPreferences
 import android.util.Log
+import io.github.proify.android.extensions.defaultSharedPreferencesName
 import io.github.proify.android.extensions.deflate
 import io.github.proify.android.extensions.inflate
 import io.github.proify.lyricon.app.bridge.AppBridge
@@ -20,7 +21,7 @@ import java.io.OutputStream
 
 object AppBackup {
 
-    private const val TAG = "BackupManager"
+    private const val TAG = "AppBackup"
 
     private val BLACKLIST_KEYS = listOf(
         KEY_AI_TRANSLATION_API_KEY
@@ -72,8 +73,13 @@ object AppBackup {
             f.isFile
         } ?: return emptyMap()
 
+        val defaultSharedPreferencesName = LyriconApp.get().defaultSharedPreferencesName
         files.forEach { file ->
             val name = file.nameWithoutExtension
+            if (name == defaultSharedPreferencesName) {
+                return@forEach
+            }
+
             val prefs = AppBridge.getSharedPreferences(app, name)
             val entries = prefs.all
             if (entries.isNotEmpty()) {

@@ -8,8 +8,9 @@ package io.proify.lyricon.xposed
 
 import io.github.proify.lyricon.lyric.model.Song
 import io.github.proify.lyricon.lyric.style.AiTranslationConfigs
-import io.github.proify.lyricon.xposed.systemui.util.AITranslator
+import io.github.proify.lyricon.xposed.systemui.aitrans.AITranslator
 import kotlinx.coroutines.runBlocking
+import org.junit.Assume.assumeTrue
 import org.junit.Test
 
 /**
@@ -23,13 +24,16 @@ class AITranslatorManagerTest {
 
     @Test
     fun testLyricTranslation(): Unit = runBlocking {
+        val apiKey = System.getenv("AI_TRANSLATION_API_KEY")
+        assumeTrue("AI_TRANSLATION_API_KEY is not set", !apiKey.isNullOrBlank())
+
         // 配置信息：建议使用支持长上下文的模型
         val configs = AiTranslationConfigs(
-            apiKey = "sk-c5267cffe95d46fc8662cd7727f32ed5",
+            apiKey = apiKey,
             provider = "openai",
-            model = "deepseek-chat",
+            model = System.getenv("AI_TRANSLATION_MODEL") ?: "deepseek-chat",
             targetLanguage = "中文",
-            baseUrl = "https://api.deepseek.com/v1"
+            baseUrl = System.getenv("AI_TRANSLATION_BASE_URL") ?: "https://api.deepseek.com/v1"
         )
 
         // 模拟一首具有代表性节奏感的歌曲（例如：抒情摇滚风格）

@@ -172,6 +172,9 @@
     <string name="item_translation_model">模型</string>
     <string name="item_translation_base_url">介面地址</string>
     <string name="item_translation_custom_prompt">自定義提示詞</string>
+    <string name="item_translation_model_api_key_not_set">API Key 未設定</string>
+    <string name="item_translation_model_empty">未取得可用模型</string>
+    <string name="item_translation_model_load_failed">載入模型失敗：%1$s</string>
     <string name="item_translation_only">僅顯示翻譯</string>
     <string name="alert_dialog_message_translation_clear">此操作將清空資料庫，請確認是否繼續？</string>
     <string name="item_translation_disable">不顯示翻譯</string>
@@ -190,4 +193,7 @@
     <string name="item_base_chinese_conv_off">保持原樣</string>
     <string name="item_base_chinese_conv_simplified">轉換為簡体</string>
     <string name="item_base_chinese_conv_traditional">轉換為繁體</string>
+
+    <string name="item_translation_auto_ignore_chinese">不翻譯中文</string>
+    <string name="item_translation_auto_ignore_chinese_summary">如果整首歌詞都是中文，則不翻譯。</string>
 </resources>

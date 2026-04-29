@@ -10,6 +10,8 @@ import io.github.proify.lyricon.lyric.model.Song
 import io.github.proify.lyricon.lyric.style.LyricStyle
 
 class TranslationOnlyProcessor : PostProcessor {
+    override val priority: Int = 100
+
     override fun isEnabled(style: LyricStyle): Boolean = style.packageStyle.text.isTranslationOnly
 
     override suspend fun process(

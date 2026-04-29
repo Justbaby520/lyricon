@@ -14,6 +14,7 @@ import io.github.proify.lyricon.xposed.logger.YLog
 import io.github.proify.lyricon.xposed.systemui.lyric.LyricPrefs
 import io.github.proify.lyricon.xposed.systemui.util.ChineseConverter.toSimplified
 import io.github.proify.lyricon.xposed.systemui.util.ChineseConverter.toTraditional
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -27,7 +28,7 @@ object LyricDataProcessor {
 
     /** 注册后置加工插件列表 */
     private val postProcessors = listOf(
-        AITranslationProcessor(),
+        AiTranslationProcessor(),
         TranslationOnlyProcessor()
     ).sortedBy { it.priority }
 
@@ -36,7 +37,7 @@ object LyricDataProcessor {
      * 职责：处理极速任务（繁简转换、屏蔽词），确保切歌时 UI 瞬间响应。
      */
     fun executePreProcessing(song: Song): Song {
-        return song.deepCopy()
+        return song
             .let(::filterBlockedWords)
            // .let(::convertChineseCharacters)
     }
@@ -52,6 +53,8 @@ object LyricDataProcessor {
                 if (processor.isEnabled(style)) {
                     try {
                         currentSong = processor.process(currentSong, style)
+                    } catch (e: CancellationException) {
+                        throw e
                     } catch (e: Exception) {
                         YLog.error(
                             tag = TAG,
