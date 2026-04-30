@@ -1,8 +1,8 @@
 import { defineConfig } from 'vitepress'
 
          export default defineConfig({
-                                     title : 'Lyricon Docs',
-                                     description : 'Lyricon 使用与开发文档',
+                                             title : '词幕',
+                                             description : '词幕主页',
                                      base : '/lyricon/',
                                             cleanUrls : true,
                                             lastUpdated : true,
