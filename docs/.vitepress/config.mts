@@ -15,8 +15,7 @@ import { defineConfig } from 'vitepress'
                                      nav : [
                                      { text : '首页', link: '/' },
                                      { text: 'App', link: '/app/' },
-                                           { text : 'Developer', link: '/developer/' },
-                                           { text : 'GitHub', link: 'https://github.com/tomakino/lyricon' }
+                                                                                                                                                                                                  { text : 'Developer', link: '/developer/' }
                                      ],
                                      sidebar : [
                                      {
