@@ -47,16 +47,17 @@ subscriber.removeConnectionListener(listener)
 
 回调说明：
 
-| 回调 | 说明 |
-|:---|:---|
-| `onConnected` | 用户主动注册且连接成功 |
-| `onReconnected` | 服务重启或超时重试后连接恢复 |
-| `onDisconnected` | 连接断开，包括主动注销和远端断开 |
-| `onConnectTimeout` | 达到最大重试次数仍未连接成功 |
+| 回调                 | 说明               |
+|:-------------------|:-----------------|
+| `onConnected`      | 用户主动注册且连接成功      |
+| `onReconnected`    | 服务重启或超时重试后连接恢复   |
+| `onDisconnected`   | 连接断开，包括主动注销和远端断开 |
+| `onConnectTimeout` | 达到最大重试次数仍未连接成功   |
 
 ## 生命周期建议
 
-- 如果在 `Activity` 中使用，建议在 `onStart()` 或 `onCreate()` 注册，在 `onStop()` 或 `onDestroy()` 释放，具体取决于是否需要后台监听。
+- 如果在 `Activity` 中使用，建议在 `onStart()` 或 `onCreate()` 注册，在 `onStop()` 或 `onDestroy()`
+  释放，具体取决于是否需要后台监听。
 - 如果在 `Service` 中使用，建议随服务创建和销毁管理 Subscriber。
 - 不要假设 `register()` 调用后立即有数据，应以连接回调和订阅回调为准。
 - 连接断开后，界面应能处理歌曲、歌词或 Provider 为空的状态。

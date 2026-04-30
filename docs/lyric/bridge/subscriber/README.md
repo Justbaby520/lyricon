@@ -30,15 +30,15 @@ Subscriber 是 Lyricon 的歌词订阅端接口。第三方应用可以通过 Su
 
 ## 核心类型
 
-| 类型 | 说明 |
-|:---|:---|
-| `LyriconFactory` | 创建 Subscriber 实例的工厂 |
-| `LyriconSubscriber` | Subscriber 入口，负责注册、注销、订阅和资源释放 |
-| `ActivePlayerListener` | 活跃播放器状态监听器 |
+| 类型                           | 说明                             |
+|:-----------------------------|:-------------------------------|
+| `LyriconFactory`             | 创建 Subscriber 实例的工厂            |
+| `LyriconSubscriber`          | Subscriber 入口，负责注册、注销、订阅和资源释放  |
+| `ActivePlayerListener`       | 活跃播放器状态监听器                     |
 | `SimpleActivePlayerListener` | `ActivePlayerListener` 的空实现适配器 |
-| `ConnectionListener` | 连接生命周期监听器 |
-| `ProviderInfo` | 当前活跃 Provider 信息 |
-| `SubscriberInfo` | Subscriber 注册信息 |
+| `ConnectionListener`         | 连接生命周期监听器                      |
+| `ProviderInfo`               | 当前活跃 Provider 信息               |
+| `SubscriberInfo`             | Subscriber 注册信息                |
 
 ## 最小示例
 

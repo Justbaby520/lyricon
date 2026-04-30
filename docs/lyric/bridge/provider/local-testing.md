@@ -1,10 +1,12 @@
 # Provider 本地测试
 
-正常情况下，Provider 需要通过 Lyricon 在 LSPosed / Xposed 环境中激活的中心服务进行测试。如果当前设备无法使用 LSPosed，可以使用 LocalCentralService 做基础测试。
+正常情况下，Provider 需要通过 Lyricon 在 LSPosed / Xposed 环境中激活的中心服务进行测试。如果当前设备无法使用
+LSPosed，可以使用 LocalCentralService 做基础测试。
 
 ## LocalCentralService
 
-LocalCentralService 是一个用于测试的本地中心服务实现，提供 Lyricon 中心服务的部分能力，方便在无 LSPosed 环境下验证 Provider 接入流程。
+LocalCentralService 是一个用于测试的本地中心服务实现，提供 Lyricon 中心服务的部分能力，方便在无
+LSPosed 环境下验证 Provider 接入流程。
 
 下载地址：
 

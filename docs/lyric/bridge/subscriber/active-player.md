@@ -1,6 +1,7 @@
 # Subscriber 活跃播放器
 
-活跃播放器是 Lyricon 当前选择的数据来源。Subscriber 订阅活跃播放器后，可以接收该 Provider 推送的歌曲、歌词、播放状态和显示配置。
+活跃播放器是 Lyricon 当前选择的数据来源。Subscriber 订阅活跃播放器后，可以接收该 Provider
+推送的歌曲、歌词、播放状态和显示配置。
 
 ## 订阅活跃播放器
 
@@ -28,15 +29,16 @@ subscriber.unsubscribeActivePlayer(listener)
 
 `ProviderInfo` 是当前活跃 Provider 的信息快照。
 
-| 字段 | 说明 |
-|:---|:---|
-| `providerPackageName` | 提供端应用包名 |
-| `playerPackageName` | 播放器应用包名 |
-| `logo` | 提供端或播放器图标，仅用于展示 |
-| `metadata` | 提供端附加元数据 |
-| `processName` | 播放器所在进程名 |
+| 字段                    | 说明              |
+|:----------------------|:----------------|
+| `providerPackageName` | 提供端应用包名         |
+| `playerPackageName`   | 播放器应用包名         |
+| `logo`                | 提供端或播放器图标，仅用于展示 |
+| `metadata`            | 提供端附加元数据        |
+| `processName`         | 播放器所在进程名        |
 
-`ProviderInfo` 的相等性只比较 `providerPackageName`、`playerPackageName` 和 `processName`。`logo` 与 `metadata` 只作为展示信息，不参与身份判断。
+`ProviderInfo` 的相等性只比较 `providerPackageName`、`playerPackageName` 和 `processName`。`logo` 与
+`metadata` 只作为展示信息，不参与身份判断。
 
 ## 无活跃播放器
 
@@ -52,7 +54,8 @@ override fun onActiveProviderChanged(providerInfo: ProviderInfo?) {
 
 ## 播放器切换
 
-当活跃播放器发生切换时，Subscriber 会收到 `onActiveProviderChanged()`。后续的歌曲、歌词、播放状态和进度回调会来自新的活跃 Provider。
+当活跃播放器发生切换时，Subscriber 会收到 `onActiveProviderChanged()`。后续的歌曲、歌词、播放状态和进度回调会来自新的活跃
+Provider。
 
 建议在 Provider 切换时：
 

@@ -4,72 +4,54 @@ layout: home
 hero:
   name: Lyricon
   text: Android 状态栏歌词增强工具
-  tagline: 通过 Xposed / LSPosed 将歌词带到系统状态栏，支持逐字歌词、翻译显示、对唱模式和插件化歌词来源。
+  tagline: 在系统状态栏显示当前播放歌词，支持逐字歌词、翻译显示和可视化调整。
   image:
     src: /logo.svg
     alt: Lyricon
   actions:
     - theme: brand
-      text: 开始使用
+      text: 使用文档
       link: /app/
     - theme: alt
-      text: 开发接入
-      link: /lyric/bridge/
-    - theme: alt
-      text: GitHub
-      link: https://github.com/tomakino/lyricon
+      text: 下载应用
+      link: https://github.com/tomakino/lyricon/releases
 
 features:
   - icon: 🎤
     title: 状态栏歌词
-    details: 在 System UI 中展示当前播放歌词，适合沉浸式听歌和跨应用歌词查看。
+    details: 将当前播放歌词显示在 Android 状态栏中，切换应用时也能查看。
     link: /app/
   - icon: 🎨
-    title: 可视化调整
-    details: 调整位置锚点、显示宽度、字体样式、Logo 展示和动画效果，适配不同状态栏布局。
+    title: 显示自定义
+    details: 调整位置、宽度、字体、Logo 和动画，适配不同设备状态栏。
     link: /app/#界面配置
-  - icon: 🧪
-    title: 插件生态
-    details: 通过 Provider 扩展播放器歌词来源，也可通过 Subscriber 订阅当前歌词数据。
-    link: /lyric/bridge/
+  - icon: 🧩
+    title: 播放器插件
+    details: 通过 LyricProvider 插件适配不同音乐播放器的歌词来源。
+    link: /app/#安装歌词插件
 ---
 
-## 文档分区
+## 快速开始
 
-| 分区 | 面向对象 | 内容 |
-|:---|:---|
-| [App](./app/README.md) | 普通用户 | 安装、激活、插件安装、界面配置和常见问题 |
-| [Lyric](./lyric/README.md) | 开发者 | 歌词数据模型、Bridge 接入和显示相关能力 |
-| [Bridge](./lyric/bridge/README.md) | 播放器、插件和第三方应用开发者 | Provider 推送歌词，Subscriber 订阅歌词 |
-
-## 快速上手
-
-1. 从 [Releases](https://github.com/tomakino/lyricon/releases) 下载并安装 Lyricon 主体应用。
+1. 从 [Releases](https://github.com/tomakino/lyricon/releases) 下载并安装 Lyricon。
 2. 在 LSPosed 中启用 Lyricon，并勾选 **系统界面 (System UI)** 作用域。
-3. 重启 System UI 或重启设备，让 Hook 生效。
-4. 从 [LyricProvider](https://github.com/tomakino/LyricProvider) 安装对应播放器插件。
-5. 打开音乐播放器播放歌曲，回到 Lyricon 调整显示位置和样式。
+3. 重启 System UI 或重启设备。
+4. 安装对应播放器的 [LyricProvider](https://github.com/tomakino/LyricProvider) 插件。
+5. 播放音乐，打开 Lyricon 调整显示位置和样式。
 
-## 开发者入口
+## 主要功能
 
-| 目标 | 文档 |
-|:---|:---|
-| 为播放器或歌词插件向 Lyricon 推送歌词 | [Provider 开发文档](./lyric/bridge/provider/README.md) |
-| 在第三方应用中读取当前歌词和播放状态 | [Subscriber 接入文档](./lyric/bridge/subscriber/README.md) |
-| 了解 Bridge 的整体数据流 | [Lyric Bridge 文档](./lyric/bridge/README.md) |
+| 功能   | 说明                    |
+|:-----|:----------------------|
+| 逐字歌词 | 根据歌词来源显示动态逐字进度        |
+| 翻译显示 | 支持展示翻译歌词              |
+| 对唱模式 | 支持次要歌词或对唱歌词展示         |
+| 视觉配置 | 支持位置、宽度、字体、Logo 和动画调整 |
 
-## Maven 坐标
+## 更多内容
 
-Provider：
-
-```kotlin
-implementation("io.github.proify.lyricon:provider:<version>")
-```
-
-Subscriber：
-
-```kotlin
-implementation("io.github.proify.lyricon:subscriber:<version>")
-```
-
-建议使用 Maven Central 上的最新版本。
+| 内容                       | 入口                                               |
+|:-------------------------|:-------------------------------------------------|
+| App 安装、配置和排障             | [App 使用文档](./app/README.md)                      |
+| Provider / Subscriber 接入 | [开发者文档](./lyric/bridge/README.md)                |
+| 源码与问题反馈                  | [GitHub 仓库](https://github.com/tomakino/lyricon) |

@@ -39,12 +39,12 @@ provider.service.addConnectionListener {
 
 回调说明：
 
-| 回调 | 说明 |
-|:---|:---|
-| `onConnected` | 首次连接成功 |
-| `onReconnected` | 断线后重新连接成功 |
-| `onDisconnected` | 连接断开 |
-| `onConnectTimeout` | 连接中心服务超时 |
+| 回调                 | 说明        |
+|:-------------------|:----------|
+| `onConnected`      | 首次连接成功    |
+| `onReconnected`    | 断线后重新连接成功 |
+| `onDisconnected`   | 连接断开      |
+| `onConnectTimeout` | 连接中心服务超时  |
 
 ## 自动同步
 

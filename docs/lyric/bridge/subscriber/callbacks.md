@@ -1,19 +1,20 @@
 # Subscriber 回调说明
 
-Subscriber 通过 `ActivePlayerListener` 接收活跃播放器状态。只关心部分事件时，推荐实现 `SimpleActivePlayerListener`。
+Subscriber 通过 `ActivePlayerListener` 接收活跃播放器状态。只关心部分事件时，推荐实现
+`SimpleActivePlayerListener`。
 
 ## 回调总览
 
-| 回调 | 触发时机 | 主要用途 |
-|:---|:---|:---|
-| `onActiveProviderChanged` | 活跃播放器变化 | 更新当前来源 |
-| `onSongChanged` | 当前歌曲或结构化歌词变化 | 渲染歌曲和歌词数据 |
-| `onReceiveText` | 收到纯文本歌词 | 显示无时间轴文本 |
-| `onPlaybackStateChanged` | 播放/暂停变化 | 控制动画或播放状态 |
-| `onPositionChanged` | 播放进度更新 | 驱动歌词滚动 |
-| `onSeekTo` | 主动跳转进度 | 立即校准显示状态 |
-| `onDisplayTranslationChanged` | 翻译显示开关变化 | 控制翻译歌词 UI |
-| `onDisplayRomaChanged` | 罗马音显示开关变化 | 控制罗马音 UI |
+| 回调                            | 触发时机         | 主要用途      |
+|:------------------------------|:-------------|:----------|
+| `onActiveProviderChanged`     | 活跃播放器变化      | 更新当前来源    |
+| `onSongChanged`               | 当前歌曲或结构化歌词变化 | 渲染歌曲和歌词数据 |
+| `onReceiveText`               | 收到纯文本歌词      | 显示无时间轴文本  |
+| `onPlaybackStateChanged`      | 播放/暂停变化      | 控制动画或播放状态 |
+| `onPositionChanged`           | 播放进度更新       | 驱动歌词滚动    |
+| `onSeekTo`                    | 主动跳转进度       | 立即校准显示状态  |
+| `onDisplayTranslationChanged` | 翻译显示开关变化     | 控制翻译歌词 UI |
+| `onDisplayRomaChanged`        | 罗马音显示开关变化    | 控制罗马音 UI  |
 
 ## onActiveProviderChanged
 
