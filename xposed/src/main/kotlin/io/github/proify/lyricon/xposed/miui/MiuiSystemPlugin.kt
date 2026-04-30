@@ -8,13 +8,11 @@ package io.github.proify.lyricon.xposed.miui
 
 import io.github.proify.lyricon.xposed.PackageHooker
 import io.github.proify.lyricon.xposed.logger.YLog
-import io.github.proify.lyricon.xposed.systemui.hook.XiaomiIslandHooker
 
 object MiuiSystemPlugin : PackageHooker() {
     private const val TAG = "MiuiSystemPlugin"
 
     override fun onHook() {
         YLog.info(TAG, "onHook")
-        XiaomiIslandHooker.initialize(classLoader)
     }
 }
