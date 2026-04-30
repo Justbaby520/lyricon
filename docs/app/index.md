@@ -40,16 +40,6 @@ UI 作用域中。
 
 不同 ROM 的状态栏布局差异较大，建议先确认歌词可显示，再调整位置和样式。
 
-## 支持的应用
-
-- [ConePlayer](https://coneplayer.trantor.ink/)
-- Flamingo
-- [BBPlayer](https://bbplayer.roitium.com/)
-- MobiMusic
-- [Kanade](https://github.com/rcmiku/Kanade)
-- Sollin Player
-- [QZ Music](https://github.com/lqtmcstudio/QZMusic)
-
 ## 排障
 
 ### 没有显示歌词
