@@ -1,0 +1,11 @@
+<svg aria-label="Lyricon" role="img" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#6ea8ff"/>
+      <stop offset="1" stop-color="#9b7cff"/>
+    </linearGradient>
+  </defs>
+  <rect fill="url(#g)" height="100" rx="24" width="100"/>
+  <path d="M30 68V27h9v41h-9Zm17 0V27h9v41h-9Zm17 0V27h9v41h-9Z" fill="white" opacity=".92"/>
+  <path d="M23 76h54" opacity=".75" stroke="white" stroke-linecap="round" stroke-width="7"/>
+</svg>

@@ -64,9 +64,9 @@
 | 类别       | 资源链接                                                                                    | 说明                         |
 |:---------|:----------------------------------------------------------------------------------------|:---------------------------|
 | **插件库**  | [LyricProvider 仓库](https://github.com/tomakino/LyricProvider)                           | 包含主流音乐平台的适配插件              |
-| **开发文档** | [Bridge 文档](docs/README.md)                                                             | Provider 与 Subscriber 接入文档 |
-| **开发插件** | [开发指南](lyric/bridge/provider/README.md)                                                 | 了解如何开发自定义歌词提供插件            |
-| **订阅接口** | [订阅指南](lyric/bridge/subscriber/README.md)                                               | 第三方应用接入词幕歌词的方法             |
+| **开发文档** | [Bridge 文档](docs/)                                                                       | Provider 与 Subscriber 接入文档 |
+| **开发插件** | [开发指南](docs/provider/)                                                                 | 了解如何开发自定义歌词提供插件            |
+| **订阅接口** | [订阅指南](docs/subscriber/)                                                               | 第三方应用接入词幕歌词的方法             |
 
 ### 💡 已原生适配的应用
 
