@@ -39,9 +39,12 @@ import io.github.proify.lyricon.app.compose.IconActions
 import io.github.proify.lyricon.app.compose.custom.miuix.basic.ScrollBehavior
 import io.github.proify.lyricon.app.compose.custom.miuix.extra.SuperDialog
 import io.github.proify.lyricon.app.compose.custom.miuix.preference.CheckboxPreference
-import io.github.proify.lyricon.app.compose.preference.InputPreference
-import io.github.proify.lyricon.app.compose.preference.InputType
+import io.github.proify.lyricon.app.compose.preference.DoubleInputPreference
+import io.github.proify.lyricon.app.compose.preference.IntInputPreference
+import io.github.proify.lyricon.app.compose.preference.LongInputPreference
+import io.github.proify.lyricon.app.compose.preference.PreferenceValueDisplay
 import io.github.proify.lyricon.app.compose.preference.RectInputPreference
+import io.github.proify.lyricon.app.compose.preference.StringInputPreference
 import io.github.proify.lyricon.app.compose.preference.TextColorPreference
 import io.github.proify.lyricon.app.compose.preference.rememberBooleanPreference
 import io.github.proify.lyricon.app.compose.preference.rememberStringPreference
@@ -99,12 +102,11 @@ fun TextPage(scrollBehavior: ScrollBehavior, preferences: SharedPreferences) {
                     .padding(start = 16.dp, top = 0.dp, end = 16.dp, bottom = 0.dp)
                     .fillMaxWidth(),
             ) {
-                InputPreference(
+                DoubleInputPreference(
                     preferences = preferences,
                     key = "lyric_style_text_size",
                     title = stringResource(R.string.item_text_size),
-                    inputType = InputType.DOUBLE,
-                    maxValue = 100.0,
+                    range = 0.0..100.0,
                     startAction = { IconActions(painterResource(R.drawable.ic_format_size)) },
                 )
                 RectInputPreference(
@@ -112,34 +114,31 @@ fun TextPage(scrollBehavior: ScrollBehavior, preferences: SharedPreferences) {
                     "lyric_style_text_margins",
                     stringResource(R.string.item_text_margins),
                     defaultValue = TextStyle.Defaults.MARGINS,
-                    leftAction = { IconActions(painterResource(R.drawable.ic_margin)) },
+                    startAction = { IconActions(painterResource(R.drawable.ic_margin)) },
                 )
                 RectInputPreference(
                     preferences,
                     "lyric_style_text_paddings",
                     stringResource(R.string.item_text_paddings),
                     defaultValue = TextStyle.Defaults.PADDINGS,
-                    leftAction = { IconActions(painterResource(R.drawable.ic_padding)) },
+                    startAction = { IconActions(painterResource(R.drawable.ic_padding)) },
                 )
 
-                InputPreference(
+                DoubleInputPreference(
                     preferences = preferences,
                     key = "lyric_style_text_size_ratio_in_multi_line_mode",
                     title = stringResource(R.string.item_text_size_scale_multi_line),
-                    defaultValue = TextStyle.Defaults.TEXT_SIZE_RATIO_IN_MULTI_LINE.toString(),
-                    inputType = InputType.DOUBLE,
-                    minValue = 0.1,
-                    maxValue = 1.0,
+                    defaultValue = TextStyle.Defaults.TEXT_SIZE_RATIO_IN_MULTI_LINE.toDouble(),
+                    range = 0.1..1.0,
                     startAction = { IconActions(painterResource(R.drawable.ic_format_size)) },
                 )
                 TransitionConfigPreference(preferences)
 
-                InputPreference(
+                DoubleInputPreference(
                     preferences = preferences,
                     key = "lyric_style_text_fading_edge_length",
                     title = stringResource(R.string.item_text_fading_edge_length),
-                    inputType = InputType.DOUBLE,
-                    maxValue = 100.0,
+                    range = 0.0..100.0,
                     startAction = { IconActions(painterResource(R.drawable.ic_gradient)) },
                 )
 
@@ -274,19 +273,19 @@ fun TextPage(scrollBehavior: ScrollBehavior, preferences: SharedPreferences) {
                     .padding(start = 16.dp, top = 0.dp, end = 16.dp, bottom = 0.dp)
                     .fillMaxWidth(),
             ) {
-                InputPreference(
+                StringInputPreference(
                     preferences = preferences,
                     key = "lyric_style_text_typeface",
                     title = stringResource(R.string.item_text_typeface),
                     startAction = { IconActions(painterResource(R.drawable.ic_fontdownload)) },
+                    maxLines = 1
                 )
 
-                InputPreference(
+                IntInputPreference(
                     preferences = preferences,
                     key = "lyric_style_text_weight",
                     title = stringResource(R.string.item_text_font_weight),
-                    inputType = InputType.INTEGER,
-                    maxValue = 1000.0,
+                    range = 0..1000,
                     startAction = { IconActions(painterResource(R.drawable.ic_fontdownload)) },
                 )
 
@@ -415,18 +414,19 @@ fun TextPage(scrollBehavior: ScrollBehavior, preferences: SharedPreferences) {
 
                 TranslationTargetLanguagePreference(preferences)
 
-                InputPreference(
+                StringInputPreference(
                     preferences = preferences,
                     key = TextStyle.KEY_AI_TRANSLATION_BASE_URL,
                     title = stringResource(R.string.item_translation_base_url),
                     defaultValue = TextStyle.Defaults.AI_TRANSLATION_HOST,
                     startAction = { IconActions(painterResource(R.drawable.link_24px)) },
+                    maxLines = 1
                 )
 
                 TranslationApiKeyPreference(preferences)
                 TranslationModelPreference(preferences)
 
-                InputPreference(
+                StringInputPreference(
                     preferences = preferences,
                     key = TextStyle.KEY_AI_TRANSLATION_PROMPT,
                     title = stringResource(R.string.item_translation_custom_prompt),
@@ -453,43 +453,39 @@ fun TextPage(scrollBehavior: ScrollBehavior, preferences: SharedPreferences) {
                     .padding(start = 16.dp, top = 0.dp, end = 16.dp, bottom = 16.dp)
                     .fillMaxWidth(),
             ) {
-                InputPreference(
+                IntInputPreference(
                     preferences = preferences,
                     key = "lyric_style_text_marquee_speed",
                     title = stringResource(R.string.item_text_marquee_speed),
-                    defaultValue = TextStyle.Defaults.MARQUEE_SPEED.toString(),
-                    inputType = InputType.INTEGER,
-                    maxValue = 500.0,
+                    defaultValue = TextStyle.Defaults.MARQUEE_SPEED.toInt(),
+                    range = 0..500,
                     startAction = { IconActions(painterResource(R.drawable.ic_speed)) },
                 )
-                InputPreference(
+                IntInputPreference(
                     preferences = preferences,
                     key = "lyric_style_text_marquee_space",
                     title = stringResource(R.string.item_text_marquee_space),
-                    defaultValue = TextStyle.Defaults.MARQUEE_GHOST_SPACING.toString(),
-                    inputType = InputType.INTEGER,
-                    maxValue = 1000.0,
+                    defaultValue = TextStyle.Defaults.MARQUEE_GHOST_SPACING.toInt(),
+                    range = 0..1000,
                     startAction = { IconActions(painterResource(R.drawable.ic_space_bar)) },
                 )
-                InputPreference(
+                LongInputPreference(
                     preferences = preferences,
                     key = "lyric_style_text_marquee_initial_delay",
                     title = stringResource(R.string.item_text_marquee_initial_delay),
-                    defaultValue = TextStyle.Defaults.MARQUEE_INITIAL_DELAY.toString(),
-                    inputType = InputType.INTEGER,
-                    maxValue = 3600000.0,
+                    defaultValue = TextStyle.Defaults.MARQUEE_INITIAL_DELAY.toLong(),
+                    range = 0L..3_600_000L,
                     startAction = { IconActions(painterResource(R.drawable.ic_autopause)) },
-                    isTimeUnit = true,
+                    display = PreferenceValueDisplay.Time(),
                 )
-                InputPreference(
+                LongInputPreference(
                     preferences = preferences,
                     key = "lyric_style_text_marquee_loop_delay",
                     title = stringResource(R.string.item_text_marquee_delay),
-                    defaultValue = TextStyle.Defaults.MARQUEE_LOOP_DELAY.toString(),
-                    inputType = InputType.INTEGER,
-                    maxValue = 3600000.0,
+                    defaultValue = TextStyle.Defaults.MARQUEE_LOOP_DELAY.toLong(),
+                    range = 0L..3_600_000L,
                     startAction = { IconActions(painterResource(R.drawable.ic_autopause)) },
-                    isTimeUnit = true,
+                    display = PreferenceValueDisplay.Time(),
                 )
 
                 var isMarqueeRepeatUnlimited by rememberBooleanPreference(
@@ -503,13 +499,11 @@ fun TextPage(scrollBehavior: ScrollBehavior, preferences: SharedPreferences) {
                     title = stringResource(R.string.item_text_marquee_repeat_unlimited),
                     startAction = { IconActions(painterResource(R.drawable.ic_all_inclusive)) },
                 )
-                InputPreference(
+                IntInputPreference(
                     preferences = preferences,
                     key = "lyric_style_text_marquee_repeat_count",
                     title = stringResource(R.string.item_text_marquee_repeat_count),
-                    inputType = InputType.INTEGER,
-                    minValue = 0.0,
-                    maxValue = 3600000.0,
+                    range = 0..3_600_000,
                     startAction = { IconActions(painterResource(R.drawable.ic_pin)) },
                 )
 
@@ -544,12 +538,13 @@ private fun TranslationModelPreference(preferences: SharedPreferences) {
     val noModelsMessage = stringResource(R.string.item_translation_model_empty)
     val unknownErrorMessage = stringResource(R.string.unknown)
 
-    InputPreference(
+    StringInputPreference(
         preferences = preferences,
         key = preferenceKey,
         title = title,
         defaultValue = defaultModel,
         startAction = { IconActions(painterResource(R.drawable.psychology_24px)) },
+        maxLines = 1,
         endActions = {
             IconButton(
                 onClick = {
@@ -756,7 +751,7 @@ private fun ClearTranslationDB() {
 private fun TranslationTargetLanguagePreference(preferences: SharedPreferences) {
     val targetLanguageName = TextStyle.Defaults.AI_TRANSLATION_TARGET_LANGUAGE_DISPLAY_NAME
 
-    InputPreference(
+    StringInputPreference(
         preferences = preferences,
         key = TextStyle.KEY_AI_TRANSLATION_TARGET_LANGUAGE,
         defaultValue = targetLanguageName,
@@ -775,12 +770,13 @@ private fun TranslationApiKeyPreference(preferences: SharedPreferences) {
             stringResource(R.string.item_translation_api_key_set)
         }
 
-    InputPreference(
+    StringInputPreference(
         preferences = preferences,
         key = KEY_AI_TRANSLATION_API_KEY,
         title = stringResource(R.string.item_translation_api_key),
         summary = summary,
         startAction = { IconActions(painterResource(R.drawable.vpn_key_24px)) },
+        maxLines = 1
     )
 }
 
