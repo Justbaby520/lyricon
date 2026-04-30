@@ -1,8 +1,8 @@
 import { defineConfig } from 'vitepress'
 
 export default defineConfig({
-  title: 'Lyricon Bridge',
-  description: 'Provider 与 Subscriber 接入文档',
+  title: 'Lyricon Docs',
+  description: 'App 与 Lyric 文档',
   base: '/lyricon/',
   cleanUrls: true,
   lastUpdated: true,
@@ -11,11 +11,12 @@ export default defineConfig({
   ],
   themeConfig: {
     logo: '/logo.svg',
-    siteTitle: 'Lyricon Bridge',
+    siteTitle: 'Lyricon Docs',
     nav: [
       { text: '首页', link: '/' },
-      { text: 'Provider', link: '/provider/' },
-      { text: 'Subscriber', link: '/subscriber/' },
+      { text: 'App', link: '/app/' },
+      { text: 'Lyric', link: '/lyric/' },
+      { text: 'Bridge', link: '/lyric/bridge/' },
       { text: 'GitHub', link: 'https://github.com/tomakino/lyricon' }
     ],
     sidebar: [
@@ -23,33 +24,48 @@ export default defineConfig({
         text: '开始',
         items: [
           { text: '文档首页', link: '/' },
-          { text: 'Bridge 概览', link: '/README' }
+          { text: '文档总览', link: '/README' }
         ]
       },
       {
-        text: 'Provider',
+        text: 'App',
         collapsed: false,
         items: [
-          { text: '概览', link: '/provider/' },
-          { text: '快速开始', link: '/provider/quick-start' },
-          { text: 'Manifest 配置', link: '/provider/manifest' },
-          { text: '连接生命周期', link: '/provider/connection' },
-          { text: '播放器控制', link: '/provider/player-control' },
-          { text: '歌词数据结构', link: '/provider/lyrics-model' },
-          { text: '本地测试', link: '/provider/local-testing' },
-          { text: '常见问题', link: '/provider/faq' }
+          { text: '概览', link: '/app/' }
         ]
       },
       {
-        text: 'Subscriber',
+        text: 'Lyric',
         collapsed: false,
         items: [
-          { text: '概览', link: '/subscriber/' },
-          { text: '快速开始', link: '/subscriber/quick-start' },
-          { text: '连接生命周期', link: '/subscriber/connection' },
-          { text: '活跃播放器', link: '/subscriber/active-player' },
-          { text: '回调说明', link: '/subscriber/callbacks' },
-          { text: '常见问题', link: '/subscriber/faq' }
+          { text: '概览', link: '/lyric/' },
+          { text: 'Bridge 概览', link: '/lyric/bridge/' }
+        ]
+      },
+      {
+        text: 'Lyric / Bridge / Provider',
+        collapsed: false,
+        items: [
+          { text: '概览', link: '/lyric/bridge/provider/' },
+          { text: '快速开始', link: '/lyric/bridge/provider/quick-start' },
+          { text: 'Manifest 配置', link: '/lyric/bridge/provider/manifest' },
+          { text: '连接生命周期', link: '/lyric/bridge/provider/connection' },
+          { text: '播放器控制', link: '/lyric/bridge/provider/player-control' },
+          { text: '歌词数据结构', link: '/lyric/bridge/provider/lyrics-model' },
+          { text: '本地测试', link: '/lyric/bridge/provider/local-testing' },
+          { text: '常见问题', link: '/lyric/bridge/provider/faq' }
+        ]
+      },
+      {
+        text: 'Lyric / Bridge / Subscriber',
+        collapsed: false,
+        items: [
+          { text: '概览', link: '/lyric/bridge/subscriber/' },
+          { text: '快速开始', link: '/lyric/bridge/subscriber/quick-start' },
+          { text: '连接生命周期', link: '/lyric/bridge/subscriber/connection' },
+          { text: '活跃播放器', link: '/lyric/bridge/subscriber/active-player' },
+          { text: '回调说明', link: '/lyric/bridge/subscriber/callbacks' },
+          { text: '常见问题', link: '/lyric/bridge/subscriber/faq' }
         ]
       }
     ],

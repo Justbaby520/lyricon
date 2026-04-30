@@ -72,9 +72,9 @@
 | Category               | Resource Link                                                         | Description                                         |
 |:-----------------------|:----------------------------------------------------------------------|:----------------------------------------------------|
 | **Plugin Library**     | [LyricProvider Repository](https://github.com/tomakino/LyricProvider) | Adaptation plugins for mainstream music platforms   |
-| **Documentation**      | [Bridge Documentation](docs/)                                         | Provider and Subscriber integration documentation   |
-| **Plugin Development** | [Development Guide](docs/provider/)                                   | Learn how to develop custom lyric provider plugins  |
-| **Subscription API**   | [Subscription Guide](docs/subscriber/)                                | How third-party apps can access lyrics from Lyricon |
+| **Documentation**      | [Documentation Center](docs/)                                         | App and Lyric documentation                         |
+| **Plugin Development** | [Development Guide](docs/lyric/bridge/provider/)                      | Learn how to develop custom lyric provider plugins  |
+| **Subscription API**   | [Subscription Guide](docs/lyric/bridge/subscriber/)                   | How third-party apps can access lyrics from Lyricon |
 
 ### 💡 Natively Supported Apps
 
