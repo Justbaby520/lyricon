@@ -11,6 +11,14 @@ Subscriber 用于订阅当前活跃播放器、歌曲、歌词、播放状态和
 5. 调用 `register()` 注册。
 6. 不再使用时调用 `unregister()` 或 `destroy()`。
 
+## 依赖
+
+![subscriber version](https://img.shields.io/maven-central/v/io.github.proify.lyricon/subscriber)
+
+```kotlin
+implementation("io.github.proify.lyricon:subscriber:0.1.70")
+```
+
 ## 文档
 
 - [快速开始](quick-start.md)

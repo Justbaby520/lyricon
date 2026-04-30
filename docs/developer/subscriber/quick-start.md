@@ -7,7 +7,7 @@
 
 ## 添加依赖
 
-![version](https://img.shields.io/maven-central/v/io.github.proify.lyricon/subscriber)
+![subscriber version](https://img.shields.io/maven-central/v/io.github.proify.lyricon/subscriber)
 
 在应用模块的 `build.gradle.kts` 中添加：
 

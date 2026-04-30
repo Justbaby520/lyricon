@@ -4,12 +4,12 @@
 
 ## 添加依赖
 
-![version](https://img.shields.io/maven-central/v/io.github.proify.lyricon/provider)
+![provider version](https://img.shields.io/maven-central/v/io.github.proify.lyricon/provider)
 
 在应用模块的 `build.gradle.kts` 中添加：
 
 ```kotlin
-implementation("io.github.proify.lyricon:provider:0.1.68")
+implementation("io.github.proify.lyricon:provider:0.1.70")
 ```
 
 > [!WARNING]
