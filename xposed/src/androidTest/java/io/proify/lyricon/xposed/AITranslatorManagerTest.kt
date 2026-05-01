@@ -10,7 +10,7 @@ import io.github.proify.lyricon.lyric.model.Song
 import io.github.proify.lyricon.lyric.style.AiTranslationConfigs
 import io.github.proify.lyricon.xposed.systemui.aitrans.AITranslator
 import kotlinx.coroutines.runBlocking
-import org.junit.Assume.assumeTrue
+import org.junit.Assume
 import org.junit.Test
 
 /**
@@ -25,7 +25,7 @@ class AITranslatorManagerTest {
     @Test
     fun testLyricTranslation(): Unit = runBlocking {
         val apiKey = System.getenv("AI_TRANSLATION_API_KEY")
-        assumeTrue("AI_TRANSLATION_API_KEY is not set", !apiKey.isNullOrBlank())
+        Assume.assumeTrue("AI_TRANSLATION_API_KEY is not set", !apiKey.isNullOrBlank())
 
         // 配置信息：建议使用支持长上下文的模型
         val configs = AiTranslationConfigs(
@@ -63,7 +63,7 @@ class AITranslatorManagerTest {
             val original = testLyrics[item.index]
             println("[ID:${item.index}]")
             println("Original: $original")
-            println("Singable: ${item.trans}")
+            println("Singable: ${item.tran}")
             println("--------------------------")
         }
     }

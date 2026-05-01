@@ -10,16 +10,16 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-internal data class TranslationRequestItem(val index: Int, val text: String)
+internal data class TranslationRequestItem(val index: Int, val src: String)
 
 @Serializable
 internal data class TranslationRequest(val lyrics: List<TranslationRequestItem>)
 
 @Serializable
-data class TranslationItem(val index: Int, val trans: String)
+data class TranslationItem(val index: Int, val tran: String)
 
 @Serializable
-internal data class TranslationResponse(val translations: List<TranslationItem>)
+internal data class TranslationResponse(val translated: List<TranslationItem>)
 
 @Serializable
 internal data class OpenAiChatRequest(

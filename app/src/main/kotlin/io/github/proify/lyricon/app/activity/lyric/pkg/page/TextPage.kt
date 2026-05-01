@@ -948,10 +948,15 @@ private fun ClearTranslationDB() {
 private fun TranslationTargetLanguagePreference(preferences: SharedPreferences) {
     val targetLanguageName = TextStyle.Defaults.AI_TRANSLATION_TARGET_LANGUAGE_DISPLAY_NAME
     var showLanguageSheet by remember { mutableStateOf(false) }
-    var targetLanguage by rememberStringPreference(
+    @Suppress("VariableNeverRead") var targetLanguage by rememberStringPreference(
         preferences,
         TextStyle.KEY_AI_TRANSLATION_TARGET_LANGUAGE,
         targetLanguageName
+    )
+    var targetLanguageCode by rememberStringPreference(
+        preferences,
+        TextStyle.KEY_AI_TRANSLATION_TARGET_LANGUAGE_CODE,
+        ""
     )
 
     StringInputPreference(
@@ -1079,9 +1084,10 @@ private fun TranslationTargetLanguagePreference(preferences: SharedPreferences) 
                             ) { _, option ->
                                 TranslationLanguageOptionPreference(
                                     option = option,
-                                    checked = targetLanguage == option.name,
+                                    checked = targetLanguageCode == option.code,
                                     onClick = {
-                                        targetLanguage = option.name
+                                        targetLanguage = option.applyLanguage
+                                        targetLanguageCode = option.code
                                         dismiss?.invoke()
                                     }
                                 )
@@ -1112,9 +1118,10 @@ private fun TranslationTargetLanguagePreference(preferences: SharedPreferences) 
                     ) { _, option ->
                         TranslationLanguageOptionPreference(
                             option = option,
-                            checked = targetLanguage == option.name,
+                            checked = targetLanguageCode == option.code,
                             onClick = {
-                                targetLanguage = option.name
+                                targetLanguage = option.applyLanguage
+                                targetLanguageCode = option.code
                                 selectedLanguageCode = null
                                 dismiss?.invoke()
                             }
@@ -1137,12 +1144,12 @@ private fun TranslationLanguageOptionPreference(
             .padding(start = 16.dp, top = 0.dp, end = 16.dp, bottom = 16.dp)
             .fillMaxWidth()
     ) {
-        val summary = listOfNotNull(option.nativeName, option.englishName)
-            .distinct()
-            .joinToString(" / ")
+//        val summary = listOfNotNull(option.nativeName)
+//            .distinct()
+//            .joinToString(" / ")
         CheckboxPreference(
             title = option.name,
-            summary = summary.takeIf { it.isNotBlank() },
+            //summary = summary.takeIf { it.isNotBlank() },
             checked = checked,
             onCheckedChange = { onClick() }
         )
@@ -1241,6 +1248,9 @@ private data class TranslationLanguageOption(
     val nativeName: String?,
     val englishName: String?,
 ) {
+
+    val applyLanguage = name
+
     val searchText: String =
         listOfNotNull(code, languageCode, languageName, name, nativeName, englishName)
             .joinToString(" ")

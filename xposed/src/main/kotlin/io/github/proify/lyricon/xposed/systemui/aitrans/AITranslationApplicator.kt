@@ -17,7 +17,7 @@ internal object AITranslationApplicator {
         var appliedCount = 0
         val translationsByIndex = transItems.associateBy { it.index }
         val newLyrics = song.lyrics?.mapIndexed { index, line ->
-            val transText = translationsByIndex[index]?.trans?.trim()
+            val transText = translationsByIndex[index]?.tran?.trim()
 
             if (!transText.isNullOrBlank()
                 && line.translation.isNullOrBlank()

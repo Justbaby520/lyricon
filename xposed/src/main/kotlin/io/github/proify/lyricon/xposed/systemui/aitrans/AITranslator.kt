@@ -34,8 +34,8 @@ import java.util.concurrent.atomic.AtomicInteger
 object AITranslator {
     private const val TAG = "LyriconAITranslator"
     private const val MAX_CACHE_SIZE = 1000
-    private const val MAX_RUNNING_TRANSLATIONS = 3
-    private const val MAX_PENDING_TRANSLATIONS = 5
+    private const val MAX_RUNNING_TRANSLATIONS = 10
+    private const val MAX_PENDING_TRANSLATIONS = 10
 
     private val cacheGeneration = AtomicInteger(0)
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())

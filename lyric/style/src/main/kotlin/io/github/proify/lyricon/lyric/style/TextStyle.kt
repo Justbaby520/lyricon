@@ -75,6 +75,9 @@ data class TextStyle(
         const val KEY_AI_TRANSLATION_PROVIDER = "lyric_style_text_ai_translation_provider"
         const val KEY_AI_TRANSLATION_TARGET_LANGUAGE =
             "lyric_style_text_ai_translation_target_language"
+        const val KEY_AI_TRANSLATION_TARGET_LANGUAGE_CODE =
+            "lyric_style_text_ai_translation_target_language_code"
+
         const val KEY_AI_TRANSLATION_API_KEY = "lyric_style_text_ai_translation_key"
         const val KEY_AI_TRANSLATION_MODEL = "lyric_style_text_ai_translation_model"
         const val KEY_AI_TRANSLATION_BASE_URL = "lyric_style_text_ai_translation_base_url"
@@ -149,7 +152,7 @@ data class TextStyle(
         const val TEXT_SIZE_RATIO_IN_MULTI_LINE: Float = 0.86f
         const val RELATIVE_PROGRESS: Boolean = true
         const val RELATIVE_PROGRESS_HIGHLIGHT: Boolean = false
-        const val WORD_MOTION_ENABLED: Boolean = true
+        const val WORD_MOTION_ENABLED: Boolean = false
         const val WORD_MOTION_CJK_LIFT_FACTOR: Float = 0.055f
         const val WORD_MOTION_CJK_WAVE_FACTOR: Float = 2.8f
         const val WORD_MOTION_LATIN_LIFT_FACTOR: Float = 0.065f
