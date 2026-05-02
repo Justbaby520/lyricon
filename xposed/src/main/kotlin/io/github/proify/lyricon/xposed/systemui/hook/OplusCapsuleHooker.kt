@@ -62,12 +62,17 @@ object OplusCapsuleHooker {
             Int::class.javaPrimitiveType
         )
 
-        unhookHandle = module.hook(setVisibilityMethod).intercept { chain ->
-            chain.proceed()
-            val view = chain.thisObject as View
-            hook.afterSetVisibility(view)
-            null
-        }
+        @Suppress("ObjectLiteralToLambda")
+        unhookHandle =
+            module.hook(setVisibilityMethod)
+                .intercept(object : XposedInterface.Hooker {
+                override fun intercept(chain: XposedInterface.Chain): Any? {
+                    chain.proceed()
+                    val view = chain.thisObject as View
+                    hook.afterSetVisibility(view)
+                    return null
+                }
+            })
     }
 
     fun registerListener(listener: CapsuleStateChangeListener): Boolean = listeners.add(listener)

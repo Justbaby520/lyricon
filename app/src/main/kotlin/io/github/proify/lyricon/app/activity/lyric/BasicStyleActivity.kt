@@ -24,6 +24,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import io.github.proify.lyricon.app.BuildConfig
 import io.github.proify.lyricon.app.R
 import io.github.proify.lyricon.app.compose.AppToolBarListContainer
 import io.github.proify.lyricon.app.compose.IconActions
@@ -195,7 +196,9 @@ class BasicLyricStyleActivity : AbstractLyricActivity() {
                         }
                     )
 
-                    ChineseConversionPreference()
+                    if (BuildConfig.ENABLE_CHINESE_CONVERSION) {
+                        ChineseConversionPreference()
+                    }
                 }
             }
 

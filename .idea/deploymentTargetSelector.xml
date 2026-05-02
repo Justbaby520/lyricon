@@ -18,9 +18,6 @@
         <option name="selectionMode" value="DROPDOWN" />
         <DialogSelection />
       </SelectionState>
-      <SelectionState runConfigName="AITranslatorManagerTest">
-        <option name="selectionMode" value="DROPDOWN" />
-      </SelectionState>
       <SelectionState runConfigName="testLyricTranslation()">
         <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>

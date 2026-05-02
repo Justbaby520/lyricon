@@ -245,8 +245,9 @@
 
     <string name="item_view_on_github_summary">View on GitHub / Report issues.</string>
     <string name="item_open_source_licenses_summary">Show licenses of third-party software.</string>
-    <string name="item_logo_style_custom">自定义</string>
+    <string name="item_logo_style_custom">Custom</string>
     <string name="custom_logo_dialog_title">Custom logo</string>
     <string name="custom_logo_dialog_summary">Paste a Base64-encoded image or raw SVG content.</string>
-    <string name="item_logo_custom_colorful">该图标为彩色图标</string>
+    <string name="item_logo_custom_colorful">This icon is colorful</string>
+    <string name="module_status_connecting">Connecting…</string>
 </resources>

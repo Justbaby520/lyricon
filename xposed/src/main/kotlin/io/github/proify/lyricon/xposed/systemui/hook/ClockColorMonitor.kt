@@ -11,6 +11,7 @@ import android.content.res.ColorStateList
 import android.view.View
 import android.widget.TextView
 import androidx.core.graphics.ColorUtils
+import io.github.libxposed.api.XposedInterface
 import io.github.libxposed.api.XposedModule
 import io.github.proify.lyricon.xposed.systemui.util.OnColorChangeListener
 import java.util.WeakHashMap
@@ -53,17 +54,18 @@ object ClockColorMonitor {
                 Int::class.javaPrimitiveType
             )
         )
-
+        @Suppress("ObjectLiteralToLambda")
         methods.forEach { method ->
-            module.hook(method).intercept { chain ->
-                chain.proceed()
-                // 后置处理
-                val tv = chain.thisObject as? TextView
-                if (tv != null) {
-                    afterSetColor(tv)
+            module.hook(method).intercept(object : XposedInterface.Hooker {
+                override fun intercept(chain: XposedInterface.Chain): Any? {
+                    chain.proceed()
+                    val tv = chain.thisObject as? TextView
+                    if (tv != null) {
+                        afterSetColor(tv)
+                    }
+                    return null
                 }
-                null
-            }
+            })
         }
     }
 

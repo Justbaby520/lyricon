@@ -163,7 +163,7 @@ object SystemUIHooker : PackageHooker() {
 
         val service = ModuleEntry.instance
         val defaultSp = service.getRemotePreferences("default")
-        val coreServiceDisable = defaultSp.getBoolean("core_service_disable", false) ?: false
+        val coreServiceDisable = defaultSp.getBoolean("core_service_disable", false)
 
         if (!coreServiceDisable) {
             BridgeCentral.initialize(context)

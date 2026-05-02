@@ -7,6 +7,7 @@
 package io.github.proify.lyricon.xposed.hook
 
 import android.app.Application
+import io.github.libxposed.api.XposedInterface
 import io.github.libxposed.api.XposedModule
 import io.github.libxposed.api.XposedModuleInterface
 import io.github.proify.lyricon.xposed.logger.YLog
@@ -65,14 +66,8 @@ abstract class PackageHooker {
             val targetClass = classLoader.loadClass(targetClassName)
             val onCreateMethod = targetClass.getDeclaredMethod("onCreate")
 
-            module.hook(onCreateMethod).intercept { chain ->
-                chain.proceed()
-                val instance = chain.thisObject as? Application
-                if (instance != null) {
-                    handleApplicationInstance(instance)
-                }
-                null
-            }
+            module.hook(onCreateMethod)
+                .intercept(XposedInterfaceHooker())
         } catch (e: Throwable) {
             YLog.error(
                 TAG,
@@ -100,6 +95,18 @@ abstract class PackageHooker {
             }
         } catch (t: Throwable) {
             YLog.error(TAG, "Critical failure: Global Hook failed", t)
+        }
+    }
+
+
+    private inner class XposedInterfaceHooker : XposedInterface.Hooker {
+        override fun intercept(chain: XposedInterface.Chain): Any? {
+            chain.proceed()
+            val instance = chain.thisObject as? Application
+            if (instance != null) {
+                handleApplicationInstance(instance)
+            }
+            return null // 或 void 不用返回
         }
     }
 

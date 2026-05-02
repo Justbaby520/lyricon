@@ -246,6 +246,9 @@
 
     <string name="item_view_on_github_summary">檢視 GitHub / 報告問題</string>
     <string name="item_open_source_licenses_summary">顯示第三方軟體的授權</string>
+    <string name="item_logo_style_custom">自訂</string>
     <string name="custom_logo_dialog_title">自訂圖示</string>
     <string name="custom_logo_dialog_summary">貼上 Base64 編碼的圖片或原始 SVG 內容。</string>
+    <string name="item_logo_custom_colorful">此圖示為彩色圖示</string>
+    <string name="module_status_connecting">正在連線…</string>
 </resources>

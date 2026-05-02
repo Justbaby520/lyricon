@@ -6,9 +6,13 @@
 
 package io.github.proify.lyricon.app.bridge
 
+import androidx.annotation.Keep
 import io.github.proify.lyricon.common.Constants
 
 object AppBridge {
+
+    @Keep
+    fun isActive(): Boolean = false
 
     object LyricStylePrefs {
         const val LYRIC_STYLE_PREF_NAME_PREIFY: String = "lyricon_style_"

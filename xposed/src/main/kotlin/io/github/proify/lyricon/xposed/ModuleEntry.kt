@@ -6,6 +6,7 @@
 
 package io.github.proify.lyricon.xposed
 
+import androidx.annotation.Keep
 import io.github.libxposed.api.XposedModule
 import io.github.libxposed.api.XposedModuleInterface
 import io.github.proify.lyricon.common.PackageNames
@@ -13,6 +14,7 @@ import io.github.proify.lyricon.xposed.hook.GeneralHooker
 import io.github.proify.lyricon.xposed.logger.YLog
 import io.github.proify.lyricon.xposed.systemui.SystemUIHooker
 
+@Keep
 class ModuleEntry : XposedModule() {
 
     companion object {
@@ -26,6 +28,16 @@ class ModuleEntry : XposedModule() {
         lateinit var instance: ModuleEntry
     }
 
+    override fun onPackageReady(param: XposedModuleInterface.PackageReadyParam) {
+        super.onPackageReady(param)
+        YLog.info(TAG, "onPackageReady: packageName=${param.packageName}")
+    }
+
+    override fun onSystemServerStarting(param: XposedModuleInterface.SystemServerStartingParam) {
+        super.onSystemServerStarting(param)
+        YLog.info(TAG, "onSystemServerStarting: classLoader=${param.classLoader}")
+    }
+
     override fun onModuleLoaded(param: XposedModuleInterface.ModuleLoadedParam) {
         instance = this
         YLog.init(this)
@@ -37,7 +49,10 @@ class ModuleEntry : XposedModule() {
 
     override fun onPackageLoaded(param: XposedModuleInterface.PackageLoadedParam) {
         val packageName = param.packageName
-        if (packageName !in scopes) return
+        if (packageName !in scopes) {
+            YLog.debug(TAG, "onPackageLoaded: $packageName is not in scopes")
+            return
+        }
 
         YLog.info(TAG, "onPackageLoaded: $packageName")
 

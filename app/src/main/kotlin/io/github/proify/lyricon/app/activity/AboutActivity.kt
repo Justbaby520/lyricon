@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.sp
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import io.github.proify.lyricon.app.AppConstants
 import io.github.proify.lyricon.app.BuildConfig
+import io.github.proify.lyricon.app.LyriconApp
 import io.github.proify.lyricon.app.R
 import io.github.proify.lyricon.app.compose.AppToolBarListContainer
 import io.github.proify.lyricon.app.compose.IconActions
@@ -102,7 +103,7 @@ class AboutActivity : BaseActivity() {
                         summary =
                             stringResource(
                                 id = R.string.item_app_version_summary,
-                                BuildConfig.VERSION_NAME,
+                                LyriconApp.packageInfo.versionName ?: BuildConfig.VERSION_NAME,
                                 BuildConfig.VERSION_CODE.toString(),
                                 BuildConfig.BUILD_TYPE
                             )

@@ -11,6 +11,7 @@ package io.github.proify.lyricon.xposed.systemui.hook
 import android.annotation.SuppressLint
 import android.content.Context
 import android.view.ViewGroup
+import io.github.libxposed.api.XposedInterface
 import io.github.libxposed.api.XposedModule
 import io.github.proify.lyricon.xposed.logger.YLog
 
@@ -77,18 +78,22 @@ object StatusBarViewResolver {
                 Boolean::class.javaPrimitiveType
             )
 
-            module.hook(inflateMethod).intercept { chain ->
-                val result = chain.proceed()
-                val currentLayoutId = chain.args[0] as Int
+            @Suppress("ObjectLiteralToLambda")
+            module.hook(inflateMethod).intercept(object : XposedInterface.Hooker {
+                override fun intercept(chain: XposedInterface.Chain): Any? {
+                    val result = chain.proceed()
+                    val currentLayoutId = chain.args[0] as Int
 
-                if (currentLayoutId == targetId) {
-                    val viewGroup = result as? ViewGroup
-                    viewGroup?.let { root ->
-                        notifyAll(root)
+                    if (currentLayoutId == targetId) {
+                        val viewGroup = result as? ViewGroup
+                        viewGroup?.let { root ->
+                            notifyAll(root)
+                        }
                     }
+                    return result
                 }
-                result
-            }
+
+            })
             isInitialized = true
         } catch (t: Throwable) {
             YLog.error("StatusBarViewResolver", "Error during LayoutInflater inflation hook", t)

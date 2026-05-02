@@ -107,7 +107,7 @@
     <string name="item_text_color_background">背景颜色</string>
     <string name="item_text_color_highlight">高亮颜色</string>
     <string name="hint_custom_color">自定义</string>
-    <string name="item_text_size_scale_multi_line">多行模式下文字大小比例</string>
+    <string name="item_text_size_scale_multi_line">多行模式下大小比例</string>
     <string name="item_text_transition_config">变换动画速度</string>
     <string name="option_text_transition_config_smooth">平滑</string>
     <string name="option_text_transition_config_fast">快速</string>
@@ -235,20 +235,23 @@
     <string name="dialog_summary_text_marquee_initial_delay">跑马灯开始滚动前的延迟，单位为毫秒。</string>
     <string name="dialog_summary_text_marquee_delay">跑马灯每次循环之间的延迟，单位为毫秒。</string>
     <string name="dialog_summary_text_marquee_repeat_count">未启用无限滚动时，跑马灯最多重复滚动的次数。</string>
-    <string name="dialog_summary_translation_target_language">AI 翻译输出的目标语言，例如 English 或 Japanese。</string>
+    <string name="dialog_summary_translation_target_language">AI 翻译输出的目标语言。</string>
     <string name="dialog_summary_translation_api_key">用于访问 OpenAI 兼容翻译服务的 API 密钥。</string>
-    <string name="dialog_summary_translation_model">AI 翻译使用的模型名称。可使用搜索按钮加载可用模型。</string>
+    <string name="dialog_summary_translation_model">AI 翻译使用的模型名称。</string>
     <string name="dialog_summary_translation_base_url">OpenAI 兼容 API 的基础地址。</string>
     <string name="dialog_summary_translation_custom_prompt">发送给翻译模型的提示词，用于说明歌词翻译方式。</string>
     <string name="dialog_summary_translation_temperature">控制翻译随机性。数值越低越稳定，越高越发散。</string>
-    <string name="dialog_summary_translation_top_p">控制翻译输出的 nucleus sampling 范围。</string>
+    <string name="dialog_summary_translation_top_p">控制翻译输出的采样范围。</string>
     <string name="dialog_summary_translation_max_tokens">限制每次翻译请求生成的 Token 数。填 0 使用服务默认值。</string>
     <string name="dialog_summary_translation_presence_penalty">调整模型是否更倾向于引入新的表述或内容。</string>
     <string name="dialog_summary_translation_frequency_penalty">调整模型抑制重复词语的强度。</string>
 
     <string name="item_view_on_github_summary">查看项目/提交问题</string>
     <string name="item_open_source_licenses_summary">查看软件依赖和许可证信息</string>
+    <string name="item_logo_style_custom">自定义</string>
     <string name="custom_logo_dialog_title">自定义图标</string>
     <string name="custom_logo_dialog_summary">粘贴 Base64 编码的图片或原始 SVG 内容。</string>
+    <string name="item_logo_custom_colorful">该图标为彩色图标</string>
+    <string name="module_status_connecting">正在连接…</string>
 
 </resources>

@@ -8,12 +8,19 @@ package io.github.proify.lyricon.app.activity
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -28,6 +35,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -78,11 +86,13 @@ import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.BasicComponentColors
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardColors
+import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.DropdownImpl
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.ListPopupColumn
 import top.yukonga.miuix.kmp.basic.ListPopupDefaults
 import top.yukonga.miuix.kmp.basic.PopupPositionProvider
+import top.yukonga.miuix.kmp.basic.ProgressIndicatorDefaults.progressIndicatorColors
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -104,7 +114,6 @@ class MainActivity : BaseActivity(), LyriconApp.XposedServiceStateListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        addXposedServiceStateListener(this)
         handleVersionUpdate()
 
         setContent {
@@ -114,8 +123,10 @@ class MainActivity : BaseActivity(), LyriconApp.XposedServiceStateListener {
                 onRestartApp = ::restartApp
             )
         }
-
         setupEventListeners()
+
+        addXposedServiceStateListener(this)
+        viewModel.startConnectTimeout()
     }
 
     override fun onDestroy() {
@@ -198,6 +209,15 @@ class MainActivity : BaseActivity(), LyriconApp.XposedServiceStateListener {
 
         val showRestartMenu: MutableState<Boolean> = mutableStateOf(false)
         val isModuleActive: MutableState<Boolean> = mutableStateOf(false)
+        var isServiceConnecting = mutableStateOf(false)
+
+        private val handler = Handler(Looper.getMainLooper())
+        fun startConnectTimeout() {
+            isServiceConnecting.value = true
+            handler.postDelayed({
+                isServiceConnecting.value = false
+            }, 2000)
+        }
 
         fun updateSafeMode(isSafe: Boolean) {
             _safeMode.value = isSafe
@@ -218,7 +238,8 @@ class MainActivity : BaseActivity(), LyriconApp.XposedServiceStateListener {
 
     private class StatusCard(
         override val colors: CardColors,
-        val icon: ImageVector,
+        val icon: ImageVector? = null,
+        val iconLayout: @Composable (BoxScope.() -> Unit)? = null,
         val title: String,
         val showAnimatedEmoji: Boolean = false,
         val summary: String? = null,
@@ -241,12 +262,16 @@ class MainActivity : BaseActivity(), LyriconApp.XposedServiceStateListener {
                             .size(40.dp),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Icon(
-                            modifier = Modifier.size(26.dp),
-                            imageVector = icon,
-                            tint = White,
-                            contentDescription = null,
-                        )
+                        if (iconLayout != null) {
+                            iconLayout()
+                        } else if (icon != null) {
+                            Icon(
+                                modifier = Modifier.size(26.dp),
+                                imageVector = icon,
+                                tint = White,
+                                contentDescription = null,
+                            )
+                        }
                     }
                 },
                 customTitle = {
@@ -324,6 +349,7 @@ class MainActivity : BaseActivity(), LyriconApp.XposedServiceStateListener {
                     isWaitingForReboot = model?.isWaitingForReboot?.value ?: false,
                     isMonet = model?.isMonet ?: AppThemeUtils.isEnableMonet(LocalContext.current),
                     isModuleActive = model?.isModuleActive?.value ?: false,
+                    isServiceConnecting = model?.isServiceConnecting?.value ?: false,
                     onRestartSystemUI = onRestartSystemUI
                 )
                 StatusCardItem(
@@ -378,6 +404,7 @@ class MainActivity : BaseActivity(), LyriconApp.XposedServiceStateListener {
                     isWaitingForReboot = model?.isWaitingForReboot?.value ?: false,
                     isMonet = model?.isMonet ?: AppThemeUtils.isEnableMonet(LocalContext.current),
                     isModuleActive = model?.isModuleActive?.value ?: false,
+                    isServiceConnecting = model?.isServiceConnecting?.value ?: false,
                     onRestartSystemUI = onRestartSystemUI
                 )
                 TabletContentItem {
@@ -439,10 +466,14 @@ class MainActivity : BaseActivity(), LyriconApp.XposedServiceStateListener {
         isWaitingForReboot: Boolean,
         isMonet: Boolean,
         isModuleActive: Boolean,
+        isServiceConnecting: Boolean,
         onRestartSystemUI: () -> Unit
     ): CardStatus {
         val isInspectionMode = LocalInspectionMode.current
-        val summary = stringResource(R.string.module_status_summary, BuildConfig.VERSION_NAME)
+        val summary = stringResource(
+            R.string.module_status_summary,
+            LyriconApp.packageInfo.versionName ?: BuildConfig.VERSION_NAME
+        )
 
         if (isInspectionMode) {
             return StatusCard(
@@ -494,6 +525,21 @@ class MainActivity : BaseActivity(), LyriconApp.XposedServiceStateListener {
                 summary = summary,
                 showAnimatedEmoji = true
             )
+        } else if (isServiceConnecting) {
+            return StatusCard(
+                colors = CardColors(MaterialPalette.Blue.Primary, White),
+                iconLayout = {
+                    CircularProgressIndicator(
+                        colors = progressIndicatorColors(
+                            backgroundColor = Color.Transparent,
+                            foregroundColor = White
+                        ),
+                        size = 20.dp
+                    )
+                },
+                title = stringResource(id = R.string.module_status_connecting),
+                summary = summary,
+            )
         }
 
         return StatusCard(
@@ -510,10 +556,21 @@ class MainActivity : BaseActivity(), LyriconApp.XposedServiceStateListener {
         cardStatus: CardStatus,
         modifier: Modifier = Modifier
     ) {
+        val animatedColors by animateColorAsState(
+            targetValue = cardStatus.colors.color,
+            label = "card_color",
+            animationSpec = tween(
+                durationMillis = 300,
+                easing = FastOutSlowInEasing
+            ),
+        )
+
         Card(
-            modifier = modifier.fillMaxWidth(),
+            modifier = modifier
+                .fillMaxWidth()
+                .animateContentSize(),
             insideMargin = PaddingValues(vertical = 7.dp),
-            colors = cardStatus.colors,
+            colors = cardStatus.colors.copy(color = animatedColors),
             pressFeedbackType = PressFeedbackType.Sink,
             onClick = {},
             content = cardStatus.content

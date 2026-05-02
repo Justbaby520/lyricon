@@ -13,16 +13,16 @@ configure<ApplicationExtension> {
     }
 
     packaging {
-//        resources {
-//            excludes.addAll(
-//                listOf(
-//                    "META-INF/**/LICENSE*",
-//                    "META-INF/**/NOTICE*",
-//                    "META-INF/*.version",
-//                    "DebugProbesKt.bin"
-//                )
-//            )
-//        }
+        resources {
+            excludes.addAll(
+                listOf(
+                    "META-INF/**/LICENSE*",
+                    "META-INF/**/NOTICE*",
+                    "META-INF/*.version",
+                    "DebugProbesKt.bin"
+                )
+            )
+        }
         dex {
             //强制压缩Dex
             useLegacyPackaging = true
@@ -46,6 +46,17 @@ configure<ApplicationExtension> {
                 "zh-rTW",
                 "zh-rHK"
             )
+        }
+    }
+
+    flavorDimensions += "locale"
+    productFlavors {
+        create("standard") {
+            dimension = "locale"
+        }
+        create("zh") {
+            dimension = "locale"
+            versionNameSuffix = "-zh"
         }
     }
 

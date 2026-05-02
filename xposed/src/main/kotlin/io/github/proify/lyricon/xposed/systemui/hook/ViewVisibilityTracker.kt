@@ -18,7 +18,7 @@ import java.util.concurrent.ConcurrentHashMap
 /**
  * 视图可见性追踪器
  *
- * 该工具通过 Hook [android.view.View.setFlags] 方法来追踪和管理视图的原始可见性状态。
+ * 该工具通过 Hook android.view.View.setFlags 方法来追踪和管理视图的原始可见性状态。
  */
 object ViewVisibilityTracker {
     private const val TAG = "ViewVisibilityTracker"
@@ -47,7 +47,6 @@ object ViewVisibilityTracker {
      * @param module XposedModule 实例
      * @param classLoader 当前宿主 App 的 ClassLoader
      */
-
     fun initialize(module: XposedModule, classLoader: ClassLoader) {
         try {
             // 移除旧的 Hook 实例，防止内存泄漏或重复 Hook
@@ -57,16 +56,22 @@ object ViewVisibilityTracker {
             @SuppressLint("SoonBlockedPrivateApi")
             val setFlagsMethod = classLoader.loadClass(View::class.java.name)
                 .getDeclaredMethod(
-                "setFlags",
+                    "setFlags",
                     Int::class.javaPrimitiveType,
                     Int::class.javaPrimitiveType
                 )
 
-            unhookHandle = module.hook(setFlagsMethod).intercept { chain ->
-                val view = chain.thisObject as View
-                handleSetFlags(view, chain)
-                chain.proceed()
-            }
+            @Suppress("ObjectLiteralToLambda")
+            unhookHandle =
+                module.hook(setFlagsMethod)
+                    .intercept(object : XposedInterface.Hooker {
+                        override fun intercept(chain: XposedInterface.Chain): Any? {
+                            val view = chain.thisObject as View
+                            handleSetFlags(view, chain)
+                            return chain.proceed()
+                        }
+
+                    })
             YLog.info(TAG, "Successfully hooked View.setFlags")
         } catch (t: Throwable) {
             YLog.error(TAG, "Failed to initialize hook", t)

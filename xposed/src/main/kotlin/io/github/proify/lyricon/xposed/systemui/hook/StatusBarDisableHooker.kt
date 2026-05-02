@@ -8,6 +8,8 @@
 
 package io.github.proify.lyricon.xposed.systemui.hook
 
+import android.annotation.SuppressLint
+import io.github.libxposed.api.XposedInterface
 import io.github.libxposed.api.XposedModule
 import io.github.proify.lyricon.xposed.logger.YLog
 import java.util.concurrent.CopyOnWriteArraySet
@@ -40,6 +42,7 @@ object StatusBarDisableHooker {
         listeners.remove(listener)
     }
 
+    @SuppressLint("PrivateApi")
     fun inject(module: XposedModule, classLoader: ClassLoader) {
         try {
             val clazz = Class.forName(
@@ -55,22 +58,26 @@ object StatusBarDisableHooker {
                 Boolean::class.javaPrimitiveType
             )
 
-            module.hook(method).intercept { chain ->
-                chain.proceed()
-                val state1 = chain.args[1] as Int
-                val animate = chain.args[3] as Boolean
+            @Suppress("ObjectLiteralToLambda")
+            module.hook(method).intercept(object : XposedInterface.Hooker {
+                override fun intercept(chain: XposedInterface.Chain): Any? {
+                    chain.proceed()
+                    val state1 = chain.args[1] as Int
+                    val animate = chain.args[3] as Boolean
 
-                val shouldHide = (state1 and FLAG_DISABLE_SYSTEM_INFO != 0)
+                    val shouldHide = (state1 and FLAG_DISABLE_SYSTEM_INFO != 0)
 
-                listeners.forEach {
-                    try {
-                        it.onDisableStateChanged(shouldHide, animate)
-                    } catch (e: Exception) {
-                        YLog.error(TAG, "分发监听失败", e)
+                    listeners.forEach {
+                        try {
+                            it.onDisableStateChanged(shouldHide, animate)
+                        } catch (e: Exception) {
+                            YLog.error(TAG, "分发监听失败", e)
+                        }
                     }
+                    return null
                 }
-                null
-            }
+
+            })
         } catch (e: Throwable) {
             YLog.error(TAG, " -> Hook 注入失败: ")
         }
