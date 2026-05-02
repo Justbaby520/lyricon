@@ -3,7 +3,23 @@ import { defineConfig } from 'vitepress'
          const zhSidebar = [
          {
          text : 'App',
-         items : [{ text: '使用说明', link: '/app/' }]
+                 items : [
+                 { text : '使用指南', link: '/zh-cn/app/' },
+                   { text : '安装与激活', link: '/zh-cn/app/installation' },
+                   { text : '首次使用', link: '/zh-cn/app/first-run' },
+                            { text : '歌词提供服务', link: '/zh-cn/app/providers' },
+                            { text : '基本设置', link: '/zh-cn/app/basic-settings' },
+                            { text : '应用样式', link: '/zh-cn/app/app-style' },
+                              { text : '文字样式', link: '/zh-cn/app/text-style' },
+                              { text : '图标样式', link: '/zh-cn/app/logo-style' },
+                                       { text : '动画效果', link: '/zh-cn/app/animation' },
+                                       { text : '翻译', link: '/zh-cn/app/translation' },
+                                       { text : '视图规则', link: '/zh-cn/app/visibility-rules' },
+                                         { text : '应用设置', link: '/zh-cn/app/settings' },
+                                         { text : '备份与恢复', link: '/zh-cn/app/backup-restore' },
+                                                  { text : 'ROM 适配', link: '/zh-cn/app/rom-notes' },
+                                                  { text : '常见问题', link: '/zh-cn/app/troubleshooting' }
+                                                  ]
                         },
                         {
                         text : 'Developer',
@@ -38,7 +54,23 @@ import { defineConfig } from 'vitepress'
                                         const enSidebar = [
                                         {
                                         text : 'App',
-                                        items : [{ text : 'Guide', link: '/en/app/' }]
+                                                                                                                                                     items : [
+                                                                                                                                                     { text : 'Guide', link: '/en/app/' },
+                                                                                                                                                       { text : 'Installation', link: '/en/app/installation' },
+                                                                                                                                                       { text : 'First Run', link: '/en/app/first-run' },
+                                                                                                                                                                { text : 'Lyric Providers', link: '/en/app/providers' },
+                                                                                                                                                                { text : 'Basic Settings', link: '/en/app/basic-settings' },
+                                                                                                                                                                { text : 'App Styles', link: '/en/app/app-style' },
+                                                                                                                                                                  { text : 'Text Style', link: '/en/app/text-style' },
+                                                                                                                                                                  { text : 'Logo Style', link: '/en/app/logo-style' },
+                                                                                                                                                                           { text : 'Animation Effects', link: '/en/app/animation' },
+                                                                                                                                                                           { text : 'Translation', link: '/en/app/translation' },
+                                                                                                                                                                           { text : 'View Rules', link: '/en/app/visibility-rules' },
+                                                                                                                                                                             { text : 'App Settings', link: '/en/app/settings' },
+                                                                                                                                                                             { text : 'Backup And Restore', link: '/en/app/backup-restore' },
+                                                                                                                                                                                      { text : 'ROM Notes', link: '/en/app/rom-notes' },
+                                                                                                                                                                                      { text : 'Troubleshooting', link: '/en/app/troubleshooting' }
+                                                                                                                                                                                      ]
                                                    },
                                                    {
                                                    text : 'Developer',
@@ -82,7 +114,7 @@ export default defineConfig({
                             siteTitle : '词幕',
                             nav : [
                             { text : '首页', link: '/' },
-                            { text : 'App', link: '/app/' },
+                                                                                                                                                                                                                                                                                                                                                          { text : 'App', link: '/zh-cn/app/' },
                             { text: 'Developer', link: '/developer/' }
                                   ],
                                   sidebar : zhSidebar,

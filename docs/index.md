@@ -10,7 +10,7 @@ hero:
   actions:
     - theme: brand
       text: 使用文档
-      link: /app/
+      link: /zh-cn/app/
     - theme: alt
       text: 下载应用
       link: https://github.com/tomakino/lyricon/releases
