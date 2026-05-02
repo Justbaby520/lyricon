@@ -83,6 +83,7 @@
 - [**Kanade**](https://github.com/rcmiku/Kanade)
 - **Sollin Player**
 - [**QZ Music**](https://github.com/lqtmcstudio/QZMusic)
+- [**棉花音乐**](https://github.com/pure-music/PureMusic)
 
 #### Is your player already supported but not listed here? Please [submit an issue](https://github.com/tomakino/lyricon/issues).
 

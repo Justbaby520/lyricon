@@ -75,6 +75,7 @@
 - [**Kanade**](https://github.com/rcmiku/Kanade)
 - **Sollin Player**
 - [**QZ Music**](https://github.com/lqtmcstudio/QZMusic)
+- [**棉花音乐**](https://github.com/pure-music/PureMusic)
 
 #### 已适配了但没有你的播放器？请[提交 issue](https://github.com/tomakino/lyricon/issues)。
 
