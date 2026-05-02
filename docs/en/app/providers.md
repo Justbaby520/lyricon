@@ -1,13 +1,12 @@
 # Lyric Providers
 
-Lyric providers send lyrics, playback state, album cover, and translation data to Lyricon. The main
+Lyric providers send lyrics, playback state, and translation data to Lyricon. The main
 Lyricon app manages display configuration, but it does not guarantee lyrics for every player by
 itself.
 
 ## Sources
 
-Lyricon can use built-in services or external lyric providers. External providers are usually used
-to support more players or update player-specific adaptation logic.
+Install lyric providers from the official source:
 
 - [LyricProvider Releases](https://github.com/proify/LyricProvider/releases)
 
@@ -30,7 +29,7 @@ The top-right menu can switch the provider list mode.
 | Mode    | Description                                              |
 |:--------|:---------------------------------------------------------|
 | Compact | Shows essential information for daily use                |
-| Full    | Shows more tags and provider details for troubleshooting |
+| Full    | Shows more tags and provider details                    |
 
 ## Capability Tags
 
@@ -50,13 +49,6 @@ Check in this order:
 3. The player is playing a track with available lyrics.
 4. The provider appears in the Lyricon provider page.
 5. The player was reopened after installing or updating the provider.
-
-## Disable Built-in Services
-
-In **Settings**, **Disable built-in services** can be enabled. This is useful when using external
-Lyricon services and you want to avoid built-in services.
-
-After changing this option, restart System UI to fully refresh service state.
 
 ## No Available Providers
 

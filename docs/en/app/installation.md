@@ -5,12 +5,12 @@ is not enough; the module must be enabled, scoped, and loaded by restarting Syst
 
 ## Requirements
 
-| Item             | Requirement                                              |
-|:-----------------|:---------------------------------------------------------|
-| Android version  | Android 9.0 (API 28) or later                            |
-| Root             | Root access is required                                  |
-| Xposed framework | LSPosed is recommended, or a compatible Xposed framework |
-| Scope            | **System UI** must be selected                           |
+| Item              | Requirement                    |
+|:------------------|:-------------------------------|
+| Android version   | Android 10 (API 29) or later   |
+| Root              | Root access is required        |
+| LSPosed framework | LSPosed 2.0 or later           |
+| Scope             | **System UI** must be selected |
 
 ## Install The App
 
@@ -36,7 +36,7 @@ Open the Lyricon home screen and check the status card.
 | Active                        | The module service is available                          | Continue with providers and style configuration |
 | Not active                    | The module is not injected or the service is unavailable | Check LSPosed and the System UI scope           |
 | Waiting for System UI restart | A new version or setting needs reinjection               | Restart System UI or reboot                     |
-| System UI error, disabled     | Lyricon disabled itself to protect System UI             | Review recent settings and restart System UI    |
+| System UI error, disabled     | System UI entered protection state                       | Check LSPosed logs and recently changed settings |
 
 ## Restart System UI
 

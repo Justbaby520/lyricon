@@ -23,30 +23,30 @@ import { defineConfig } from 'vitepress'
                         },
                         {
                         text : 'Developer',
-         items : [{ text : '概览', link: '/developer/' }]
+         items : [{ text : '概览', link: '/zh-cn/developer/' }]
          },
          {
          text : 'Provider',
          items : [
-         { text : '概览', link: '/developer/provider/' },
-           { text : '快速开始', link: '/developer/provider/quick-start' },
-           { text : 'Manifest 配置', link: '/developer/provider/manifest' },
-                    { text : '连接生命周期', link: '/developer/provider/connection' },
-                    { text : '播放器控制', link: '/developer/provider/player-control' },
-                    { text : '歌词数据结构', link: '/developer/provider/lyrics-model' },
-                      { text : '本地测试', link: '/developer/provider/local-testing' },
-                      { text : '常见问题', link: '/developer/provider/faq' }
+         { text : '概览', link: '/zh-cn/developer/provider/' },
+           { text : '快速开始', link: '/zh-cn/developer/provider/quick-start' },
+           { text : 'Manifest 配置', link: '/zh-cn/developer/provider/manifest' },
+                    { text : '连接生命周期', link: '/zh-cn/developer/provider/connection' },
+                    { text : '播放器控制', link: '/zh-cn/developer/provider/player-control' },
+                    { text : '歌词数据结构', link: '/zh-cn/developer/provider/lyrics-model' },
+                      { text : '本地测试', link: '/zh-cn/developer/provider/local-testing' },
+                      { text : '常见问题', link: '/zh-cn/developer/provider/faq' }
                                ]
                                },
                                {
                                text : 'Subscriber',
                                       items : [
-                                      { text : '概览', link: '/developer/subscriber/' },
-                                      { text : '快速开始', link: '/developer/subscriber/quick-start' },
-                                        { text : '连接生命周期', link: '/developer/subscriber/connection' },
-                                        { text : '活跃播放器', link: '/developer/subscriber/active-player' },
-                                                 { text : '回调说明', link: '/developer/subscriber/callbacks' },
-                                                 { text : '常见问题', link: '/developer/subscriber/faq' }
+                                      { text : '概览', link: '/zh-cn/developer/subscriber/' },
+                                      { text : '快速开始', link: '/zh-cn/developer/subscriber/quick-start' },
+                                        { text : '连接生命周期', link: '/zh-cn/developer/subscriber/connection' },
+                                        { text : '活跃播放器', link: '/zh-cn/developer/subscriber/active-player' },
+                                                 { text : '回调说明', link: '/zh-cn/developer/subscriber/callbacks' },
+                                                 { text : '常见问题', link: '/zh-cn/developer/subscriber/faq' }
                                                  ]
                                         }
                                         ]
@@ -115,7 +115,7 @@ export default defineConfig({
                             nav : [
                             { text : '首页', link: '/' },
                                                                                                                                                                                                                                                                                                                                                           { text : 'App', link: '/zh-cn/app/' },
-                            { text: 'Developer', link: '/developer/' }
+                            { text: 'Developer', link: '/zh-cn/developer/' }
                                   ],
                                   sidebar : zhSidebar,
                             socialLinks : [{ icon : 'github', link: 'https://github.com/tomakino/lyricon' }],

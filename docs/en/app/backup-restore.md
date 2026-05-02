@@ -13,15 +13,8 @@ Backups mainly save in-app Lyricon settings, such as:
 - Translation configuration.
 - App language, theme, and other preferences.
 
-## What May Not Be Included
-
-The following usually need to be checked separately on the target device:
-
-- LSPosed module enabled state.
-- System UI scope configuration.
-- External lyric provider APKs.
-- Music player apps.
-- Root permission state.
+> [!Warning]
+> Sensitive information such as keys is not backed up.
 
 ## Export A Backup
 

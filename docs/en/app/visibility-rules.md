@@ -59,7 +59,7 @@ lines instead of triggering a full lyric view hide timeout.
 - One rule per line is easier to maintain.
 - Broad rules may accidentally hide normal lyrics.
 - Test several tracks after changing rules.
-- If you are not familiar with regex, start with exact keywords instead of complex expressions.
+- If you are not familiar with regex, ask AI.
 
 ## After ROM Updates
 
