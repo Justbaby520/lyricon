@@ -6,7 +6,7 @@
 
 <resources>
     <string name="app_name">词幕</string>
-    <string name="xposed_description">为状态栏添加实时歌词功能</string>
+    <string name="app_description">为状态栏添加实时歌词功能</string>
     <string name="action_confirm">确定</string>
     <string name="action_save">保存</string>
     <string name="action_add">添加</string>
@@ -92,7 +92,7 @@
     <string name="item_text_marquee_infinite_scrolling">无限滚动</string>
     <string name="item_text_marquee_repeat_count">最大滚动次数</string>
     <string name="item_text_marquee_stop_at_end">结束时在末尾停止</string>
-    <string name="item_text_fading_style">边缘淡出样式</string>
+    <string name="item_text_word_progress_fading_style">渐变单词进度样式</string>
     <string name="item_text_syllable">逐字歌词</string>
     <string name="item_text_relative_progress">相对进度</string>
     <string name="item_text_relative_progress_summary">歌词缺少字词时间轴时，将整行作为一个进度单元。</string>
@@ -248,7 +248,7 @@
 
     <string name="item_view_on_github_summary">查看项目/提交问题</string>
     <string name="item_open_source_licenses_summary">查看软件依赖和许可证信息</string>
-    <string name="about_badge_live_lyrics">实时歌词</string>
-    <string name="about_tagline">让每一句歌词都准时抵达</string>
+    <string name="custom_logo_dialog_title">自定义图标</string>
+    <string name="custom_logo_dialog_summary">粘贴 Base64 编码的图片或原始 SVG 内容。</string>
 
 </resources>

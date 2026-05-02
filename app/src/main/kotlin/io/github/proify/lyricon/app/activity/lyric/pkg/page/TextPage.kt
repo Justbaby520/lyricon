@@ -163,7 +163,7 @@ fun TextPage(scrollBehavior: ScrollBehavior, preferences: SharedPreferences) {
                 )
                 SwitchPreference(
                     checked = isGradientProgressStyleEnabled,
-                    title = stringResource(R.string.item_text_fading_style),
+                    title = stringResource(R.string.item_text_word_progress_fading_style),
                     startAction = { IconActions(painterResource(R.drawable.ic_gradient)) },
                     onCheckedChange = { isGradientProgressStyleEnabled = it }
                 )

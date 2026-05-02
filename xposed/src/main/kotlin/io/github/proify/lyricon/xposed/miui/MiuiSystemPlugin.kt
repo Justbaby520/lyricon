@@ -6,7 +6,7 @@
 
 package io.github.proify.lyricon.xposed.miui
 
-import io.github.proify.lyricon.xposed.PackageHooker
+import io.github.proify.lyricon.xposed.hook.PackageHooker
 import io.github.proify.lyricon.xposed.logger.YLog
 
 object MiuiSystemPlugin : PackageHooker() {

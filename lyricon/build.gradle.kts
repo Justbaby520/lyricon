@@ -9,22 +9,20 @@ configure<ApplicationExtension> {
     namespace = rootProject.extra["appPackageName"] as String
 
     compileSdk {
-        version = release(rootProject.extra.get("compileSdkVersion") as Int) {
-           /// minorApiLevel = 1
-        }
+        version = release(rootProject.extra.get("compileSdkVersion") as Int)
     }
 
     packaging {
-        resources {
-            excludes.addAll(
-                listOf(
-                    "META-INF/**/LICENSE*",
-                    "META-INF/**/NOTICE*",
-                    "META-INF/*.version",
-                    "DebugProbesKt.bin"
-                )
-            )
-        }
+//        resources {
+//            excludes.addAll(
+//                listOf(
+//                    "META-INF/**/LICENSE*",
+//                    "META-INF/**/NOTICE*",
+//                    "META-INF/*.version",
+//                    "DebugProbesKt.bin"
+//                )
+//            )
+//        }
         dex {
             //强制压缩Dex
             useLegacyPackaging = true

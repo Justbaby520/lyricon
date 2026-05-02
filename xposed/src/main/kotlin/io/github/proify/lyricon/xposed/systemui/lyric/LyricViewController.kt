@@ -33,7 +33,7 @@ object LyricViewController : ActivePlayerListener,
     private const val TAG = "LyricViewController"
     private const val DEBUG = true
 
-    /** 当前播放状态，线程安全可见 */
+    /** 当前播放状态 */
     @Volatile
     var isPlaying: Boolean = false
         private set

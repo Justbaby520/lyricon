@@ -6,7 +6,7 @@
 
 <resources>
     <string name="app_name">詞幕</string>
-    <string name="xposed_description">為狀態列加入即時歌詞功能</string>
+    <string name="app_description">為狀態列加入即時歌詞功能</string>
     <string name="action_confirm">確定</string>
     <string name="action_save">儲存</string>
     <string name="action_add">新增</string>
@@ -90,7 +90,7 @@
     <string name="item_text_marquee_infinite_scrolling">無限滾動</string>
     <string name="item_text_marquee_repeat_count">最大滾動次數</string>
     <string name="item_text_marquee_stop_at_end">結束時停止於末尾</string>
-    <string name="item_text_fading_style">邊緣淡出樣式</string>
+    <string name="item_text_word_progress_fading_style">漸變單詞進度樣式</string>
     <string name="item_text_syllable">逐字歌詞</string>
     <string name="item_text_relative_progress">相對進度</string>
     <string name="item_text_relative_progress_summary">歌詞缺少字詞時間軸時，將整行作為一個進度單元。</string>
@@ -246,6 +246,6 @@
 
     <string name="item_view_on_github_summary">檢視 GitHub / 報告問題</string>
     <string name="item_open_source_licenses_summary">顯示第三方軟體的授權</string>
-    <string name="about_badge_live_lyrics">即時歌詞</string>
-    <string name="about_tagline">讓每一句歌詞都準時抵達</string>
+    <string name="custom_logo_dialog_title">自訂圖示</string>
+    <string name="custom_logo_dialog_summary">貼上 Base64 編碼的圖片或原始 SVG 內容。</string>
 </resources>

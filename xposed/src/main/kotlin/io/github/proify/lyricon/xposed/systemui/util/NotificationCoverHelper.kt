@@ -89,6 +89,10 @@ object NotificationCoverHelper {
                     val success = withContext(Dispatchers.IO) {
                         try {
                             val dir = Directory.getPackageDataDir(packageName)
+                            if (dir == null) {
+                                Log.e(TAG, "Failed to get package data dir for $packageName")
+                                return@withContext false
+                            }
                             val targetFile = File(dir, COVER_FILE_NAME)
                             val tempFile = File(dir, TEMP_FILE_NAME)
 
@@ -114,7 +118,7 @@ object NotificationCoverHelper {
 
                     if (success) {
                         lastGenerationId = currentId
-                        notifyListeners(packageName, getCoverFile(packageName))
+                        getCoverFile(packageName)?.let { notifyListeners(packageName, it) }
                     }
 
                     // 无论成功失败，处理完都要释放副本内存
@@ -146,8 +150,10 @@ object NotificationCoverHelper {
         listeners.forEach { it.onCoverUpdated(packageName, coverFile) }
     }
 
-    fun getCoverFile(packageName: String): File =
-        File(Directory.getPackageDataDir(packageName), COVER_FILE_NAME)
+    fun getCoverFile(packageName: String): File? {
+        val dir = Directory.getPackageDataDir(packageName) ?: return null
+        return File(dir, COVER_FILE_NAME)
+    }
 
     private fun MediaMetadata.extractAlbumArt(): Bitmap? =
         getBitmap(MediaMetadata.METADATA_KEY_ALBUM_ART)

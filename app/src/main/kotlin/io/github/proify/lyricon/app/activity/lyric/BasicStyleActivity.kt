@@ -49,15 +49,9 @@ class BasicLyricStyleActivity : AbstractLyricActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        preferences.registerOnSharedPreferenceChangeListener(this)
         setContent {
             Content()
         }
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        preferences.unregisterOnSharedPreferenceChangeListener(this)
     }
 
     @Composable

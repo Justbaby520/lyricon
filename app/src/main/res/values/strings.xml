@@ -6,7 +6,7 @@
 
 <resources>
     <string name="app_name">Lyricon</string>
-    <string name="xposed_description">Adds live lyrics to the status bar</string>
+    <string name="app_description">Adds live lyrics to the status bar</string>
     <string name="action_confirm">Confirm</string>
     <string name="action_save">Save</string>
     <string name="action_add">Add</string>
@@ -90,7 +90,7 @@
     <string name="item_text_marquee_infinite_scrolling">Infinite scrolling</string>
     <string name="item_text_marquee_repeat_count">Max repeat count</string>
     <string name="item_text_marquee_stop_at_end">Stop at end</string>
-    <string name="item_text_fading_style">Fading style</string>
+    <string name="item_text_word_progress_fading_style">Gradient word progress style</string>
     <string name="item_text_syllable">Syllable lyrics</string>
     <string name="item_text_relative_progress">Relative progress</string>
     <string name="item_text_relative_progress_summary">If word timing is unavailable, treat the entire line as a single unit.</string>
@@ -245,6 +245,8 @@
 
     <string name="item_view_on_github_summary">View on GitHub / Report issues.</string>
     <string name="item_open_source_licenses_summary">Show licenses of third-party software.</string>
-    <string name="about_badge_live_lyrics">Live Lyrics</string>
-    <string name="about_tagline">Make every lyric land in the right moment</string>
+    <string name="item_logo_style_custom">自定义</string>
+    <string name="custom_logo_dialog_title">Custom logo</string>
+    <string name="custom_logo_dialog_summary">Paste a Base64-encoded image or raw SVG content.</string>
+    <string name="item_logo_custom_colorful">该图标为彩色图标</string>
 </resources>

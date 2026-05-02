@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright 2026 Proify, Tomakino
  * Licensed under the Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0
@@ -11,10 +11,8 @@ import android.content.res.ColorStateList
 import android.view.View
 import android.widget.TextView
 import androidx.core.graphics.ColorUtils
-import de.robv.android.xposed.XC_MethodHook
-import de.robv.android.xposed.XposedBridge
+import io.github.libxposed.api.XposedModule
 import io.github.proify.lyricon.xposed.systemui.util.OnColorChangeListener
-import java.lang.reflect.Member
 import java.util.WeakHashMap
 
 object ClockColorMonitor {
@@ -40,49 +38,55 @@ object ClockColorMonitor {
         }
     }
 
-    fun hook() {
+    fun hook(module: XposedModule, classLoader: ClassLoader) {
         if (hooked) return
         hooked = true
 
-        val methods = arrayOf<Member>(
-            TextView::class.java.getDeclaredMethod(
+        val classTextView = classLoader.loadClass("android.widget.TextView")
+        val methods = arrayOf(
+            classTextView.getDeclaredMethod(
                 "setTextColor",
                 ColorStateList::class.java
             ),
-            TextView::class.java.getDeclaredMethod(
+            classTextView.getDeclaredMethod(
                 "setTextColor",
                 Int::class.javaPrimitiveType
             )
         )
 
-        val hook = object : XC_MethodHook() {
-
-            @SuppressLint("DiscouragedApi")
-            override fun afterHookedMethod(param: MethodHookParam) {
-                val tv = param.thisObject as? TextView ?: return
-
-                if (clockId == INVALID_ID) {
-                    clockId = tv.resources.getIdentifier(
-                        CLOCK_ID_NAME,
-                        CLOCK_ID_TYPE,
-                        tv.context.packageName
-                    )
-                    if (clockId == INVALID_ID) return
+        methods.forEach { method ->
+            module.hook(method).intercept { chain ->
+                chain.proceed()
+                // 后置处理
+                val tv = chain.thisObject as? TextView
+                if (tv != null) {
+                    afterSetColor(tv)
                 }
-
-                if (tv.id != clockId) return
-
-                val listener = listeners[tv] ?: return
-
-                val color = tv.currentTextColor
-                val luminance = luminanceCache.getOrPut(color) {
-                    ColorUtils.calculateLuminance(color).toFloat()
-                }
-
-                listener.onColorChanged(color, luminance)
+                null
             }
         }
+    }
 
-        methods.forEach { XposedBridge.hookMethod(it, hook) }
+    @SuppressLint("DiscouragedApi")
+    private fun afterSetColor(tv: TextView) {
+        if (clockId == INVALID_ID) {
+            clockId = tv.resources.getIdentifier(
+                CLOCK_ID_NAME,
+                CLOCK_ID_TYPE,
+                tv.context.packageName
+            )
+            if (clockId == INVALID_ID) return
+        }
+
+        if (tv.id != clockId) return
+
+        val listener = listeners[tv] ?: return
+
+        val color = tv.currentTextColor
+        val luminance = luminanceCache.getOrPut(color) {
+            ColorUtils.calculateLuminance(color).toFloat()
+        }
+
+        listener.onColorChanged(color, luminance)
     }
 }

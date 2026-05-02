@@ -9,9 +9,7 @@ plugins {
 configure<LibraryExtension> {
     namespace = "io.github.proify.lyricon.xposed"
     compileSdk {
-        version = release(rootProject.extra.get("compileSdkVersion") as Int) {
-         //   minorApiLevel = 1
-        }
+        version = release(rootProject.extra.get("compileSdkVersion") as Int)
     }
 
     defaultConfig {
@@ -43,6 +41,7 @@ configure<LibraryExtension> {
 
     buildFeatures {
         buildConfig = true
+        aidl = true
     }
 }
 
@@ -56,9 +55,11 @@ dependencies {
     implementation(project(":lyric:bridge:central"))
     implementation(project(":opencc-lite"))
 
+    compileOnly(libs.libxposed.api)
+    implementation(libs.libxposed.service)
+
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.core.ktx)
-    compileOnly(libs.xposed.api)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

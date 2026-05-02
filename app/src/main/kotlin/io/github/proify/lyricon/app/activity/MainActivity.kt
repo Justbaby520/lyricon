@@ -5,6 +5,7 @@
  */
 package io.github.proify.lyricon.app.activity
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -48,14 +49,16 @@ import androidx.core.content.edit
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.lifecycleScope
+import io.github.libxposed.service.XposedService
 import io.github.proify.android.extensions.defaultSharedPreferences
 import io.github.proify.lyricon.app.BuildConfig
 import io.github.proify.lyricon.app.LyriconApp
+import io.github.proify.lyricon.app.LyriconApp.Companion.addXposedServiceStateListener
+import io.github.proify.lyricon.app.LyriconApp.Companion.removeXposedServiceStateListener
 import io.github.proify.lyricon.app.R
 import io.github.proify.lyricon.app.activity.lyric.BasicLyricStyleActivity
 import io.github.proify.lyricon.app.activity.lyric.pkg.PackageStyleActivity
 import io.github.proify.lyricon.app.activity.lyric.provider.LyricProviderActivity
-import io.github.proify.lyricon.app.bridge.AppBridge
 import io.github.proify.lyricon.app.bridge.AppBridgeConstants
 import io.github.proify.lyricon.app.bridge.LyriconBridge
 import io.github.proify.lyricon.app.compose.AppToolBarListContainer
@@ -89,19 +92,20 @@ import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
 
-class MainActivity : BaseActivity() {
+class MainActivity : BaseActivity(), LyriconApp.XposedServiceStateListener {
 
     private companion object {
         const val PREF_KEY_LAST_VERSION = "last_version"
         private const val TAG = "MainActivity"
+        private const val RESTART_DEBOUNCE_MS = 666L
     }
 
     private val viewModel: MainViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        handleVersionUpdateLogic()
+        addXposedServiceStateListener(this)
+        handleVersionUpdate()
 
         setContent {
             MainContent(
@@ -114,10 +118,12 @@ class MainActivity : BaseActivity() {
         setupEventListeners()
     }
 
-    /**
-     * 版本更新逻辑处理
-     */
-    private fun handleVersionUpdateLogic() {
+    override fun onDestroy() {
+        super.onDestroy()
+        removeXposedServiceStateListener(this)
+    }
+
+    private fun handleVersionUpdate() {
         val sharedPreferences = defaultSharedPreferences
         val savedVersionCode = sharedPreferences.getLong(PREF_KEY_LAST_VERSION, 0)
         if (savedVersionCode <= 0) {
@@ -159,13 +165,13 @@ class MainActivity : BaseActivity() {
         if (viewModel.isWaitingForReboot.value) {
             saveCurrentVersionCode()
             lifecycleScope.launch {
-                delay(666)
+                delay(RESTART_DEBOUNCE_MS)
                 viewModel.setWaitingForReboot(false)
             }
         }
         val result = Utils.killSystemUI()
         if (result.result == -1) {
-            viewModel.showRestartFailDialog.value = true
+            viewModel.showRestartFailedDialog.value = true
         }
     }
 
@@ -175,22 +181,27 @@ class MainActivity : BaseActivity() {
         }
     }
 
+    override fun onServiceStateChanged(service: XposedService?) {
+        viewModel.isModuleActive.value = service != null
+    }
+
     /**
      * 界面状态管理层
      */
     class MainViewModel : ViewModel() {
         private val _safeMode = mutableStateOf(false)
-        val showRestartFailDialog: MutableState<Boolean> = mutableStateOf(false)
+        val showRestartFailedDialog: MutableState<Boolean> = mutableStateOf(false)
         private val _isWaitingForReboot = mutableStateOf(false)
 
         val safeMode: State<Boolean> get() = _safeMode
         val isWaitingForReboot: State<Boolean> get() = _isWaitingForReboot
 
-        val showPopup: MutableState<Boolean> = mutableStateOf(false)
+        val showRestartMenu: MutableState<Boolean> = mutableStateOf(false)
+        val isModuleActive: MutableState<Boolean> = mutableStateOf(false)
 
         fun updateSafeMode(isSafe: Boolean) {
             _safeMode.value = isSafe
-            LyriconApp.updateSafeMode(isSafe)
+            LyriconApp.setSafeMode(isSafe)
         }
 
         fun setWaitingForReboot(waiting: Boolean) {
@@ -265,6 +276,7 @@ class MainActivity : BaseActivity() {
         }
     }
 
+    @SuppressLint("ConfigurationScreenWidthHeight")
     @Composable
     fun MainContent(
         model: MainViewModel? = null,
@@ -272,20 +284,20 @@ class MainActivity : BaseActivity() {
         onRestartApp: () -> Unit = {}
     ) {
         val isTablet = LocalConfiguration.current.screenWidthDp >= 600
-        val fallbackShowPopup = remember { mutableStateOf(false) }
-        val showPopupState = model?.showPopup ?: fallbackShowPopup
+        val fallbackShowRestartMenu = remember { mutableStateOf(false) }
+        val showRestartMenuState = model?.showRestartMenu ?: fallbackShowRestartMenu
 
         if (isTablet) {
             TabletMainContent(
                 model = model,
-                showPopupState = showPopupState,
+                showRestartMenuState = showRestartMenuState,
                 onRestartSystemUI = onRestartSystemUI,
                 onRestartApp = onRestartApp
             )
         } else {
             PhoneMainContent(
                 model = model,
-                showPopupState = showPopupState,
+                showRestartMenuState = showRestartMenuState,
                 onRestartSystemUI = onRestartSystemUI,
                 onRestartApp = onRestartApp
             )
@@ -295,15 +307,15 @@ class MainActivity : BaseActivity() {
     @Composable
     private fun PhoneMainContent(
         model: MainViewModel?,
-        showPopupState: MutableState<Boolean>,
+        showRestartMenuState: MutableState<Boolean>,
         onRestartSystemUI: () -> Unit,
         onRestartApp: () -> Unit
     ) {
         AppToolBarListContainer(
             title = stringResource(R.string.app_name),
-            actions = { TopBarActions(showPopupState, onRestartSystemUI, onRestartApp) },
+            actions = { TopBarActions(showRestartMenuState, onRestartSystemUI, onRestartApp) },
             scaffoldContent = {
-                if (model != null) RestartFailDialog(showState = model.showRestartFailDialog)
+                if (model != null) RestartFailedDialog(showState = model.showRestartFailedDialog)
             }
         ) {
             item("status_card") {
@@ -311,6 +323,7 @@ class MainActivity : BaseActivity() {
                     safeMode = model?.safeMode?.value ?: false,
                     isWaitingForReboot = model?.isWaitingForReboot?.value ?: false,
                     isMonet = model?.isMonet ?: AppThemeUtils.isEnableMonet(LocalContext.current),
+                    isModuleActive = model?.isModuleActive?.value ?: false,
                     onRestartSystemUI = onRestartSystemUI
                 )
                 StatusCardItem(
@@ -348,15 +361,15 @@ class MainActivity : BaseActivity() {
     @Composable
     private fun TabletMainContent(
         model: MainViewModel?,
-        showPopupState: MutableState<Boolean>,
+        showRestartMenuState: MutableState<Boolean>,
         onRestartSystemUI: () -> Unit,
         onRestartApp: () -> Unit
     ) {
         AppToolBarListContainer(
             title = stringResource(R.string.app_name),
-            actions = { TopBarActions(showPopupState, onRestartSystemUI, onRestartApp) },
+            actions = { TopBarActions(showRestartMenuState, onRestartSystemUI, onRestartApp) },
             scaffoldContent = {
-                if (model != null) RestartFailDialog(showState = model.showRestartFailDialog)
+                if (model != null) RestartFailedDialog(showState = model.showRestartFailedDialog)
             }
         ) {
             item("status_card") {
@@ -364,6 +377,7 @@ class MainActivity : BaseActivity() {
                     safeMode = model?.safeMode?.value ?: false,
                     isWaitingForReboot = model?.isWaitingForReboot?.value ?: false,
                     isMonet = model?.isMonet ?: AppThemeUtils.isEnableMonet(LocalContext.current),
+                    isModuleActive = model?.isModuleActive?.value ?: false,
                     onRestartSystemUI = onRestartSystemUI
                 )
                 TabletContentItem {
@@ -424,12 +438,13 @@ class MainActivity : BaseActivity() {
         safeMode: Boolean,
         isWaitingForReboot: Boolean,
         isMonet: Boolean,
+        isModuleActive: Boolean,
         onRestartSystemUI: () -> Unit
     ): CardStatus {
-        val inspectionMode = LocalInspectionMode.current
+        val isInspectionMode = LocalInspectionMode.current
         val summary = stringResource(R.string.module_status_summary, BuildConfig.VERSION_NAME)
 
-        if (inspectionMode) {
+        if (isInspectionMode) {
             return StatusCard(
                 colors = CardColors(MaterialPalette.Green.Primary, White),
                 icon = ImageVector.vectorResource(id = R.drawable.ic_android),
@@ -446,7 +461,7 @@ class MainActivity : BaseActivity() {
             )
         }
 
-        if (AppBridge.isModuleActive()) {
+        if (isModuleActive) {
             if (isWaitingForReboot) {
                 return StatusCard(
                     colors = CardColors(MaterialPalette.Orange.Primary, White),
@@ -626,7 +641,7 @@ class MainActivity : BaseActivity() {
     }
 
     @Composable
-    private fun RestartFailDialog(showState: MutableState<Boolean>) {
+    private fun RestartFailedDialog(showState: MutableState<Boolean>) {
         OverlayDialog(
             title = stringResource(R.string.restart_fail),
             summary = stringResource(R.string.message_app_restart_fail),
@@ -643,12 +658,12 @@ class MainActivity : BaseActivity() {
 
     @Composable
     private fun TopBarActions(
-        showPopup: MutableState<Boolean>,
+        showRestartMenu: MutableState<Boolean>,
         onRestartSystemUI: () -> Unit,
         onRestartApp: () -> Unit
     ) {
         Box(modifier = Modifier.padding(end = 14.dp)) {
-            IconButton(onClick = { showPopup.value = true }) {
+            IconButton(onClick = { showRestartMenu.value = true }) {
                 Icon(
                     modifier = Modifier.size(24.dp),
                     imageVector = MiuixIcons.Refresh,
@@ -658,7 +673,7 @@ class MainActivity : BaseActivity() {
             }
 
             RestartMenuPopup(
-                showPopup = showPopup,
+                showRestartMenu = showRestartMenu,
                 onRestartSystemUI = onRestartSystemUI,
                 onRestartApp = onRestartApp
             )
@@ -667,7 +682,7 @@ class MainActivity : BaseActivity() {
 
     @Composable
     private fun RestartMenuPopup(
-        showPopup: MutableState<Boolean>,
+        showRestartMenu: MutableState<Boolean>,
         onRestartSystemUI: () -> Unit,
         onRestartApp: () -> Unit
     ) {
@@ -677,11 +692,11 @@ class MainActivity : BaseActivity() {
         )
 
         OverlayListPopup(
-            show = showPopup.value,
+            show = showRestartMenu.value,
             popupPositionProvider = ListPopupDefaults.DropdownPositionProvider,
             alignment = PopupPositionProvider.Align.TopEnd,
             enableWindowDim = true,
-            onDismissRequest = { showPopup.value = false },
+            onDismissRequest = { showRestartMenu.value = false },
             minWidth = 200.dp,
             content = {
                 ListPopupColumn {
@@ -692,7 +707,7 @@ class MainActivity : BaseActivity() {
                             isSelected = false,
                             onSelectedIndexChange = {
                                 if (index == 0) onRestartSystemUI() else onRestartApp()
-                                showPopup.value = false
+                                showRestartMenu.value = false
                             },
                             index = index
                         )
@@ -706,4 +721,5 @@ class MainActivity : BaseActivity() {
     fun MainContentPreview() {
         MainContent()
     }
+
 }

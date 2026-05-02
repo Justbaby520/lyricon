@@ -45,7 +45,7 @@ class StatusBarViewController(
     }
 
     val context: Context = statusBarView.context.applicationContext
-    val visibilityController = ViewVisibilityController(statusBarView)
+    val visibilityController: ViewVisibilityController = ViewVisibilityController(statusBarView)
     val lyricView: StatusBarLyric by lazy { createLyricView(currentLyricStyle) }
 
     private val clockId: Int by lazy { ResourceMapper.getIdByName(context, "clock") }
@@ -104,7 +104,7 @@ class StatusBarViewController(
     /**
      * 更新状态栏颜色，内部决定最终颜色
      */
-    private fun updateStatusColor(systemStatusBarColor: SystemStatusBarColor) {
+    internal fun updateStatusColor(systemStatusBarColor: SystemStatusBarColor) {
         this.systemStatusBarColor = systemStatusBarColor
 
         val textStyle = currentLyricStyle.packageStyle.text
@@ -214,7 +214,8 @@ class StatusBarViewController(
 
         // 执行插入：在前或在后
         val targetIndex =
-            if (baseStyle.insertionOrder == BasicStyle.INSERTION_ORDER_AFTER) anchorIndex + 1 else anchorIndex
+            if (baseStyle.insertionOrder == BasicStyle.INSERTION_ORDER_AFTER) anchorIndex + 1
+            else anchorIndex
         anchorParent.addView(lyricView, targetIndex, lp)
 
         lyricView.updateVisibility()
@@ -236,9 +237,14 @@ class StatusBarViewController(
 
     private fun getClockView(): View? = statusBarView.findViewById(clockId)
 
+    private var lastPlayingState: Boolean? = null
     private fun applyVisibilityRulesNow() {
+        val isPlaying = LyricViewController.isPlaying
+
+        if (lastPlayingState == isPlaying) return
+
         fun computeShouldApplyPlayingRules(): Boolean {
-            return LyricViewController.isPlaying && when {
+            return isPlaying && when {
                 lyricView.isDisabledVisible -> !lyricView.isHideOnLockScreen()
                 lyricView.isVisible -> true
                 else -> false
@@ -249,6 +255,8 @@ class StatusBarViewController(
             rules = currentLyricStyle.basicStyle.visibilityRules,
             isPlaying = computeShouldApplyPlayingRules()
         )
+
+        lastPlayingState = isPlaying
     }
 
     private fun createLyricView(style: LyricStyle) =
@@ -311,7 +319,8 @@ class StatusBarViewController(
     }
 
     override fun equals(other: Any?): Boolean =
-        (this === other) || (other is StatusBarViewController && statusBarView == other.statusBarView)
+        (this === other) ||
+                (other is StatusBarViewController && statusBarView == other.statusBarView)
 
     override fun hashCode(): Int = 31 * 17 + statusBarView.hashCode()
 

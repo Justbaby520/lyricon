@@ -1,21 +1,24 @@
-/*
+﻿/*
  * Copyright 2026 Proify, Tomakino
  * Licensed under the Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0
  */
 
+@file:Suppress("unused")
+
 package io.github.proify.lyricon.xposed.systemui.hook
 
+import android.annotation.SuppressLint
 import android.view.View
-import de.robv.android.xposed.XC_MethodHook
-import de.robv.android.xposed.XposedHelpers
+import io.github.libxposed.api.XposedInterface
+import io.github.libxposed.api.XposedModule
 import io.github.proify.lyricon.xposed.logger.YLog
 import java.util.concurrent.ConcurrentHashMap
 
 /**
  * 视图可见性追踪器
- * * 该工具通过 Hook [android.view.View.setFlags] 方法来追踪和管理视图的原始可见性状态。
- * 使用原生 Xposed API 实现，不依赖第三方 Hook 框架。
+ *
+ * 该工具通过 Hook [android.view.View.setFlags] 方法来追踪和管理视图的原始可见性状态。
  */
 object ViewVisibilityTracker {
     private const val TAG = "ViewVisibilityTracker"
@@ -36,31 +39,34 @@ object ViewVisibilityTracker {
     private val originalVisibilityMap = ConcurrentHashMap<Int, Int>()
 
     /** 存储当前 Hook 的句柄，用于初始化时清理旧 Hook */
-    private var unhookHandle: XC_MethodHook.Unhook? = null
+    private var unhookHandle: XposedInterface.HookHandle? = null
 
     /**
      * 初始化 Hook 逻辑
-     * * @param classLoader 当前宿主 App 的 ClassLoader
+     *
+     * @param module XposedModule 实例
+     * @param classLoader 当前宿主 App 的 ClassLoader
      */
-    fun initialize(classLoader: ClassLoader) {
+
+    fun initialize(module: XposedModule, classLoader: ClassLoader) {
         try {
             // 移除旧的 Hook 实例，防止内存泄漏或重复 Hook
             unhookHandle?.unhook()
 
             // Hook View.setFlags(int flags, int mask)
-            unhookHandle = XposedHelpers.findAndHookMethod(
-                View::class.java,
+            @SuppressLint("SoonBlockedPrivateApi")
+            val setFlagsMethod = classLoader.loadClass(View::class.java.name)
+                .getDeclaredMethod(
                 "setFlags",
-                Int::class.javaPrimitiveType, // flags
-                Int::class.javaPrimitiveType, // mask
-                object : XC_MethodHook() {
-                    @Throws(Throwable::class)
-                    override fun beforeHookedMethod(param: MethodHookParam) {
-                        val view = param.thisObject as View
-                        handleSetFlags(view, param)
-                    }
-                }
-            )
+                    Int::class.javaPrimitiveType,
+                    Int::class.javaPrimitiveType
+                )
+
+            unhookHandle = module.hook(setFlagsMethod).intercept { chain ->
+                val view = chain.thisObject as View
+                handleSetFlags(view, chain)
+                chain.proceed()
+            }
             YLog.info(TAG, "Successfully hooked View.setFlags")
         } catch (t: Throwable) {
             YLog.error(TAG, "Failed to initialize hook", t)
@@ -70,15 +76,15 @@ object ViewVisibilityTracker {
     /**
      * 处理 setFlags 参数的内部逻辑
      * @param view 当前正在执行 setFlags 的 View 实例
-     * @param param Xposed 方法回调参数
+     * @param chain 拦截器链
      */
-    private fun handleSetFlags(view: View, param: XC_MethodHook.MethodHookParam) {
+    private fun handleSetFlags(view: View, chain: XposedInterface.Chain) {
         val viewId = view.id
         // 如果 View 没有设置 ID，则不进行追踪（根据业务需求可调整）
         if (viewId == View.NO_ID) return
 
-        val flags = param.args[0] as Int
-        val mask = param.args[1] as Int
+        val flags = chain.args[0] as Int
+        val mask = chain.args[1] as Int
 
         // 仅当掩码包含可见性更改位时才进行处理
         if (mask != VISIBILITY_FLAG_MASK) return
@@ -86,14 +92,10 @@ object ViewVisibilityTracker {
         when (flags) {
             CUSTOM_GONE -> {
                 saveOriginalVisibilityIfNeeded(viewId, view.visibility)
-                // 将自定义标志修改为系统识别的 GONE
-                param.args[0] = View.GONE
             }
 
             CUSTOM_VISIBLE -> {
                 saveOriginalVisibilityIfNeeded(viewId, view.visibility)
-                // 将自定义标志修改为系统识别的 VISIBLE
-                param.args[0] = View.VISIBLE
             }
 
             else -> {
@@ -107,7 +109,8 @@ object ViewVisibilityTracker {
 
     /**
      * 在必要时保存视图当前的可见性
-     * * @param viewId 视图 ID
+     *
+     * @param viewId 视图 ID
      * @param currentVisibility 当前 View 对象的实际可见性值
      */
     private fun saveOriginalVisibilityIfNeeded(viewId: Int, currentVisibility: Int) {
@@ -118,7 +121,7 @@ object ViewVisibilityTracker {
 
     /**
      * 获取视图被篡改前的原始可见性
-     *  @param viewId 视图 ID
+     * @param viewId 视图 ID
      * @param defaultValue 找不到记录时的默认返回值，默认为 -1
      * @return 原始可见性标志 (0, 4, 8) 或默认值
      */
@@ -128,7 +131,7 @@ object ViewVisibilityTracker {
 
     /**
      * 停止追踪特定视图并移除记录
-     *  @param viewId 视图 ID
+     * @param viewId 视图 ID
      */
     fun clearTracking(viewId: Int) {
         originalVisibilityMap.remove(viewId)
