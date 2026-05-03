@@ -1,9 +1,13 @@
 {
   "scripts": {
-    "docs:build": "vitepress build docs"
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs"
   },
   "devDependencies": {
-    "vitepress-theme-teek": "^1.5.7",
-    "vitepress": "^1.6.4"
+    "sass": "^1.89.1",
+    "vitepress": "^1.6.4",
+    "vitepress-theme-teek": "^1.5.7"
   }
 }
+
