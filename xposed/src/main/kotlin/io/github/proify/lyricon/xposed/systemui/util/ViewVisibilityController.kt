@@ -22,7 +22,7 @@ class ViewVisibilityController(private val rootViewGroup: ViewGroup) {
         private const val TAG = "ViewVisibilityController"
         private const val TRACKED_MARKER = "tracked"
         private const val VISIBILITY_UNKNOWN = -1
-        private const val DEBUG = true
+        private const val DEBUG = false
     }
 
     /**

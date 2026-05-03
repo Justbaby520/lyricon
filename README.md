@@ -61,10 +61,10 @@
 
 ## 🧩 生态与支持
 
-| 类别       | 资源链接                                                            | 说明             |
-|:---------|:----------------------------------------------------------------|:---------------|
-| **插件库**  | [LyricProvider 仓库](https://github.com/tomakino/LyricProvider)   | 包含主流音乐平台的适配插件 |
-| **开发文档** | [文档中心](https://tomakino.github.io/lyricon/)                    | App 与 Lyric 文档 |
+| 类别       | 资源链接                                                          | 说明             |
+|:---------|:--------------------------------------------------------------|:---------------|
+| **插件库**  | [LyricProvider 仓库](https://github.com/tomakino/LyricProvider) | 包含主流音乐平台的适配插件  |
+| **开发文档** | [文档中心](https://tomakino.github.io/lyricon/)                   | App 与 Lyric 文档 |
 
 ### 💡 已原生适配的应用
 
