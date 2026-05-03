@@ -1,8 +1,4 @@
-import DefaultTheme from 'vitepress/theme'
-import Layout from './Layout.vue'
-import './custom.css'
+importTeekfrom'vitepress-theme-teek'
+import 'vitepress-theme-teek/index.css'
 
-export default {
-...DefaultTheme,
-Layout
-}
+export default Teek

@@ -3,6 +3,7 @@
     "docs:build": "vitepress build docs"
   },
   "devDependencies": {
+    "vitepress-theme-teek": "^1.5.7",
     "vitepress": "^1.6.4"
   }
 }
