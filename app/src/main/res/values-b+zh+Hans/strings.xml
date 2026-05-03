@@ -34,7 +34,7 @@
     <string name="activity_settings">设置</string>
     <string name="activity_about">关于</string>
     <string name="activity_anchor">锚点</string>
-    <string name="activity_view_rules">视图规则</string>
+    <string name="activity_view_rules">视图可见性规则</string>
     <string name="activity_basic_settings">基本设置</string>
     <string name="activity_app_style_manager">应用样式管理</string>
     <string name="activity_lyric_provider_services">歌词提供服务</string>
@@ -115,6 +115,10 @@
     <string name="option_text_transition_config_none">关闭</string>
     <string name="item_logo_section_basic">基本</string>
     <string name="item_logo_enable">启用</string>
+    <string name="item_anim_speed">动画速度</string>
+    <string name="option_anim_speed_fast">快</string>
+    <string name="option_anim_speed_normal">正常</string>
+    <string name="option_anim_speed_slow">慢</string>
     <string name="item_logo_margins">边距</string>
     <string name="item_logo_section_coloros">ColorOS</string>
     <string name="item_logo_hide_in_coloros_capsule_mode">在流体云模式下隐藏</string>
@@ -253,5 +257,10 @@
     <string name="custom_logo_dialog_summary">粘贴 Base64 编码的图片或原始 SVG 内容。</string>
     <string name="item_logo_custom_colorful">该图标为彩色图标</string>
     <string name="module_status_connecting">正在连接…</string>
+    <string name="item_text_enable_enter_anim_summary">控制歌词可见性变换时的动画</string>
+    <string name="section_base">基本</string>
+    <string name="section_translation">翻译</string>
+    <string name="section_visibility">可见性</string>
+    <string name="item_text_enable_enter_anim">歌词进场动画</string>
 
 </resources>

@@ -62,7 +62,9 @@ data class TextStyle(
 
     var isAiTranslationEnable: Boolean = false,
     var aiTranslationConfigs: AiTranslationConfigs? = null,
-    var isAiTranslationAutoIgnoreChinese: Boolean = false
+    var isAiTranslationAutoIgnoreChinese: Boolean = false,
+
+    var enableEnterAnim: Boolean = false
 ) : Parcelable, AbstractStyle() {
 
     companion object {
@@ -104,6 +106,7 @@ data class TextStyle(
         const val KEY_AI_TRANSLATION_IGNORE_CHINESE: String =
             "lyric_style_text_ai_translation_auto_ignore_chinese"
 
+        const val KEY_ENABLED_ENTER_ANIM = "lyric_style_text_enable_enter_anim"
     }
 
     object PlaceholderFormat {
@@ -319,6 +322,8 @@ data class TextStyle(
                 KEY_AI_TRANSLATION_IGNORE_CHINESE,
                 Defaults.AI_TRANSLATION_IGNORE_CHINESE
             )
+
+        enableEnterAnim = preferences.getBoolean(KEY_ENABLED_ENTER_ANIM, false)
     }
 
     override fun onWrite(editor: SharedPreferences.Editor) {
@@ -376,26 +381,16 @@ data class TextStyle(
             "lyric_style_text_transition_config",
             transitionConfig
         )
-        editor.putString(
-            "lyric_style_text_placeholder_format",
-            placeholderFormat
-        )
+        editor.putString("lyric_style_text_placeholder_format", placeholderFormat)
 
-        editor.putBoolean(
-            KEY_TEXT_TRANSLATION_DISABLE,
-            isDisableTranslation
-        )
+        editor.putBoolean(KEY_TEXT_TRANSLATION_DISABLE, isDisableTranslation)
         editor.putBoolean(KEY_TEXT_TRANSLATION_ONLY, isTranslationOnly)
 
-        editor.putBoolean(
-            KEY_AI_TRANSLATION_ENABLED,
-            isAiTranslationEnable
-        )
+        editor.putBoolean(KEY_AI_TRANSLATION_ENABLED, isAiTranslationEnable)
         aiTranslationConfigs?.let { writeAiTranslationConfigs(editor, it) }
-        editor.putBoolean(
-            KEY_AI_TRANSLATION_IGNORE_CHINESE,
-            isAiTranslationAutoIgnoreChinese
-        )
+        editor.putBoolean(KEY_AI_TRANSLATION_IGNORE_CHINESE, isAiTranslationAutoIgnoreChinese)
+
+        editor.putBoolean(KEY_ENABLED_ENTER_ANIM, enableEnterAnim)
     }
 
     private fun getAiTranslationConfigs(preferences: SharedPreferences): AiTranslationConfigs {

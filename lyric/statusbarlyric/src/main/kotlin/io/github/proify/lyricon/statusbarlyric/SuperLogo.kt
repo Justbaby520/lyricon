@@ -27,8 +27,8 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import io.github.proify.android.extensions.dp
+import io.github.proify.android.extensions.isVisibleIfChanged
 import io.github.proify.android.extensions.toBitmap
-import io.github.proify.android.extensions.visibilityIfChanged
 import io.github.proify.lyricon.common.util.SVGHelper
 import io.github.proify.lyricon.lyric.style.LogoStyle
 import io.github.proify.lyricon.lyric.style.LyricStyle
@@ -63,6 +63,12 @@ class SuperLogo(context: Context) : ImageView(context) {
     private var currentStatusColor: StatusColor = StatusColor()
     private var lyricStyle: LyricStyle? = null
 
+    var forceHide = false
+        set(value) {
+            field = value
+            updateVisibility()
+        }
+
     // --- 进度条绘制属性 ---
     private var progress: Float = 0f
     private val progressPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -84,10 +90,10 @@ class SuperLogo(context: Context) : ImageView(context) {
 
     var coverFile: File? = null
 
-    var oplusCapsuleShowing: Boolean = false
+    var isOplusCapsuleShowing: Boolean = false
         set(value) {
             field = value
-            updateVisibilityState()
+            updateVisibility()
         }
 
     var activePackage: String? = null
@@ -253,18 +259,17 @@ class SuperLogo(context: Context) : ImageView(context) {
             strategy?.updateContent()
         }
 
-        updateVisibilityState()
+        updateVisibility()
     }
 
-    internal fun updateVisibilityState() {
+     fun updateVisibility() {
         val logoConfig = lyricStyle?.packageStyle?.logo
         val isEnabled = logoConfig?.enable == true
         val isEffective = strategy?.isEffective == true
         val isHideInCapsule =
-            logoConfig?.hideInColorOSCapsuleMode == true && oplusCapsuleShowing
+            logoConfig?.hideInColorOSCapsuleMode == true && isOplusCapsuleShowing
 
-        this.visibilityIfChanged =
-            if (!isHideInCapsule && isEnabled && isEffective) VISIBLE else GONE
+        this.isVisibleIfChanged = !isHideInCapsule && isEnabled && isEffective && !forceHide
     }
 
     private fun updateLayoutParams(style: LyricStyle, logoStyle: LogoStyle) {
@@ -365,7 +370,7 @@ class SuperLogo(context: Context) : ImageView(context) {
             isEffective = bitmap != null
 
             onColorUpdate() // 内容更新后立即应用颜色
-            updateVisibilityState()
+            updateVisibility()
         }
 
         override fun onColorUpdate() {
@@ -501,7 +506,7 @@ class SuperLogo(context: Context) : ImageView(context) {
 
             // 始终应用 Outline 和 动画状态检查，以防 Style 变更
             applyStyleAndAnimation()
-            updateVisibilityState()
+            updateVisibility()
         }
 
         private fun applyStyleAndAnimation() {
@@ -617,7 +622,7 @@ class SuperLogo(context: Context) : ImageView(context) {
 
             setImageDrawable(icon)
             isEffective = icon != null
-            updateVisibilityState()
+            updateVisibility()
         }
 
         private fun getIcon(packageName: String): Drawable? {
@@ -668,7 +673,7 @@ class SuperLogo(context: Context) : ImageView(context) {
             isEffective = bitmap != null
 
             onColorUpdate()
-            updateVisibilityState()
+            updateVisibility()
         }
 
         override fun onColorUpdate() {

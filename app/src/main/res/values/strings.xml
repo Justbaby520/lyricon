@@ -35,7 +35,7 @@
     <string name="activity_about">About</string>
     <string name="activity_anchor">Anchor</string>
     <string name="activity_view_rules">View Rules</string>
-    <string name="activity_basic_settings">Basic settings</string>
+    <string name="activity_basic_settings">Basic Settings</string>
     <string name="activity_app_style_manager">App style manager</string>
     <string name="activity_lyric_provider_services">Lyric Providers</string>
     <string name="activity_open_source_licenses">Open-source licenses</string>
@@ -113,6 +113,10 @@
     <string name="option_text_transition_config_none">Off</string>
     <string name="item_logo_section_basic">Basic</string>
     <string name="item_logo_enable">Enable</string>
+    <string name="item_anim_speed">Animation speed</string>
+    <string name="option_anim_speed_fast">Fast</string>
+    <string name="option_anim_speed_normal">Normal</string>
+    <string name="option_anim_speed_slow">Slow</string>
     <string name="item_logo_margins">Margins</string>
     <string name="item_logo_section_coloros">ColorOS</string>
     <string name="item_logo_hide_in_coloros_capsule_mode">Hide in Capsule mode</string>
@@ -250,4 +254,13 @@
     <string name="custom_logo_dialog_summary">Paste a Base64-encoded image or raw SVG content.</string>
     <string name="item_logo_custom_colorful">This icon is colorful</string>
     <string name="module_status_connecting">Connecting…</string>
+    <string name="item_text_enable_enter_anim">Lyrics entrance animation</string>
+    <string name="item_text_enable_enter_anim_summary">Controls the animation for lyrics visibility transitions.</string>
+    <string name="section_base">Basic</string>
+    <string name="section_translation">Translation</string>
+    <string name="section_visibility">Visibility</string>
+    <string name="item_base_width_in_landscape">宽度（横屏模式下）</string>
+    <string name="dialog_summary_base_width_in_landscape">控制歌词视图在状态栏中可使用的最大宽度。</string>
+    <string name="item_base_width_color_os_capsule_in_landscape"><![CDATA[宽度（流体云&横屏模式下）]]></string>
+    <string name="dialog_summary_base_width_color_os_capsule_in_landscape">控制 ColorOS 流体云模式下使用的歌词视图宽度。</string>
 </resources>

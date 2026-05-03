@@ -81,6 +81,7 @@ data class WordMotion(
 data class AnimParams(
     val enabled: Boolean = false,
     val presetId: String = "stack_flow",
+    val speed: String = "normal",
 )
 
 enum class TitleSlot { NAME_ARTIST, NAME, NONE }

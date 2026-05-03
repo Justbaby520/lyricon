@@ -112,6 +112,7 @@ class SuperText(context: Context) : LyricPlayerView(context) {
                 animation = AnimParams(
                     enabled = style.packageStyle.anim.enable,
                     presetId = style.packageStyle.anim.id,
+                    speed = style.packageStyle.anim.speed,
                 ),
                 placeholder = when (textStyle.placeholderFormat
                     ?: TextStyle.Defaults.PLACEHOLDER_FORMAT) {

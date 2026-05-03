@@ -17,6 +17,8 @@ import androidx.core.graphics.toColorInt
 import androidx.core.view.doOnAttach
 import androidx.core.view.isVisible
 import io.github.proify.android.extensions.dp
+import io.github.proify.android.extensions.isLandScape
+import io.github.proify.android.extensions.md5
 import io.github.proify.android.extensions.setColorAlpha
 import io.github.proify.android.extensions.toBitmap
 import io.github.proify.lyricon.colorextractor.palette.ColorExtractor
@@ -28,6 +30,7 @@ import io.github.proify.lyricon.lyric.style.LyricStyle
 import io.github.proify.lyricon.statusbarlyric.StatusBarLyric
 import io.github.proify.lyricon.xposed.logger.YLog
 import io.github.proify.lyricon.xposed.systemui.hook.ClockColorMonitor
+import io.github.proify.lyricon.xposed.systemui.hook.OplusCapsuleHooker
 import io.github.proify.lyricon.xposed.systemui.lyric.LyricViewController.isPlaying
 import io.github.proify.lyricon.xposed.systemui.util.OnColorChangeListener
 import io.github.proify.lyricon.xposed.systemui.util.ViewVisibilityController
@@ -178,7 +181,11 @@ class StatusBarViewController(
         coverColorPaletteResult = null
         try {
             val bitmap = coverFile?.toBitmap() ?: return
-            ColorExtractor.extractAsync(bitmap) {
+            ColorExtractor.extractAsync(
+                bitmap = bitmap,
+                cacheKey = {
+                    coverFile.md5()
+                }) {
                 coverColorPaletteResult = it
                 systemStatusBarColor?.let { updateStatusColor(it) }
                 bitmap.recycle()
@@ -208,10 +215,15 @@ class StatusBarViewController(
         (lyricView.parent as? ViewGroup)?.removeView(lyricView)
 
         val anchorIndex = anchorParent.indexOfChild(anchorView)
-        val lp = lyricView.layoutParams ?: ViewGroup.LayoutParams(
-            baseStyle.width.dp,
-            ViewGroup.LayoutParams.MATCH_PARENT
-        )
+
+        val lp = lyricView.layoutParams ?: run {
+            val width = baseStyle.getAutoWidth(
+                context.isLandScape(),
+                isOplusCapsuleShowing = OplusCapsuleHooker.isShowing
+            ).dp
+
+            ViewGroup.LayoutParams(width, ViewGroup.LayoutParams.WRAP_CONTENT)
+        }
 
         // 执行插入：在前或在后
         val targetIndex =

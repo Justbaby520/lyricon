@@ -9,6 +9,7 @@ package io.github.proify.lyricon.app.activity.lyric
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -40,6 +41,7 @@ import io.github.proify.lyricon.app.util.Utils
 import io.github.proify.lyricon.app.util.editCommit
 import io.github.proify.lyricon.lyric.style.BasicStyle
 import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.SpinnerEntry
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.OverlaySpinnerPreference
@@ -63,7 +65,16 @@ class BasicLyricStyleActivity : AbstractLyricActivity() {
             title = stringResource(R.string.activity_basic_settings),
             canBack = true
         ) {
-            item(key = "location") {
+            item(key = "base") {
+                SmallTitle(
+                    text = stringResource(R.string.section_base),
+                    insideMargin = PaddingValues(
+                        start = 26.dp,
+                        top = 0.dp,
+                        end = 26.dp,
+                        bottom = 10.dp
+                    )
+                )
                 Card(
                     modifier = Modifier
                         .padding(horizontal = 16.dp)
@@ -149,25 +160,43 @@ class BasicLyricStyleActivity : AbstractLyricActivity() {
                         }
                     )
 
-
                     DoubleInputPreference(
                         preferences = preferences,
                         key = "lyric_style_base_width",
                         title = stringResource(R.string.item_base_width),
                         dialogSummary = stringResource(R.string.dialog_summary_base_width),
-                        range = 0.0..1000.0,
+                        range = 0.0..8000.0,
                         startAction = {
                             IconActions(painterResource(R.drawable.ic_width_normal))
                         },
                     )
-
+                    DoubleInputPreference(
+                        preferences = preferences,
+                        key = "lyric_style_base_width_in_landscape",
+                        title = stringResource(R.string.item_base_width_in_landscape),
+                        dialogSummary = stringResource(R.string.dialog_summary_base_width_in_landscape),
+                        range = 0.0..8000.0,
+                        startAction = {
+                            IconActions(painterResource(R.drawable.ic_width_normal))
+                        },
+                    )
                     if (Utils.isOPlus) {
                         DoubleInputPreference(
                             preferences = preferences,
                             key = "lyric_style_base_width_in_coloros_capsule_mode",
                             title = stringResource(R.string.item_base_width_color_os_capsule),
                             dialogSummary = stringResource(R.string.dialog_summary_base_width_color_os_capsule),
-                            range = 0.0..1000.0,
+                            range = 0.0..8000.0,
+                            startAction = {
+                                IconActions(painterResource(R.drawable.ic_width_normal))
+                            },
+                        )
+                        DoubleInputPreference(
+                            preferences = preferences,
+                            key = "lyric_style_base_width_in_coloros_capsule_mode_in_landscape",
+                            title = stringResource(R.string.item_base_width_color_os_capsule_in_landscape),
+                            dialogSummary = stringResource(R.string.dialog_summary_base_width_color_os_capsule_in_landscape),
+                            range = 0.0..8000.0,
                             startAction = {
                                 IconActions(painterResource(R.drawable.ic_width_normal))
                             },
@@ -202,10 +231,20 @@ class BasicLyricStyleActivity : AbstractLyricActivity() {
                 }
             }
 
+
             item(key = "visibility") {
+                SmallTitle(
+                    text = stringResource(R.string.section_visibility),
+                    insideMargin = PaddingValues(
+                        start = 26.dp,
+                        top = 16.dp,
+                        end = 26.dp,
+                        bottom = 10.dp
+                    )
+                )
                 Card(
                     modifier = Modifier
-                        .padding(start = 16.dp, top = 16.dp, end = 16.dp)
+                        .padding(start = 16.dp, top = 0.dp, end = 16.dp)
                         .fillMaxWidth(),
                 ) {
 
@@ -226,6 +265,25 @@ class BasicLyricStyleActivity : AbstractLyricActivity() {
                     HideWhenNoLyric()
                     HideWhenNoUpdate()
                     HideWhenKeywords()
+                }
+            }
+
+            item(key = "ai_translation") {
+                SmallTitle(
+                    text = stringResource(R.string.section_translation),
+                    insideMargin = PaddingValues(
+                        start = 26.dp,
+                        top = 16.dp,
+                        end = 26.dp,
+                        bottom = 10.dp
+                    )
+                )
+                Card(
+                    modifier = Modifier
+                        .padding(start = 16.dp, top = 0.dp, end = 16.dp, bottom = 0.dp)
+                        .fillMaxWidth(),
+                ) {
+                    AiTranslationPreference(preferences)
                 }
             }
 
