@@ -1,24 +1,16 @@
 <script setup>
 import DefaultTheme from 'vitepress/theme'
-import { onMounted, ref } from 'vue'
+import { onMounted } from 'vue'
 
 const { Layout } = DefaultTheme
-const copyright = ref('')
+const bgUrl = __WALLPAPER_URL__ || ''
+const copyright = __WALLPAPER_COPYRIGHT__ || ''
 
-async function fetchWallpaper() {
-  try {
-    const res = await fetch('https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1')
-    const data = await res.json()
-    const img = data.images[0]
-    const url = `https://www.bing.com${img.url}`
-    document.documentElement.style.setProperty('--vp-home-bg-image', `url(${url})`)
-    copyright.value = img.copyright
-  } catch {
-    document.documentElement.style.setProperty('--vp-home-bg-image', 'none')
+onMounted(() => {
+  if (bgUrl) {
+    document.documentElement.style.setProperty('--vp-home-bg-image', `url(${bgUrl})`)
   }
-}
-
-onMounted(fetchWallpaper)
+})
 </script>
 
 <template>

@@ -102,7 +102,24 @@ import { defineConfig } from 'vitepress'
 }
 ]
 
-export default defineConfig({
+                                                                                                                                                                                                                            async function fetchBingWallpaper() {
+                                                                                                                                                                                                                                                                try {
+                                                                                                                                                                                                                                                                const res = await fetch('https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1')
+                                                                                                                                                                                                                                                                                        const data = await res.json()
+                                                                                                                                                                                                                                                                                                                   const img = data.images[0]
+                                                                                                                                                                                                                                                                                                                   return {
+                                                                                                                                                                                                                                                                                                                   __WALLPAPER_URL__:  JSON.stringify(`https : / / www.bing.com${img.url}`),
+                                                                                                                                                                                                                                                                                                                                                                                           __WALLPAPER_COPYRIGHT__ :  JSON.stringify(img.copyright)
+}
+} catch {
+return {
+__WALLPAPER_URL__ :  JSON.stringify(''),
+                                    __WALLPAPER_COPYRIGHT__ :  JSON.stringify('')
+                                                                              }
+                                                                              }
+                                                                              }
+
+                                                                              export default defineConfig({
                             title : '词幕',
                             description : 'Android 状态栏歌词工具',
                             base : '/lyricon/',
@@ -158,6 +175,15 @@ export default defineConfig({
                            text : 'Edit this page on GitHub'
                            }
                            }
-                           }
-                           }
-                           })
+                                                                                                                                                                                                                                                                                                         }
+                                                                                                                                                                                                                                                                                                         },
+                                                                                                                                                                                                                                                                                                         vite : {
+                                                                                                                                                                                                                                                                                                         plugins : [{
+                                                                                                                                                                                                                                                                                                         name : 'bing-wallpaper',
+                                                                                                                                                                                                                                                                                                         async config() {
+                                                                                                                                                                                                                                                                                                                        const defs = await fetchBingWallpaper()
+                                                                                                                                                                                                                                                                                                         return { define : defs }
+                                                                                                                                                                                                                                                                                                         }
+                                                                                                                                                                                                                                                                                                         }]
+                                                                                                                                                                                                                                                                                                         }
+                                                                                                                                                                                                                                                                                                         })

@@ -1,0 +1,2 @@
+declareconst__WALLPAPER_URL__:string
+declareconst__WALLPAPER_COPYRIGHT__:string
