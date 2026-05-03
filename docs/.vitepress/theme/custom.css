@@ -1,0 +1,20 @@
+.VPHero {
+  position: relative;
+}
+
+.VPHero::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: var(--vp-home-bg-image, url('/wallpaper.jpg')) center / cover no-repeat;
+}
+
+.VPHome {
+  background: transparent !important;
+}
+
+.VPHero .container {
+  position: relative;
+  z-index: 1;
+}
