@@ -14,6 +14,18 @@ import io.github.proify.lyricon.xposed.hook.GeneralHooker
 import io.github.proify.lyricon.xposed.logger.YLog
 import io.github.proify.lyricon.xposed.systemui.SystemUIHooker
 
+/**
+ * ooooo        oooooo   oooo ooooooooo.   ooooo   .oooooo.     .oooooo.   ooooo      ooo
+ * `888'         `888.   .8'  `888   `Y88. `888'  d8P'  `Y8b   d8P'  `Y8b  `888b.     `8'
+ *  888           `888. .8'    888   .d88'  888  888          888      888  8 `88b.    8
+ *  888            `888.8'     888ooo88P'   888  888          888      888  8   `88b.  8
+ *  888             `888'      888`88b.     888  888          888      888  8     `88b.8
+ *  888       o      888       888  `88b.   888  `88b    ooo  `88b    d88'  8       `888
+ * o888ooooood8     o888o     o888o  o888o o888o  `Y8bood8P'   `Y8bood8P'  o8o        `8
+ *
+ *  @author Tomakino
+ *  @date 2026/05/03
+ */
 @Keep
 class ModuleEntry : XposedModule() {
 

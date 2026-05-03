@@ -28,6 +28,7 @@ import io.github.proify.lyricon.lyric.style.LyricStyle
 import io.github.proify.lyricon.statusbarlyric.StatusBarLyric
 import io.github.proify.lyricon.xposed.logger.YLog
 import io.github.proify.lyricon.xposed.systemui.hook.ClockColorMonitor
+import io.github.proify.lyricon.xposed.systemui.lyric.LyricViewController.isPlaying
 import io.github.proify.lyricon.xposed.systemui.util.OnColorChangeListener
 import io.github.proify.lyricon.xposed.systemui.util.ViewVisibilityController
 import java.io.File
@@ -237,26 +238,35 @@ class StatusBarViewController(
 
     private fun getClockView(): View? = statusBarView.findViewById(clockId)
 
-    private var lastPlayingState: Boolean? = null
+    private var wasPlayingBeforeVisibilityUpdate: Boolean = false
+
+    fun computeShouldApplyPlayingRules(): Boolean {
+        return isPlaying && when {
+            lyricView.isDisabledVisible -> !lyricView.isHideOnLockScreen()
+            lyricView.isVisible -> true
+            else -> false
+        }
+    }
+
     private fun applyVisibilityRulesNow() {
-        val isPlaying = LyricViewController.isPlaying
-
-        if (lastPlayingState == isPlaying) return
-
-        fun computeShouldApplyPlayingRules(): Boolean {
-            return isPlaying && when {
-                lyricView.isDisabledVisible -> !lyricView.isHideOnLockScreen()
-                lyricView.isVisible -> true
-                else -> false
-            }
+        val isPlaying = computeShouldApplyPlayingRules()
+        fun apply() {
+            visibilityController.applyVisibilityRules(
+                rules = currentLyricStyle.basicStyle.visibilityRules,
+                isPlaying = isPlaying
+            )
         }
 
-        visibilityController.applyVisibilityRules(
-            rules = currentLyricStyle.basicStyle.visibilityRules,
-            isPlaying = computeShouldApplyPlayingRules()
-        )
-
-        lastPlayingState = isPlaying
+        if (!isPlaying) {
+            // 仅在之前是播放状态时才更新（避免重复更新非播放状态的隐藏逻辑）
+            if (wasPlayingBeforeVisibilityUpdate) {
+                apply()
+                wasPlayingBeforeVisibilityUpdate = false
+            }
+        } else {
+            apply()
+            wasPlayingBeforeVisibilityUpdate = true
+        }
     }
 
     private fun createLyricView(style: LyricStyle) =
