@@ -1,7 +1,144 @@
 import { defineConfig } from 'vitepress'
 import { defineTeekConfig } from 'vitepress-theme-teek/config'
 
-const teekConfig = defineTeekConfig({})
+const teekConfig = defineTeekConfig({
+  teekTheme: true,
+  teekHome: false,
+  vpHome: true,
+  loading: true,
+  windowTransition: true,
+  anchorScroll: true,
+  sidebarTrigger: false,
+  homeCardListPosition: 'right',
+  pageStyle: 'default',
+  themeSize: 'default',
+
+  viewTransition: {
+    enabled: true,
+    mode: 'out-in',
+    duration: 600,
+    easing: 'ease-in'
+  },
+
+  banner: {
+    enabled: true,
+    name: '词幕',
+    bgStyle: 'partImg',
+    pureBgColor: '#28282d',
+    imgSrc: ['/wallpaper.jpg'],
+    imgInterval: 15000,
+    imgShuffle: false,
+    imgWaves: false,
+    mask: true,
+    maskBg: 'rgba(0, 0, 0, 0.4)',
+    textColor: '#ffffff',
+    descStyle: 'default',
+    description: ['Android 状态栏歌词扩展工具']
+  },
+
+  themeEnhance: {
+    enabled: true,
+    position: 'top',
+    layoutSwitch: {
+      disabled: false,
+      defaultMode: 'original',
+      disableAnimation: false,
+      defaultDocMaxWidth: 90,
+      defaultPageMaxWidth: 95
+    },
+    themeColor: {
+      disabled: false,
+      defaultColorName: 'vp-default',
+      defaultSpread: false,
+      disabledInMobile: false
+    },
+    spotlight: {
+      disabled: false,
+      defaultStyle: 'aside',
+      defaultValue: false
+    }
+  },
+
+  breadcrumb: {
+    enabled: true,
+    showCurrentName: true,
+    separator: '/',
+    homeLabel: '首页'
+  },
+
+  codeBlock: {
+    enabled: true,
+    collapseHeight: 700,
+    overlay: false,
+    langTextTransform: 'uppercase'
+  },
+
+  backTop: {
+    enabled: true,
+    content: 'progress'
+  },
+
+  toComment: {
+    enabled: false
+  },
+
+  articleShare: {
+    enabled: true,
+    text: '分享此页面',
+    copiedText: '链接已复制',
+    query: false,
+    hash: false
+  },
+
+  articleBanner: {
+    enabled: true,
+    showCategory: false,
+    showTag: false
+  },
+
+  articleAnalyze: {
+    showIcon: true,
+    dateFormat: 'yyyy-MM-dd',
+    showInfo: true,
+    showAuthor: false,
+    showCreateDate: true,
+    showUpdateDate: false,
+    showCategory: false,
+    showTag: false
+  },
+
+  docAnalysis: {
+    enabled: true,
+    wordCount: true,
+    readingTime: true,
+    statistics: {
+      provider: 'busuanzi',
+      siteView: true,
+      pageView: true,
+      permalink: true
+    }
+  },
+
+  tagColor: [
+    { border: '#c7d2fe', bg: '#eef2ff', text: '#4f46e5' },
+    { border: '#a5f3fc', bg: '#ecfeff', text: '#0891b2' },
+    { border: '#a7f3d0', bg: '#ecfdf5', text: '#059669' },
+    { border: '#fde68a', bg: '#fffbeb', text: '#d97706' },
+    { border: '#fbcfe8', bg: '#fdf2f8', text: '#db2777' },
+    { border: '#bfdbfe', bg: '#eff6ff', text: '#2563eb' },
+    { border: '#e9d5ff', bg: '#faf5ff', text: '#9333ea' }
+  ],
+
+  footerInfo: {
+    theme: {
+      show: true
+    },
+    copyright: {
+      show: true,
+      createYear: 2024
+    }
+  }
+})
 
 const zhSidebar = [
          {
