@@ -16,9 +16,9 @@ import android.widget.TextView
 import androidx.core.graphics.toColorInt
 import androidx.core.view.doOnAttach
 import androidx.core.view.isVisible
+import io.github.proify.android.extensions.crc32
 import io.github.proify.android.extensions.dp
 import io.github.proify.android.extensions.isLandScape
-import io.github.proify.android.extensions.md5
 import io.github.proify.android.extensions.setColorAlpha
 import io.github.proify.android.extensions.toBitmap
 import io.github.proify.lyricon.colorextractor.palette.ColorExtractor
@@ -184,7 +184,7 @@ class StatusBarViewController(
             ColorExtractor.extractAsync(
                 bitmap = bitmap,
                 cacheKey = {
-                    coverFile.md5()
+                    coverFile.crc32().toString()
                 }) {
                 coverColorPaletteResult = it
                 systemStatusBarColor?.let { updateStatusColor(it) }

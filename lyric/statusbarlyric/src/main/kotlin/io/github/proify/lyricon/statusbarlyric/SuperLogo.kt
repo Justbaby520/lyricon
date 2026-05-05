@@ -26,6 +26,7 @@ import android.view.animation.LinearInterpolator
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import io.github.proify.android.extensions.crc32
 import io.github.proify.android.extensions.dp
 import io.github.proify.android.extensions.isVisibleIfChanged
 import io.github.proify.android.extensions.toBitmap
@@ -262,7 +263,7 @@ class SuperLogo(context: Context) : ImageView(context) {
         updateVisibility()
     }
 
-     fun updateVisibility() {
+    fun updateVisibility() {
         val logoConfig = lyricStyle?.packageStyle?.logo
         val isEnabled = logoConfig?.enable == true
         val isEffective = strategy?.isEffective == true
@@ -493,7 +494,7 @@ class SuperLogo(context: Context) : ImageView(context) {
                 isEffective = false
                 lastFileSignature = null
             } else {
-                val signature = coverFile.lastModified().toString() + coverFile.length()
+                val signature = coverFile.crc32().toString()
 
                 // 只有文件变动或未初始化时才重新加载
                 if (signature != lastFileSignature || drawable == null) {
@@ -501,6 +502,8 @@ class SuperLogo(context: Context) : ImageView(context) {
                     setImageBitmap(bitmap)
                     lastFileSignature = signature
                     isEffective = bitmap != null
+
+                    stopAnimation(true)
                 }
             }
 
@@ -594,11 +597,14 @@ class SuperLogo(context: Context) : ImageView(context) {
                     }
         }
 
-        private fun stopAnimation() {
+        private fun stopAnimation(resetRotation: Boolean = false) {
             rotationAnimator?.cancel()
             rotationAnimator = null
-            // 注意：这里不重置 rotation 为 0，以便暂停后恢复时视觉连贯。
+
+            // 注意：这里不自动重置 rotation 为 0，以便暂停后恢复时视觉连贯。
             // 彻底重置由 LyricLogoView.resetViewAttributes() 在切换策略时处理。
+
+            if (resetRotation) rotation = 0f
         }
     }
 
