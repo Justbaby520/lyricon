@@ -16,7 +16,9 @@ import android.widget.TextView
 import androidx.core.graphics.toColorInt
 import androidx.core.view.doOnAttach
 import androidx.core.view.isVisible
+import io.github.proify.android.extensions.crc32
 import io.github.proify.android.extensions.dp
+import io.github.proify.android.extensions.isLandScape
 import io.github.proify.android.extensions.setColorAlpha
 import io.github.proify.android.extensions.toBitmap
 import io.github.proify.lyricon.colorextractor.palette.ColorExtractor
@@ -28,6 +30,8 @@ import io.github.proify.lyricon.lyric.style.LyricStyle
 import io.github.proify.lyricon.statusbarlyric.StatusBarLyric
 import io.github.proify.lyricon.xposed.logger.YLog
 import io.github.proify.lyricon.xposed.systemui.hook.ClockColorMonitor
+import io.github.proify.lyricon.xposed.systemui.hook.OplusCapsuleHooker
+import io.github.proify.lyricon.xposed.systemui.lyric.LyricViewController.isPlaying
 import io.github.proify.lyricon.xposed.systemui.util.OnColorChangeListener
 import io.github.proify.lyricon.xposed.systemui.util.ViewVisibilityController
 import java.io.File
@@ -45,7 +49,7 @@ class StatusBarViewController(
     }
 
     val context: Context = statusBarView.context.applicationContext
-    val visibilityController = ViewVisibilityController(statusBarView)
+    val visibilityController: ViewVisibilityController = ViewVisibilityController(statusBarView)
     val lyricView: StatusBarLyric by lazy { createLyricView(currentLyricStyle) }
 
     private val clockId: Int by lazy { ResourceMapper.getIdByName(context, "clock") }
@@ -104,7 +108,7 @@ class StatusBarViewController(
     /**
      * 更新状态栏颜色，内部决定最终颜色
      */
-    private fun updateStatusColor(systemStatusBarColor: SystemStatusBarColor) {
+    internal fun updateStatusColor(systemStatusBarColor: SystemStatusBarColor) {
         this.systemStatusBarColor = systemStatusBarColor
 
         val textStyle = currentLyricStyle.packageStyle.text
@@ -177,7 +181,11 @@ class StatusBarViewController(
         coverColorPaletteResult = null
         try {
             val bitmap = coverFile?.toBitmap() ?: return
-            ColorExtractor.extractAsync(bitmap) {
+            ColorExtractor.extractAsync(
+                bitmap = bitmap,
+                cacheKey = {
+                    coverFile.crc32().toString()
+                }) {
                 coverColorPaletteResult = it
                 systemStatusBarColor?.let { updateStatusColor(it) }
                 bitmap.recycle()
@@ -207,14 +215,20 @@ class StatusBarViewController(
         (lyricView.parent as? ViewGroup)?.removeView(lyricView)
 
         val anchorIndex = anchorParent.indexOfChild(anchorView)
-        val lp = lyricView.layoutParams ?: ViewGroup.LayoutParams(
-            baseStyle.width.dp,
-            ViewGroup.LayoutParams.MATCH_PARENT
-        )
+
+        val lp = lyricView.layoutParams ?: run {
+            val width = baseStyle.getAutoWidth(
+                context.isLandScape(),
+                isOplusCapsuleShowing = OplusCapsuleHooker.isShowing
+            ).dp
+
+            ViewGroup.LayoutParams(width, ViewGroup.LayoutParams.WRAP_CONTENT)
+        }
 
         // 执行插入：在前或在后
         val targetIndex =
-            if (baseStyle.insertionOrder == BasicStyle.INSERTION_ORDER_AFTER) anchorIndex + 1 else anchorIndex
+            if (baseStyle.insertionOrder == BasicStyle.INSERTION_ORDER_AFTER) anchorIndex + 1
+            else anchorIndex
         anchorParent.addView(lyricView, targetIndex, lp)
 
         lyricView.updateVisibility()
@@ -236,19 +250,35 @@ class StatusBarViewController(
 
     private fun getClockView(): View? = statusBarView.findViewById(clockId)
 
+    private var wasPlayingBeforeVisibilityUpdate: Boolean = false
+
+    fun computeShouldApplyPlayingRules(): Boolean {
+        return isPlaying && when {
+            lyricView.isDisabledVisible -> !lyricView.isHideOnLockScreen()
+            lyricView.isVisible -> true
+            else -> false
+        }
+    }
+
     private fun applyVisibilityRulesNow() {
-        fun computeShouldApplyPlayingRules(): Boolean {
-            return LyricViewController.isPlaying && when {
-                lyricView.isDisabledVisible -> !lyricView.isHideOnLockScreen()
-                lyricView.isVisible -> true
-                else -> false
-            }
+        val isPlaying = computeShouldApplyPlayingRules()
+        fun apply() {
+            visibilityController.applyVisibilityRules(
+                rules = currentLyricStyle.basicStyle.visibilityRules,
+                isPlaying = isPlaying
+            )
         }
 
-        visibilityController.applyVisibilityRules(
-            rules = currentLyricStyle.basicStyle.visibilityRules,
-            isPlaying = computeShouldApplyPlayingRules()
-        )
+        if (!isPlaying) {
+            // 仅在之前是播放状态时才更新（避免重复更新非播放状态的隐藏逻辑）
+            if (wasPlayingBeforeVisibilityUpdate) {
+                apply()
+                wasPlayingBeforeVisibilityUpdate = false
+            }
+        } else {
+            apply()
+            wasPlayingBeforeVisibilityUpdate = true
+        }
     }
 
     private fun createLyricView(style: LyricStyle) =
@@ -311,7 +341,8 @@ class StatusBarViewController(
     }
 
     override fun equals(other: Any?): Boolean =
-        (this === other) || (other is StatusBarViewController && statusBarView == other.statusBarView)
+        (this === other) ||
+                (other is StatusBarViewController && statusBarView == other.statusBarView)
 
     override fun hashCode(): Int = 31 * 17 + statusBarView.hashCode()
 

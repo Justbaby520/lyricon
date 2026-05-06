@@ -7,6 +7,7 @@
 package io.github.proify.lyricon.xposed.systemui.lyric
 
 import android.os.Handler
+import io.github.proify.android.extensions.crc32
 import io.github.proify.lyricon.lyric.model.Song
 import io.github.proify.lyricon.lyric.style.LyricStyle
 import io.github.proify.lyricon.statusbarlyric.StatusBarLyric
@@ -33,7 +34,7 @@ object LyricViewController : ActivePlayerListener,
     private const val TAG = "LyricViewController"
     private const val DEBUG = true
 
-    /** 当前播放状态，线程安全可见 */
+    /** 当前播放状态 */
     @Volatile
     var isPlaying: Boolean = false
         private set
@@ -86,6 +87,22 @@ object LyricViewController : ActivePlayerListener,
         updateAllControllers {
             lyricView.setSong(song)
             refreshTranslationVisibility(lyricView)
+        }
+
+        updateCoverFileFromSong(song)
+    }
+
+    private fun updateCoverFileFromSong(song: Song?) {
+        val activePackage = this.activePackage
+        val name = song?.name
+        val artist = song?.artist
+        if (activePackage.isBlank() || name.isNullOrBlank() || artist.isNullOrBlank()) {
+            return
+        }
+        val file = NotificationCoverHelper.getCachedCoverFile(activePackage, name, artist)
+        if (file != null && file.exists()) {
+            YLog.info(TAG, "Cover cache file found: $name - $artist")
+            updateCoverFile(file)
         }
     }
 
@@ -193,11 +210,17 @@ object LyricViewController : ActivePlayerListener,
         view.logoView.apply {
             val pkg = provider?.playerPackageName.orEmpty()
             this.activePackage = pkg
-            val cover = if (pkg.isBlank()) null else NotificationCoverHelper.getCoverFile(pkg)
-            this.coverFile = cover
-            controller.updateCoverThemeColors(cover)
-            // Logo 加载涉及位图操作，通过 post 确保在 UI 线程执行
-            post { this.providerLogo = provider?.logo }
+//
+//            val cover =
+//                if (pkg.isBlank()) {
+//                    null
+//                } else {
+//                    NotificationCoverHelper.getLatestCoverFile(pkg)
+//                }
+//            this.coverFile = cover
+//            controller.updateCoverThemeColors(cover)
+
+            this.providerLogo = provider?.logo
         }
     }
 
@@ -243,6 +266,22 @@ object LyricViewController : ActivePlayerListener,
      */
     override fun onCoverUpdated(packageName: String, coverFile: File) {
         if (packageName != activePackage) return
+        updateCoverFile(coverFile)
+    }
+
+    private var lastCoverSignature = 0L
+    private fun updateCoverFile(coverFile: File?) {
+        if (coverFile != null) {
+            val signature = coverFile.crc32()
+            if (signature == lastCoverSignature) {
+                YLog.verbose(TAG, "Cover file is the same, skip update")
+                return
+            }
+            lastCoverSignature = signature
+        } else {
+            lastCoverSignature = 0
+        }
+
         updateAllControllers {
             lyricView.logoView.apply {
                 this.coverFile = coverFile

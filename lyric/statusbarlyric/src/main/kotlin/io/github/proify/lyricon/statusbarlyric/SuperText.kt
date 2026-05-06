@@ -26,6 +26,7 @@ import io.github.proify.lyricon.lyric.view.Marquee
 import io.github.proify.lyricon.lyric.view.RichLyricLineView
 import io.github.proify.lyricon.lyric.view.TextLook
 import io.github.proify.lyricon.lyric.view.TitleSlot
+import io.github.proify.lyricon.lyric.view.WordMotion
 import java.io.File
 import kotlin.math.min
 
@@ -98,12 +99,20 @@ class SuperText(context: Context) : LyricPlayerView(context) {
                     foreground = resolveHighlightColor(textStyle),
                 ),
                 marquee = buildMarquee(textStyle),
+                wordMotion = WordMotion(
+                    enabled = textStyle.wordMotionEnabled,
+                    cjkLiftFactor = textStyle.wordMotionCjkLiftFactor,
+                    cjkWaveFactor = textStyle.wordMotionCjkWaveFactor,
+                    latinLiftFactor = textStyle.wordMotionLatinLiftFactor,
+                    latinWaveFactor = textStyle.wordMotionLatinWaveFactor,
+                ),
                 gradient = textStyle.gradientProgressStyle,
                 fadingEdge = textStyle.fadingEdgeLength.coerceAtLeast(0).dp,
                 scaleMultiLine = textStyle.scaleInMultiLine,
                 animation = AnimParams(
                     enabled = style.packageStyle.anim.enable,
                     presetId = style.packageStyle.anim.id,
+                    speed = style.packageStyle.anim.speed,
                 ),
                 placeholder = when (textStyle.placeholderFormat
                     ?: TextStyle.Defaults.PLACEHOLDER_FORMAT) {

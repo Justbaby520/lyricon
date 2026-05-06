@@ -61,11 +61,10 @@
 
 ## 🧩 生态与支持
 
-| 类别       | 资源链接                                                                                      | 说明              |
-|:---------|:------------------------------------------------------------------------------------------|:----------------|
-| **插件库**  | [LyricProvider 仓库](https://github.com/tomakino/LyricProvider)                             | 包含主流音乐平台的适配插件   |
-| **开发插件** | [开发指南](https://github.com/tomakino/lyricon/blob/master/lyric/bridge/provider/README.md)   | 了解如何开发自定义歌词提供插件 |
-| **订阅接口** | [订阅指南](https://github.com/tomakino/lyricon/blob/master/lyric/bridge/subscriber/README.md) | 第三方应用接入词幕歌词的方法  |
+| 类别       | 资源链接                                                          | 说明             |
+|:---------|:--------------------------------------------------------------|:---------------|
+| **插件库**  | [LyricProvider 仓库](https://github.com/tomakino/LyricProvider) | 包含主流音乐平台的适配插件  |
+| **开发文档** | [文档中心](https://tomakino.github.io/lyricon/)                   | App 与 Lyric 文档 |
 
 ### 💡 已原生适配的应用
 
@@ -76,6 +75,7 @@
 - [**Kanade**](https://github.com/rcmiku/Kanade)
 - **Sollin Player**
 - [**QZ Music**](https://github.com/lqtmcstudio/QZMusic)
+- [**棉花音乐**](https://github.com/pure-music/PureMusic)
 
 #### 已适配了但没有你的播放器？请[提交 issue](https://github.com/tomakino/lyricon/issues)。
 

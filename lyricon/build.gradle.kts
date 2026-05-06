@@ -9,21 +9,19 @@ configure<ApplicationExtension> {
     namespace = rootProject.extra["appPackageName"] as String
 
     compileSdk {
-        version = release(rootProject.extra.get("compileSdkVersion") as Int) {
-           /// minorApiLevel = 1
-        }
+        version = release(rootProject.extra.get("compileSdkVersion") as Int)
     }
 
     packaging {
-        resources{
+        resources {
             excludes.addAll(
                 listOf(
-                    "META-INF/LICENSE*",
-                    "META-INF/NOTICE*",
-                    "META-INF/*.txt"
+                    "META-INF/**/LICENSE*",
+                    "META-INF/**/NOTICE*",
+                    "META-INF/*.version",
+                    "DebugProbesKt.bin"
                 )
             )
-            excludes += "DebugProbesKt.bin"
         }
         dex {
             //强制压缩Dex
@@ -48,6 +46,17 @@ configure<ApplicationExtension> {
                 "zh-rTW",
                 "zh-rHK"
             )
+        }
+    }
+
+    flavorDimensions += "locale"
+    productFlavors {
+        create("standard") {
+            dimension = "locale"
+        }
+        create("zh") {
+            dimension = "locale"
+            versionNameSuffix = "-zh"
         }
     }
 

@@ -23,13 +23,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.proify.android.extensions.formatToString
 import io.github.proify.lyricon.app.R
-import io.github.proify.lyricon.app.compose.custom.miuix.extra.SuperDialog
+import io.github.proify.lyricon.app.compose.custom.miuix.extra.OverlayDialog
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.TextButton
 
 @Composable
 fun RectFInputDialog(
     title: String? = null,
+    summary: String? = null,
     show: MutableState<Boolean>,
     initialLeft: Float = 0f,
     initialTop: Float = 0f,
@@ -50,8 +51,9 @@ fun RectFInputDialog(
         if (show.value) show.value = false
     }
 
-    SuperDialog(
+    OverlayDialog(
         title = title,
+        summary = summary,
         show = show.value,
         onDismissRequest = { dismiss() }
     ) {

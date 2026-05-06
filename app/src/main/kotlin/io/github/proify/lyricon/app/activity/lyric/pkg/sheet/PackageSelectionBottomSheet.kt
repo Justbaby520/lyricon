@@ -155,11 +155,12 @@ fun PackageSelectionBottomSheet(
     WindowBottomSheet(
         show = show.value,
         modifier = Modifier,
-        title = stringResource(R.string.add_package_config),
+        title = stringResource(R.string.add_app_style),
         backgroundColor = MiuixTheme.colorScheme.surface,
         onDismissRequest = { show.value = false },
         outsideMargin = BottomSheetDefaults.outsideMargin,
         insideMargin = DpSize(0.dp, 0.dp),
+        enableNestedScroll = false,
         content = {
             Column {
                 PackageSearchBar(

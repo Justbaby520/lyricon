@@ -9,6 +9,7 @@ package io.github.proify.lyricon.app.activity.lyric
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -24,6 +25,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import io.github.proify.lyricon.app.BuildConfig
 import io.github.proify.lyricon.app.R
 import io.github.proify.lyricon.app.compose.AppToolBarListContainer
 import io.github.proify.lyricon.app.compose.IconActions
@@ -39,6 +41,7 @@ import io.github.proify.lyricon.app.util.Utils
 import io.github.proify.lyricon.app.util.editCommit
 import io.github.proify.lyricon.lyric.style.BasicStyle
 import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.SpinnerEntry
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.OverlaySpinnerPreference
@@ -49,15 +52,9 @@ class BasicLyricStyleActivity : AbstractLyricActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        preferences.registerOnSharedPreferenceChangeListener(this)
         setContent {
             Content()
         }
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        preferences.unregisterOnSharedPreferenceChangeListener(this)
     }
 
     @Composable
@@ -65,10 +62,19 @@ class BasicLyricStyleActivity : AbstractLyricActivity() {
         val context = LocalContext.current
 
         AppToolBarListContainer(
-            title = stringResource(R.string.activity_base_lyric_style),
+            title = stringResource(R.string.activity_basic_settings),
             canBack = true
         ) {
-            item(key = "location") {
+            item(key = "base") {
+                SmallTitle(
+                    text = stringResource(R.string.section_base),
+                    insideMargin = PaddingValues(
+                        start = 26.dp,
+                        top = 0.dp,
+                        end = 26.dp,
+                        bottom = 10.dp
+                    )
+                )
                 Card(
                     modifier = Modifier
                         .padding(horizontal = 16.dp)
@@ -138,6 +144,7 @@ class BasicLyricStyleActivity : AbstractLyricActivity() {
                         preferences,
                         "lyric_style_base_margins",
                         stringResource(R.string.item_base_margins),
+                        dialogSummary = stringResource(R.string.dialog_summary_base_margins),
                         startAction = {
                             IconActions(painterResource(R.drawable.ic_margin))
                         },
@@ -147,58 +154,49 @@ class BasicLyricStyleActivity : AbstractLyricActivity() {
                         preferences,
                         "lyric_style_base_paddings",
                         stringResource(R.string.item_base_paddings),
+                        dialogSummary = stringResource(R.string.dialog_summary_base_paddings),
                         startAction = {
                             IconActions(painterResource(R.drawable.ic_padding))
                         }
                     )
 
-
                     DoubleInputPreference(
                         preferences = preferences,
                         key = "lyric_style_base_width",
                         title = stringResource(R.string.item_base_width),
-                        range = 0.0..1000.0,
+                        dialogSummary = stringResource(R.string.dialog_summary_base_width),
+                        range = 0.0..8000.0,
                         startAction = {
                             IconActions(painterResource(R.drawable.ic_width_normal))
                         },
                     )
-
-//                    SwitchPreference(
-//                        preferences = preferences,
-//                        key = "lyric_style_base_dynamic_width_auto_hide_clock",
-//                        defaultValue = BasicStyle.Defaults.DYNAMIC_WIDTH_AUTO_HIDE_CLOCK,
-//                        title = stringResource(R.string.item_base_dynamic_width_auto_hide_clock),
-//                        summary = stringResource(
-//                            if (dynamicWidthEnabled.value) {
-//                                R.string.item_base_dynamic_width_auto_hide_clock_summary
-//                            } else {
-//                                R.string.item_base_dynamic_width_auto_hide_clock_disabled_summary
-//                            }
-//                        ),
-//                        startAction = {
-//                            IconActions(painterResource(R.drawable.ic_width_normal))
-//                        },
-//                        enabled = dynamicWidthEnabled.value
-//                    )
-
-//                    if (Utils.isHyperOs3OrAbove) {
-//                        SwitchPreference(
-//                            preferences = preferences,
-//                            key = "lyric_style_base_xiaomi_island_temp_hide_enabled",
-//                            defaultValue = BasicStyle.Defaults.XIAOMI_ISLAND_TEMP_HIDE_ENABLED,
-//                            title = stringResource(R.string.item_base_xiaomi_island_temp_hide),
-//                            summary = stringResource(R.string.item_base_xiaomi_island_temp_hide_summary),
-//                            startAction = {
-//                                IconActions(painterResource(R.drawable.ic_visibility_off))
-//                            },
-//                        )
-//                    }
+                    DoubleInputPreference(
+                        preferences = preferences,
+                        key = "lyric_style_base_width_in_landscape",
+                        title = stringResource(R.string.item_base_width_in_landscape),
+                        dialogSummary = stringResource(R.string.dialog_summary_base_width_in_landscape),
+                        range = 0.0..8000.0,
+                        startAction = {
+                            IconActions(painterResource(R.drawable.ic_width_normal))
+                        },
+                    )
                     if (Utils.isOPlus) {
                         DoubleInputPreference(
                             preferences = preferences,
                             key = "lyric_style_base_width_in_coloros_capsule_mode",
                             title = stringResource(R.string.item_base_width_color_os_capsule),
-                            range = 0.0..1000.0,
+                            dialogSummary = stringResource(R.string.dialog_summary_base_width_color_os_capsule),
+                            range = 0.0..8000.0,
+                            startAction = {
+                                IconActions(painterResource(R.drawable.ic_width_normal))
+                            },
+                        )
+                        DoubleInputPreference(
+                            preferences = preferences,
+                            key = "lyric_style_base_width_in_coloros_capsule_mode_in_landscape",
+                            title = stringResource(R.string.item_base_width_color_os_capsule_in_landscape),
+                            dialogSummary = stringResource(R.string.dialog_summary_base_width_color_os_capsule_in_landscape),
+                            range = 0.0..8000.0,
                             startAction = {
                                 IconActions(painterResource(R.drawable.ic_width_normal))
                             },
@@ -221,19 +219,32 @@ class BasicLyricStyleActivity : AbstractLyricActivity() {
                         preferences = preferences,
                         key = "lyric_style_base_blocked_words_regex",
                         title = stringResource(R.string.item_base_blocked_words_regex),
+                        dialogSummary = stringResource(R.string.dialog_summary_base_blocked_words_regex),
                         startAction = {
                             IconActions(painterResource(R.drawable.ic_visibility_off))
                         }
                     )
 
-                    ChineseConversionPreference()
+                    if (BuildConfig.ENABLE_CHINESE_CONVERSION) {
+                        ChineseConversionPreference()
+                    }
                 }
             }
 
+
             item(key = "visibility") {
+                SmallTitle(
+                    text = stringResource(R.string.section_visibility),
+                    insideMargin = PaddingValues(
+                        start = 26.dp,
+                        top = 16.dp,
+                        end = 26.dp,
+                        bottom = 10.dp
+                    )
+                )
                 Card(
                     modifier = Modifier
-                        .padding(start = 16.dp, top = 16.dp, end = 16.dp)
+                        .padding(start = 16.dp, top = 0.dp, end = 16.dp)
                         .fillMaxWidth(),
                 ) {
 
@@ -251,19 +262,28 @@ class BasicLyricStyleActivity : AbstractLyricActivity() {
                         title = stringResource(R.string.item_base_lockscreen_hidden),
                     )
 
-//                    SwitchPreference(
-//                        preferences,
-//                        "lyric_style_base_double_tap_switch_clock",
-//                        defaultValue = BasicStyle.Defaults.DOUBLE_TAP_SWITCH_CLOCK,
-//                        startAction = {
-//                            IconActions(painterResource(R.drawable.ic_visibility_off))
-//                        },
-//                        title = stringResource(R.string.item_base_double_tap_switch_clock),
-//                    )
-
                     HideWhenNoLyric()
                     HideWhenNoUpdate()
                     HideWhenKeywords()
+                }
+            }
+
+            item(key = "ai_translation") {
+                SmallTitle(
+                    text = stringResource(R.string.section_translation),
+                    insideMargin = PaddingValues(
+                        start = 26.dp,
+                        top = 16.dp,
+                        end = 26.dp,
+                        bottom = 10.dp
+                    )
+                )
+                Card(
+                    modifier = Modifier
+                        .padding(start = 16.dp, top = 0.dp, end = 16.dp, bottom = 0.dp)
+                        .fillMaxWidth(),
+                ) {
+                    AiTranslationPreference(preferences)
                 }
             }
 
@@ -296,9 +316,10 @@ class BasicLyricStyleActivity : AbstractLyricActivity() {
             preferences = preferences,
             key = "lyric_style_base_no_lyric_hide_timeout",
             title = stringResource(R.string.item_base_timeout_no_lyric),
+            dialogSummary = stringResource(R.string.dialog_summary_base_timeout_no_lyric),
             range = 0L..3_600_000L,
             summary = { hideWhenNoLyricSummary },
-            startAction = { IconActions(painterResource(R.drawable.ic_stop_circle)) },
+            startAction = { IconActions(painterResource(R.drawable.update_24px)) },
             display = PreferenceValueDisplay.Time(multiplier = 1000)
         )
     }
@@ -326,9 +347,10 @@ class BasicLyricStyleActivity : AbstractLyricActivity() {
             preferences = preferences,
             key = "lyric_style_base_no_update_hide_timeout",
             title = stringResource(R.string.item_base_timeout_no_update),
+            dialogSummary = stringResource(R.string.dialog_summary_base_timeout_no_update),
             range = 0L..3_600_000L,
             summary = { summary },
-            startAction = { IconActions(painterResource(R.drawable.ic_stop_circle)) },
+            startAction = { IconActions(painterResource(R.drawable.update_24px)) },
             display = PreferenceValueDisplay.Time(multiplier = 1000)
         )
     }
@@ -359,9 +381,10 @@ class BasicLyricStyleActivity : AbstractLyricActivity() {
                 preferences = preferences,
                 key = "lyric_style_base_keyword_hide_timeout",
                 title = stringResource(R.string.item_base_timeout_keyword_match),
+                dialogSummary = stringResource(R.string.dialog_summary_base_timeout_keyword_match),
                 range = 0L..3_600_000L,
                 summary = { summary },
-                startAction = { IconActions(painterResource(R.drawable.ic_stop_circle)) },
+                startAction = { IconActions(painterResource(R.drawable.update_24px)) },
                 display = PreferenceValueDisplay.Time(multiplier = 1000)
             )
         }
@@ -381,7 +404,8 @@ class BasicLyricStyleActivity : AbstractLyricActivity() {
                 key = "lyric_style_base_timeout_hide_keywords",
                 title = stringResource(R.string.item_base_filter_keyword_list),
                 summary = summary,
-                startAction = { IconActions(painterResource(R.drawable.ic_stop_circle)) },
+                dialogSummary = stringResource(R.string.dialog_summary_base_filter_keyword_list),
+                startAction = { IconActions(painterResource(R.drawable.regular_expression_24px)) },
                 label = stringResource(R.string.hint_filter_keyword_input)
             )
         }
@@ -421,7 +445,7 @@ class BasicLyricStyleActivity : AbstractLyricActivity() {
             startAction = {
                 IconActions(painterResource(R.drawable.translate_24px))
             },
-            title = stringResource(R.string.item_base_chinese_conversion_title),
+            title = stringResource(R.string.item_base_chinese_conversion),
             items = entries,
             selectedIndex = selectedIndex.intValue,
             onSelectedIndexChange = { index ->

@@ -41,7 +41,6 @@ import io.github.proify.android.extensions.formatToString
 import io.github.proify.lyricon.app.R
 import io.github.proify.lyricon.app.compose.NumberTextField
 import io.github.proify.lyricon.app.compose.color
-import io.github.proify.lyricon.app.compose.custom.miuix.extra.SuperDialog
 import io.github.proify.lyricon.app.util.AppLangUtils
 import io.github.proify.lyricon.app.util.TimeFormatter
 import io.github.proify.lyricon.app.util.editCommit
@@ -54,6 +53,7 @@ import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.window.WindowDialog
 
 /**
  * Preference 值的摘要展示策略。
@@ -110,6 +110,7 @@ fun StringInputPreference(
     showKeyboard: Boolean = true,
     titleColor: BasicComponentColors = BasicComponentDefaults.titleColor(),
     summary: String? = null,
+    dialogSummary: String? = null,
     summaryColor: BasicComponentColors = BasicComponentDefaults.summaryColor(),
     startAction: @Composable (() -> Unit)? = null,
     endActions: @Composable RowScope.() -> Unit = {},
@@ -130,6 +131,7 @@ fun StringInputPreference(
         showKeyboard = showKeyboard,
         titleColor = titleColor,
         summary = summary,
+        dialogSummary = dialogSummary,
         summaryColor = summaryColor,
         startAction = startAction,
         endActions = endActions,
@@ -142,9 +144,10 @@ fun StringInputPreference(
         format = { it },
         isSavable = { true },
         display = { it.orEmpty() },
-    ) { dialogTitle, initialValue, isValid, save, dismiss ->
+    ) { dialogTitle, dialogDescription, initialValue, isValid, save, dismiss ->
         StringInputPreferenceDialog(
             title = dialogTitle,
+            summary = dialogDescription,
             initialValue = initialValue,
             showKeyboard = showKeyboard,
             label = label,
@@ -178,6 +181,7 @@ fun IntInputPreference(
     showKeyboard: Boolean = true,
     titleColor: BasicComponentColors = BasicComponentDefaults.titleColor(),
     summary: (@Composable (Int?) -> String?)? = null,
+    dialogSummary: String? = null,
     summaryColor: BasicComponentColors = BasicComponentDefaults.summaryColor(),
     startAction: @Composable (() -> Unit)? = null,
     endActions: @Composable RowScope.() -> Unit = {},
@@ -198,6 +202,7 @@ fun IntInputPreference(
         showKeyboard = showKeyboard,
         titleColor = titleColor,
         summary = summary,
+        dialogSummary = dialogSummary,
         summaryColor = summaryColor,
         startAction = startAction,
         endActions = endActions,
@@ -238,6 +243,7 @@ fun LongInputPreference(
     showKeyboard: Boolean = true,
     titleColor: BasicComponentColors = BasicComponentDefaults.titleColor(),
     summary: (@Composable (Long?) -> String?)? = null,
+    dialogSummary: String? = null,
     summaryColor: BasicComponentColors = BasicComponentDefaults.summaryColor(),
     startAction: @Composable (() -> Unit)? = null,
     endActions: @Composable RowScope.() -> Unit = {},
@@ -259,6 +265,7 @@ fun LongInputPreference(
         showKeyboard = showKeyboard,
         titleColor = titleColor,
         summary = summary,
+        dialogSummary = dialogSummary,
         summaryColor = summaryColor,
         startAction = startAction,
         endActions = endActions,
@@ -299,6 +306,7 @@ fun DoubleInputPreference(
     showKeyboard: Boolean = true,
     titleColor: BasicComponentColors = BasicComponentDefaults.titleColor(),
     summary: (@Composable (Double?) -> String?)? = null,
+    dialogSummary: String? = null,
     summaryColor: BasicComponentColors = BasicComponentDefaults.summaryColor(),
     startAction: @Composable (() -> Unit)? = null,
     endActions: @Composable RowScope.() -> Unit = {},
@@ -320,6 +328,7 @@ fun DoubleInputPreference(
         showKeyboard = showKeyboard,
         titleColor = titleColor,
         summary = summary,
+        dialogSummary = dialogSummary,
         summaryColor = summaryColor,
         startAction = startAction,
         endActions = endActions,
@@ -354,6 +363,7 @@ private fun <T> NumberInputPreference(
     showKeyboard: Boolean,
     titleColor: BasicComponentColors,
     summary: (@Composable (T?) -> String?)?,
+    dialogSummary: String?,
     summaryColor: BasicComponentColors,
     startAction: @Composable (() -> Unit)?,
     endActions: @Composable RowScope.() -> Unit,
@@ -383,6 +393,7 @@ private fun <T> NumberInputPreference(
         showKeyboard = showKeyboard,
         titleColor = titleColor,
         summary = null,
+        dialogSummary = dialogSummary,
         summaryColor = summaryColor,
         startAction = startAction,
         endActions = endActions,
@@ -395,9 +406,10 @@ private fun <T> NumberInputPreference(
         format = format,
         isSavable = isSavable,
         display = { value -> summary?.invoke(value) ?: display.format(value).orEmpty() },
-    ) { dialogTitle, initialValue, isValid, save, dismiss ->
+    ) { dialogTitle, dialogDescription, initialValue, isValid, save, dismiss ->
         NumberInputPreferenceDialog(
             title = dialogTitle,
+            summary = dialogDescription,
             initialValue = initialValue,
             showKeyboard = showKeyboard,
             label = label,
@@ -428,6 +440,7 @@ private fun <T> TypedInputPreference(
     showKeyboard: Boolean,
     titleColor: BasicComponentColors,
     summary: String?,
+    dialogSummary: String?,
     summaryColor: BasicComponentColors,
     startAction: @Composable (() -> Unit)?,
     endActions: @Composable RowScope.() -> Unit,
@@ -442,6 +455,7 @@ private fun <T> TypedInputPreference(
     display: @Composable (T?) -> String,
     dialog: @Composable (
         title: String,
+        summary: String?,
         initialValue: String,
         isValid: (String) -> Boolean,
         onSave: (String) -> Unit,
@@ -452,7 +466,7 @@ private fun <T> TypedInputPreference(
     val currentText = prefValueState.value ?: defaultText
     val currentValue = currentText?.let(parse)
     val rawSummary = summary ?: display(currentValue)
-    val finalSummary = rawSummary.ifBlank { stringResource(id = R.string.defaultText) }
+    val finalSummary = rawSummary.ifBlank { stringResource(id = R.string.default_text) }
     val truncatedSummary = if (finalSummary.lines().size > 3) {
         finalSummary.lines().take(4).joinToString("\n") + "..."
     } else finalSummary
@@ -479,6 +493,7 @@ private fun <T> TypedInputPreference(
     if (showDialog) {
         dialog(
             title,
+            dialogSummary,
             currentText.orEmpty(),
             isSavable,
             { text ->
@@ -509,6 +524,7 @@ private fun <T> TypedInputPreference(
 @Composable
 private fun StringInputPreferenceDialog(
     title: String,
+    summary: String?,
     initialValue: String,
     showKeyboard: Boolean,
     label: String?,
@@ -529,6 +545,7 @@ private fun StringInputPreferenceDialog(
 
     InputDialogScaffold(
         title = title,
+        summary = summary,
         showKeyboard = showKeyboard,
         isValid = isValidInput(inputValue),
         onDismiss = onDismiss,
@@ -556,6 +573,7 @@ private fun StringInputPreferenceDialog(
 @Composable
 private fun NumberInputPreferenceDialog(
     title: String,
+    summary: String?,
     initialValue: String,
     showKeyboard: Boolean,
     label: String?,
@@ -571,6 +589,7 @@ private fun NumberInputPreferenceDialog(
 
     InputDialogScaffold(
         title = title,
+        summary = summary,
         showKeyboard = showKeyboard,
         isValid = isValid,
         onDismiss = onDismiss,
@@ -611,6 +630,7 @@ private fun NumberInputPreferenceDialog(
 @Composable
 private fun InputDialogScaffold(
     title: String,
+    summary: String?,
     showKeyboard: Boolean,
     isValid: Boolean,
     onDismiss: () -> Unit,
@@ -634,8 +654,9 @@ private fun InputDialogScaffold(
         }
     }
 
-    SuperDialog(
+    WindowDialog(
         title = title,
+        summary = summary,
         show = true,
         onDismissRequest = { dismiss() }
     ) {

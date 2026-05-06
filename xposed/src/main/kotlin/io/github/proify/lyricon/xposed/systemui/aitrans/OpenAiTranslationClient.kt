@@ -38,7 +38,7 @@ internal object OpenAiTranslationClient {
 
         val requestItems = texts.mapIndexedNotNull { index, text ->
             text.trim().takeIf(::shouldRequestTranslation)?.let {
-                TranslationRequestItem(index = index, text = it)
+                TranslationRequestItem(index = index, src = it)
             }
         }
         if (requestItems.isEmpty()) {
@@ -46,15 +46,22 @@ internal object OpenAiTranslationClient {
             return@withContext emptyList()
         }
 
-        val payload = TranslationRequest(lyrics = requestItems)
+        val payload = json.encodeToString(TranslationRequest(requestItems))
+        Log.d(TAG, "Requesting translations, payload: $payload")
+
         val requestIndices = requestItems.map { it.index }.toSet()
         val chatRequest = OpenAiChatRequest(
             model = configs.model.orEmpty(),
             messages = listOf(
                 ChatMessage("system", AITranslationPrompt.build(configs, song)),
-                ChatMessage("user", json.encodeToString(payload))
+                ChatMessage("user", payload)
             ),
-            responseFormat = ResponseFormat("json_object")
+            responseFormat = ResponseFormat("json_object"),
+            temperature = configs.temperature,
+            topP = configs.topP,
+            maxTokens = configs.maxTokens.takeIf { it > 0 },
+            presencePenalty = configs.presencePenalty,
+            frequencyPenalty = configs.frequencyPenalty
         )
 
         var connection: HttpURLConnection? = null
@@ -69,6 +76,7 @@ internal object OpenAiTranslationClient {
                 doOutput = true
                 setRequestProperty("Content-Type", "application/json")
                 setRequestProperty("Authorization", "Bearer ${configs.apiKey}")
+                setRequestProperty("User-Agent", "lyricon")
             }
 
             OutputStreamWriter(connection.outputStream).use {
@@ -83,6 +91,8 @@ internal object OpenAiTranslationClient {
                     Log.e(TAG, "Empty content in API response.")
                     return@withContext null
                 }
+
+                Log.d(TAG, "Parsing JSON response: $content")
                 AITranslationResponseParser.parse(content, requestIndices)
             } else {
                 val errorBody = connection.errorStream?.bufferedReader()?.use { it.readText() }

@@ -25,9 +25,13 @@ import kotlinx.serialization.Transient
 data class BasicStyle(
     var anchor: String = Defaults.ANCHOR,
     var insertionOrder: Int = Defaults.INSERTION_ORDER,
-    var width: Float = Defaults.WIDTH,
-    var widthInColorOSCapsuleMode: Float = Defaults.WIDTH_IN_COLOROS_CAPSULE_MODE,
-    var xiaomiIslandTempHideEnabled: Boolean = Defaults.XIAOMI_ISLAND_TEMP_HIDE_ENABLED,
+
+    private var width: Float = Defaults.WIDTH,
+    private var widthInLand: Float = Defaults.WIDTH_LAND,
+
+    private var widthInColorOSCapsuleMode: Float = Defaults.WIDTH_IN_COLOROS_CAPSULE_MODE,
+    private var widthInColorOSCapsuleModeLand: Float = Defaults.WIDTH_IN_COLOROS_CAPSULE_MODE_LAND,
+
     var margins: RectF = Defaults.MARGINS,
     var paddings: RectF = Defaults.PADDINGS,
     var visibilityRules: List<VisibilityRule> = Defaults.VISIBILITY_RULES,
@@ -39,6 +43,19 @@ data class BasicStyle(
     var blockedWordsRegexString: String = Defaults.BLOCKED_WORDS_REGEX,
     var chineseConversionMode: Int = Defaults.CHINESE_CONVERSION_MODE,
 ) : AbstractStyle(), Parcelable {
+
+    fun getAutoWidth(isLand: Boolean, isOplusCapsuleShowing: Boolean): Float {
+        if (isOplusCapsuleShowing) return getWidthInColorOSCapsuleMode(isLand)
+        return getWidth(isLand)
+    }
+
+    fun getWidth(isLand: Boolean): Float {
+        return if (isLand) widthInLand else width
+    }
+
+    fun getWidthInColorOSCapsuleMode(isLand: Boolean): Float {
+        return if (isLand) widthInColorOSCapsuleModeLand else widthInColorOSCapsuleMode
+    }
 
     /** 缓存的屏蔽词正则表达式对象 */
     @IgnoredOnParcel
@@ -74,15 +91,17 @@ data class BasicStyle(
             preferences.getString("lyric_style_base_anchor", Defaults.ANCHOR) ?: Defaults.ANCHOR
         insertionOrder =
             preferences.getInt("lyric_style_base_insertion_order", Defaults.INSERTION_ORDER)
+
         width = preferences.getFloat("lyric_style_base_width", Defaults.WIDTH)
+        widthInLand =
+            preferences.getFloat("lyric_style_base_width_in_landscape", Defaults.WIDTH_LAND)
         widthInColorOSCapsuleMode = preferences.getFloat(
             "lyric_style_base_width_in_coloros_capsule_mode",
             Defaults.WIDTH_IN_COLOROS_CAPSULE_MODE
         )
-
-        xiaomiIslandTempHideEnabled = preferences.getBoolean(
-            "lyric_style_base_xiaomi_island_temp_hide_enabled",
-            Defaults.XIAOMI_ISLAND_TEMP_HIDE_ENABLED
+        widthInColorOSCapsuleModeLand = preferences.getFloat(
+            "lyric_style_base_width_in_coloros_capsule_mode_in_landscape",
+            Defaults.WIDTH_IN_COLOROS_CAPSULE_MODE_LAND
         )
 
         margins = json.safeDecode<RectF>(
@@ -137,13 +156,16 @@ data class BasicStyle(
     override fun onWrite(editor: SharedPreferences.Editor) {
         editor.putString("lyric_style_base_anchor", anchor)
         editor.putInt("lyric_style_base_insertion_order", insertionOrder)
-        editor.putFloat("lyric_style_base_width", width)
-        editor.putFloat("lyric_style_base_width_in_coloros_capsule_mode", widthInColorOSCapsuleMode)
 
-        editor.putBoolean(
-            "lyric_style_base_xiaomi_island_temp_hide_enabled",
-            xiaomiIslandTempHideEnabled
+        editor.putFloat("lyric_style_base_width", width)
+        editor.putFloat("lyric_style_base_width_in_landscape", widthInLand)
+
+        editor.putFloat("lyric_style_base_width_in_coloros_capsule_mode", widthInColorOSCapsuleMode)
+        editor.putFloat(
+            "lyric_style_base_width_in_coloros_capsule_mode_in_landscape",
+            widthInColorOSCapsuleModeLand
         )
+
         editor.putString("lyric_style_base_margins", margins.toJson())
         editor.putString("lyric_style_base_paddings", paddings.toJson())
         editor.putString("lyric_style_base_visibility_rules", visibilityRules.toJson())
@@ -162,8 +184,11 @@ data class BasicStyle(
         const val ANCHOR: String = "clock"
         const val INSERTION_ORDER: Int = INSERTION_ORDER_BEFORE
         const val WIDTH: Float = 100f
+        const val WIDTH_LAND: Float = 200f
+
         const val WIDTH_IN_COLOROS_CAPSULE_MODE: Float = 70f
-        const val XIAOMI_ISLAND_TEMP_HIDE_ENABLED: Boolean = true
+        const val WIDTH_IN_COLOROS_CAPSULE_MODE_LAND: Float = 70f
+
         val MARGINS: RectF = RectF()
         val PADDINGS: RectF = RectF()
         val VISIBILITY_RULES: List<VisibilityRule> = emptyList()
