@@ -92,22 +92,27 @@ jobs:
         run: |
           echo "====== APK 文件 ======"
           find lyricon/build/outputs/apk -name "*.apk"
+ 
+      - name: 获取 APK 路径
+        run: |
+          APK_PATH=$(find lyricon/build/outputs/apk -name "*.apk" | head -n 1)
+          echo "APK_PATH=$APK_PATH" >> $GITHUB_ENV
+          echo "找到 APK:"
+          echo "$APK_PATH"
 
       - name: 上传 APK（Artifacts）
         uses: actions/upload-artifact@v7
         with:
           name: lyricon-${{ env.BUILD_TYPE }}-apk
-          path: lyricon/build/outputs/apk/${{ env.BUILD_TYPE }}/lyricon-*${{ env.BUILD_TYPE }}.apk
+          path: ${{ env.APK_PATH }}
           if-no-files-found: warn
 
       - name: 上传到 Release
         run: |
           TAG="ci-build"
-
           gh release view "$TAG" >/dev/null 2>&1 || \
           gh release create "$TAG" -t "CI Build" -n "Auto build"
-
-          gh release upload "$TAG" lyricon/build/outputs/apk/${BUILD_TYPE}/lyricon-*${BUILD_TYPE}.apk --clobber
+          gh release upload "$TAG" "$APK_PATH" --clobber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
