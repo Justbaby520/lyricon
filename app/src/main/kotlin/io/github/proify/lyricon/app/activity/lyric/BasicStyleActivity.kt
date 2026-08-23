@@ -41,8 +41,8 @@ import io.github.proify.lyricon.app.util.Utils
 import io.github.proify.lyricon.app.util.editCommit
 import io.github.proify.lyricon.lyric.style.BasicStyle
 import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.SmallTitle
-import top.yukonga.miuix.kmp.basic.SpinnerEntry
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.OverlaySpinnerPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
@@ -112,8 +112,8 @@ class BasicLyricStyleActivity : AbstractLyricActivity() {
                     )
 
                     val options = listOf(
-                        SpinnerEntry(title = stringResource(R.string.item_base_insertion_before)),
-                        SpinnerEntry(title = stringResource(R.string.item_base_insertion_after)),
+                        DropdownItem(title = stringResource(R.string.item_base_insertion_before)),
+                        DropdownItem(title = stringResource(R.string.item_base_insertion_after)),
                     )
 
                     optionKeys.forEachIndexed { index, key ->
@@ -135,6 +135,49 @@ class BasicLyricStyleActivity : AbstractLyricActivity() {
                                 putInt(
                                     "lyric_style_base_insertion_order",
                                     optionKeys[it]
+                                )
+                            }
+                        }
+                    )
+
+                    val statusStrategyKeys = listOf(
+                        BasicStyle.STATUS_COLOR_STRATEGY_PRECISE,
+                        BasicStyle.STATUS_COLOR_STRATEGY_COMPAT
+                    )
+
+                    val statusStrategyOptions = listOf(
+                        DropdownItem(
+                            title = stringResource(R.string.option_status_color_strategy_precise)
+                        ),
+                        DropdownItem(
+                            title = stringResource(R.string.option_status_color_strategy_compat)
+                        ),
+                    )
+
+                    val currentStatusStrategy = preferences.getInt(
+                        "lyric_style_base_status_color_strategy",
+                        BasicStyle.Defaults.STATUS_COLOR_STRATEGY
+                    )
+
+                    val selectedStatusStrategyIndex = remember {
+                        mutableIntStateOf(
+                            statusStrategyKeys.indexOf(currentStatusStrategy).coerceAtLeast(0)
+                        )
+                    }
+
+                    OverlaySpinnerPreference(
+                        startAction = {
+                            IconActions(painterResource(R.drawable.ic_palette))
+                        },
+                        title = stringResource(R.string.item_status_color_strategy),
+                        items = statusStrategyOptions,
+                        selectedIndex = selectedStatusStrategyIndex.intValue,
+                        onSelectedIndexChange = {
+                            selectedStatusStrategyIndex.intValue = it
+                            preferences.editCommit {
+                                putInt(
+                                    "lyric_style_base_status_color_strategy",
+                                    statusStrategyKeys[it]
                                 )
                             }
                         }
@@ -436,9 +479,9 @@ class BasicLyricStyleActivity : AbstractLyricActivity() {
         }
 
         val entries = listOf(
-            SpinnerEntry(title = stringResource(R.string.item_base_chinese_conv_off)),
-            SpinnerEntry(title = stringResource(R.string.item_base_chinese_conv_simplified)),
-            SpinnerEntry(title = stringResource(R.string.item_base_chinese_conv_traditional)),
+            DropdownItem(title = stringResource(R.string.item_base_chinese_conv_off)),
+            DropdownItem(title = stringResource(R.string.item_base_chinese_conv_simplified)),
+            DropdownItem(title = stringResource(R.string.item_base_chinese_conv_traditional)),
         )
 
         OverlaySpinnerPreference(

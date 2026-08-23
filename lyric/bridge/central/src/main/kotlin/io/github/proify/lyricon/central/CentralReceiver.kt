@@ -11,6 +11,9 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 
+/**
+ * 注册广播接收器：把注册请求交给 [CentralRuntime.registration] 处理。
+ */
 internal object CentralReceiver : BroadcastReceiver() {
 
     private const val TAG = "CentralReceiver"

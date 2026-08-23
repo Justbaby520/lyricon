@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright 2026 Proify, Tomakino
  * Licensed under the Apache License, Version 2.0
  * http://www.apache.org/licenses/LICENSE-2.0
@@ -24,8 +24,8 @@ import io.github.proify.lyricon.xposed.ModuleEntry
 import io.github.proify.lyricon.xposed.hook.PackageHooker
 import io.github.proify.lyricon.xposed.logger.YLog
 import io.github.proify.lyricon.xposed.systemui.aitrans.AITranslator
-import io.github.proify.lyricon.xposed.systemui.hook.ClockColorMonitor
 import io.github.proify.lyricon.xposed.systemui.hook.OplusCapsuleHooker
+import io.github.proify.lyricon.xposed.systemui.hook.StatusBarColorMonitor
 import io.github.proify.lyricon.xposed.systemui.hook.StatusBarDisableHooker
 import io.github.proify.lyricon.xposed.systemui.hook.StatusBarViewResolver
 import io.github.proify.lyricon.xposed.systemui.hook.ViewVisibilityTracker
@@ -152,7 +152,7 @@ object SystemUIHooker : PackageHooker() {
             }
         })
 
-        ClockColorMonitor.hook(module, classLoader)
+        StatusBarColorMonitor.initialize(module, classLoader)
         AITranslator.init(context)
         SystemUIMediaUtils.init(context)
         StatusBarViewResolver.init(module, context)

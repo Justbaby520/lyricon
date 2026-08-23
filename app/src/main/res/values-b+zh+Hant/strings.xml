@@ -136,6 +136,9 @@
     <string name="item_logo_position_after">之後</string>
     <string name="item_base_anchor">錨點</string>
     <string name="item_base_insertion_order">插入順序</string>
+    <string name="item_status_color_strategy">狀態欄顏色策略</string>
+    <string name="option_status_color_strategy_precise">精準模式</string>
+    <string name="option_status_color_strategy_compat">相容模式</string>
     <string name="item_base_insertion_before">之前</string>
     <string name="item_base_insertion_after">之後</string>
     <string name="item_base_width">寬度</string>

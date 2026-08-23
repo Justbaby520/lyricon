@@ -1,42 +1,42 @@
 [versions]
 # Gradle / Kotlin / KSP
 agp = "9.1.1"
-jetbrainsKotlinJvm = "2.3.21"
-kotlin = "2.3.21"
+jetbrainsKotlinJvm = "2.4.10"
+kotlin = "2.4.10"
 
 # AndroidX Base
 activity = "1.13.0"
-appcompat = "1.7.1"
+appcompat = "1.8.0"
 browser = "1.10.0"
-constraintlayout = "2.2.1"
-coreKtx = "1.18.0"
+constraintlayout = "2.2.2"
+coreKtx = "1.19.0"
 interpolator = "1.0.0"
-lifecycle = "2.10.0"
+lifecycle = "2.11.0"
 
 # AndroidX Compose
 activityCompose = "1.13.0"
-composeBom = "2026.05.00"
+composeBom = "2026.08.00"
 opencc4j = "1.14.0"
 
 # Material
 material = "1.14.0"
-material3 = "1.5.0-alpha19"
+material3 = "1.5.0-alpha26"
 
 # Network / Logic / Serialization
 kotlinxSerializationJson = "1.11.0"
 
 # UI Extensions / Third Party
-aboutlibrariesCore = "14.2.0"
+aboutlibrariesCore = "15.1.1"
 accompanistDrawablePainter = "0.37.3"
 androidsvg = "1.4"
 bonsai = "1.2.0"
 capsuleAndroid = "2.1.1-patch2"
 haze = "1.7.2"
 lottieCompose = "6.7.1"
-miuixUI = "0.9.1"
-miuixIcons = "0.9.1"
-miuixPreference = "0.9.1"
-miuixBlur = "0.9.1"
+miuixUI = "0.9.3"
+miuixIcons = "0.9.3"
+miuixPreference = "0.9.3"
+miuixBlur = "0.9.3"
 
 # Testing
 androidxJunit = "1.3.0"
@@ -105,3 +105,4 @@ android-library = { id = "com.android.library", version.ref = "agp" }
 # ===== Kotlin =====
 jetbrains-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "jetbrainsKotlinJvm" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }

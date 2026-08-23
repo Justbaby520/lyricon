@@ -136,6 +136,9 @@
     <string name="item_logo_position_after">After</string>
     <string name="item_base_anchor">Anchor</string>
     <string name="item_base_insertion_order">Insertion order</string>
+    <string name="item_status_color_strategy">Status bar color</string>
+    <string name="option_status_color_strategy_precise">Precise  </string>
+    <string name="option_status_color_strategy_compat">Compatible</string>
     <string name="item_base_insertion_before">Before</string>
     <string name="item_base_insertion_after">After</string>
     <string name="item_base_width">Width</string>

@@ -16,7 +16,6 @@ import android.widget.TextView
 import androidx.core.graphics.toColorInt
 import androidx.core.view.doOnAttach
 import androidx.core.view.isVisible
-import io.github.proify.android.extensions.crc32
 import io.github.proify.android.extensions.dp
 import io.github.proify.android.extensions.isLandScape
 import io.github.proify.android.extensions.setColorAlpha
@@ -29,8 +28,9 @@ import io.github.proify.lyricon.lyric.style.BasicStyle
 import io.github.proify.lyricon.lyric.style.LyricStyle
 import io.github.proify.lyricon.statusbarlyric.StatusBarLyric
 import io.github.proify.lyricon.xposed.logger.YLog
-import io.github.proify.lyricon.xposed.systemui.hook.ClockColorMonitor
+import io.github.proify.lyricon.xposed.systemui.hook.ClockViewFinder
 import io.github.proify.lyricon.xposed.systemui.hook.OplusCapsuleHooker
+import io.github.proify.lyricon.xposed.systemui.hook.StatusBarColorMonitor
 import io.github.proify.lyricon.xposed.systemui.lyric.LyricViewController.isPlaying
 import io.github.proify.lyricon.xposed.systemui.util.OnColorChangeListener
 import io.github.proify.lyricon.xposed.systemui.util.ViewVisibilityController
@@ -52,7 +52,6 @@ class StatusBarViewController(
     val visibilityController: ViewVisibilityController = ViewVisibilityController(statusBarView)
     val lyricView: StatusBarLyric by lazy { createLyricView(currentLyricStyle) }
 
-    private val clockId: Int by lazy { ResourceMapper.getIdByName(context, "clock") }
     private var lastAnchor = ""
     private var lastInsertionOrder = -1
     private var internalRemoveLyricViewFlag = false
@@ -61,8 +60,22 @@ class StatusBarViewController(
     private var coverColorPaletteResult: ColorPaletteResult? = null
     private var systemStatusBarColor: SystemStatusBarColor? = null
 
+    private val colorChangeListener = object : OnColorChangeListener {
+
+        private var colorFingerprint: String? = null
+        override fun onColorChanged(color: Int, darkIntensity: Float) {
+            val colorFingerprint = color.toString() + darkIntensity
+            if (colorFingerprint == this.colorFingerprint) return
+            this.colorFingerprint = colorFingerprint
+
+            updateStatusColor(SystemStatusBarColor(color, darkIntensity))
+        }
+    }
+
     private val onGlobalLayoutListener = ViewTreeObserver.OnGlobalLayoutListener {
         applyVisibilityRulesNow()
+        // 无副作用复核:布局事件也是状态栏颜色可能的变更时机(补救观察点)
+        StatusBarColorMonitor.refresh()
     }
 
     // --- 生命周期与初始化 ---
@@ -73,21 +86,10 @@ class StatusBarViewController(
         ScreenStateMonitor.addListener(this)
         lyricView.onPlayingChanged = { _ -> }
 
-        val onColorChangeListener = object : OnColorChangeListener {
-
-            private var colorFingerprint: String? = null
-            override fun onColorChanged(color: Int, darkIntensity: Float) {
-                val colorFingerprint = color.toString() + darkIntensity
-                if (colorFingerprint == this.colorFingerprint) return
-                this.colorFingerprint = colorFingerprint
-
-                updateStatusColor(SystemStatusBarColor(color, darkIntensity))
-            }
-        }
-
-        colorMonitorView = getClockView()?.also {
-            ClockColorMonitor.setListener(it, onColorChangeListener)
-        }
+        StatusBarColorMonitor.bindStatusBar(statusBarView)
+        colorMonitorView = getClockView()
+        StatusBarColorMonitor.bindClockView(colorMonitorView)
+        StatusBarColorMonitor.addListener(colorChangeListener)
 
         statusBarView.doOnAttach { checkLyricViewExists() }
         YLog.info(tag = TAG, "Lyric view created for $statusBarView")
@@ -99,7 +101,9 @@ class StatusBarViewController(
         lyricView.removeOnAttachStateChangeListener(lyricAttachListener)
         ScreenStateMonitor.removeListener(this)
         lyricView.onPlayingChanged = null
-        colorMonitorView?.let { ClockColorMonitor.setListener(it, null) }
+        StatusBarColorMonitor.removeListener(colorChangeListener)
+        colorMonitorView?.let { StatusBarColorMonitor.unbindClockView(it) }
+        colorMonitorView = null
         YLog.info(tag = TAG, "Lyric view destroyed for $statusBarView")
     }
 
@@ -184,7 +188,8 @@ class StatusBarViewController(
             ColorExtractor.extractAsync(
                 bitmap = bitmap,
                 cacheKey = {
-                    coverFile.crc32().toString()
+                   // coverFile.crc32().toString()
+                    coverFile.name
                 }) {
                 coverColorPaletteResult = it
                 systemStatusBarColor?.let { updateStatusColor(it) }
@@ -248,7 +253,7 @@ class StatusBarViewController(
 
     // --- 辅助方法 ---
 
-    private fun getClockView(): View? = statusBarView.findViewById(clockId)
+    private fun getClockView(): View? = ClockViewFinder.find(statusBarView)
 
     private var wasPlayingBeforeVisibilityUpdate: Boolean = false
 

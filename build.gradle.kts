@@ -5,14 +5,14 @@ plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.android.library) apply false
     alias(libs.plugins.kotlin.compose) apply false
-    id("com.vanniktech.maven.publish") version "0.36.0" apply false
+    id("com.vanniktech.maven.publish") version "0.37.0" apply false
     alias(libs.plugins.jetbrains.kotlin.jvm) apply false
-    id("com.mikepenz.aboutlibraries.plugin.android") version "14.2.0" apply false
+    id("com.mikepenz.aboutlibraries.plugin.android") version "15.0.4" apply false
 }
 
 extra["appPackageName"] = "io.github.proify.lyricon"
-extra["appVersionCode"] = 43
-extra["appVersionName"] = "1.0.30-beta13"
+extra["appVersionCode"] = 45
+extra["appVersionName"] = "1.0.30"
 extra["compileSdkVersion"] = 37
 extra["targetSdkVersion"] = 37
 extra["minSdkVersion"] = 29
@@ -27,8 +27,9 @@ extra["lyricModelVersion"] = "0.1.71"
  */
 val cleanApks: TaskProvider<Task> = tasks.register("cleanAllApks") {
     group = "build"
+    // 在配置阶段解析路径, 避免执行期访问 project (配置缓存兼容)
+    val outputDir = project.layout.buildDirectory.dir("all-apks").get().asFile
     doFirst {
-        val outputDir = project.layout.buildDirectory.dir("all-apks").get().asFile
         if (outputDir.exists()) {
             outputDir.deleteRecursively()
             println("--- [Clean] 已清理旧的 APK 导出目录 ---")

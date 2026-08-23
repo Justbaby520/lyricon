@@ -53,14 +53,14 @@ import io.github.proify.lyricon.app.activity.lyric.pkg.sheet.PackageSwitchBottom
 import io.github.proify.lyricon.app.compose.AppToolBarContainer
 import io.github.proify.lyricon.app.compose.custom.miuix.basic.MiuixScrollBehavior
 import io.github.proify.lyricon.app.compose.custom.miuix.basic.ScrollBehavior
+import io.github.proify.lyricon.app.compose.custom.miuix.basic.TabRow
+import io.github.proify.lyricon.app.compose.custom.miuix.basic.TabRowDefaults
 import io.github.proify.lyricon.app.util.LyricPrefs
 import io.github.proify.lyricon.app.util.editCommit
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import top.yukonga.miuix.kmp.basic.TabRow
-import top.yukonga.miuix.kmp.basic.TabRowDefaults
 
 const val DEFAULT_PACKAGE_NAME: String = LyricPrefs.DEFAULT_PACKAGE_NAME
 private const val TAB_COUNT = 3
@@ -279,9 +279,7 @@ private fun StyleTabRow(
                 pagerState.animateScrollToPage(index)
             }
         },
-        colors = TabRowDefaults.tabRowColors().copy(
-            backgroundColor = Color.Transparent
-        ),
+        colors = TabRowDefaults.tabRowColors(backgroundColor = Color.Transparent)
     )
 
     LaunchedEffect(pagerState) {

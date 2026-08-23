@@ -65,6 +65,7 @@ open class LyricPlayerView(
         override fun onPlayStarted(view: LyricLineView) {
             view.visibleIfChanged = true; updateViewsVisibility()
         }
+
         override fun onPlayEnded(view: LyricLineView) = updateViewsVisibility()
         override fun onPlayProgress(view: LyricLineView, total: Float, progress: Float) {}
     }

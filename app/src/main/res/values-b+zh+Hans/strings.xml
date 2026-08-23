@@ -38,7 +38,7 @@
     <string name="activity_basic_settings">基本设置</string>
     <string name="activity_app_style_manager">应用样式管理</string>
     <string name="activity_lyric_provider_services">歌词提供服务</string>
-    <string name="activity_open_source_licenses">开源许可</string>
+    <string name="activity_open_source_licenses">开放源代码许可</string>
     <string name="item_basic_settings">基本设置</string>
     <string name="item_summary_basic_settings">歌词位置、大小及状态栏显示规则</string>
     <string name="item_app_style_manager">应用样式</string>
@@ -138,6 +138,9 @@
     <string name="item_logo_position_after">之后</string>
     <string name="item_base_anchor">锚点</string>
     <string name="item_base_insertion_order">插入顺序</string>
+    <string name="item_status_color_strategy">状态栏颜色策略</string>
+    <string name="option_status_color_strategy_precise">精准模式</string>
+    <string name="option_status_color_strategy_compat">兼容模式</string>
     <string name="item_base_insertion_before">之前</string>
     <string name="item_base_insertion_after">之后</string>
     <string name="item_base_width">宽度</string>

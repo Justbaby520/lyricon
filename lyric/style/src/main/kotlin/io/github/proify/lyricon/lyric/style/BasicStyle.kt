@@ -11,6 +11,8 @@ import android.os.Parcelable
 import io.github.proify.android.extensions.json
 import io.github.proify.android.extensions.safeDecode
 import io.github.proify.android.extensions.toJson
+import io.github.proify.lyricon.lyric.style.BasicStyle.Companion.STATUS_COLOR_STRATEGY_COMPAT
+import io.github.proify.lyricon.lyric.style.BasicStyle.Companion.STATUS_COLOR_STRATEGY_PRECISE
 import io.github.proify.lyricon.lyric.style.TextStyle.Companion.KEY_AI_TRANSLATION_API_KEY
 import io.github.proify.lyricon.lyric.style.TextStyle.Companion.KEY_AI_TRANSLATION_BASE_URL
 import io.github.proify.lyricon.lyric.style.TextStyle.Companion.KEY_AI_TRANSLATION_ENABLED
@@ -38,6 +40,13 @@ import kotlinx.serialization.Transient
 data class BasicStyle(
     var anchor: String = Defaults.ANCHOR,
     var insertionOrder: Int = Defaults.INSERTION_ORDER,
+
+    /**
+     * 状态栏文字颜色同步策略 ID(见 [STATUS_COLOR_STRATEGY_PRECISE] /
+     * [STATUS_COLOR_STRATEGY_COMPAT]),由 [StatusBarColorMonitor] 注册的策略动态执行,
+     * 未来可扩展新策略
+     */
+    var statusColorStrategy: Int = Defaults.STATUS_COLOR_STRATEGY,
 
     private var width: Float = Defaults.WIDTH,
     private var widthInLand: Float = Defaults.WIDTH_LAND,
@@ -109,6 +118,10 @@ data class BasicStyle(
             preferences.getString("lyric_style_base_anchor", Defaults.ANCHOR) ?: Defaults.ANCHOR
         insertionOrder =
             preferences.getInt("lyric_style_base_insertion_order", Defaults.INSERTION_ORDER)
+        statusColorStrategy = preferences.getInt(
+            "lyric_style_base_status_color_strategy",
+            Defaults.STATUS_COLOR_STRATEGY
+        )
 
         width = preferences.getFloat("lyric_style_base_width", Defaults.WIDTH)
         widthInLand =
@@ -186,6 +199,10 @@ data class BasicStyle(
     override fun onWrite(editor: SharedPreferences.Editor) {
         editor.putString("lyric_style_base_anchor", anchor)
         editor.putInt("lyric_style_base_insertion_order", insertionOrder)
+        editor.putInt(
+            "lyric_style_base_status_color_strategy",
+            statusColorStrategy
+        )
 
         editor.putFloat("lyric_style_base_width", width)
         editor.putFloat("lyric_style_base_width_in_landscape", widthInLand)
@@ -316,6 +333,7 @@ data class BasicStyle(
     object Defaults {
         const val ANCHOR: String = "clock"
         const val INSERTION_ORDER: Int = INSERTION_ORDER_BEFORE
+        const val STATUS_COLOR_STRATEGY: Int = STATUS_COLOR_STRATEGY_PRECISE
         const val WIDTH: Float = 100f
         const val WIDTH_LAND: Float = 200f
 
@@ -337,6 +355,12 @@ data class BasicStyle(
     companion object {
         const val INSERTION_ORDER_BEFORE: Int = 0
         const val INSERTION_ORDER_AFTER: Int = 1
+
+        /** 状态栏文字颜色同步策略:精准模式(按时钟类动态 hook,默认) */
+        const val STATUS_COLOR_STRATEGY_PRECISE: Int = 0
+
+        /** 状态栏文字颜色同步策略:兼容模式(全局 TextView#setTextColor + 聚合) */
+        const val STATUS_COLOR_STRATEGY_COMPAT: Int = 1
 
         /** 中文转换模式：关闭 */
         const val CHINESE_CONVERSION_OFF = 0

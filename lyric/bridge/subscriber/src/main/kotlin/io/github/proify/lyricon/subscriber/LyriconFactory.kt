@@ -12,6 +12,9 @@ import android.app.ActivityManager
 import android.app.Application
 import android.content.Context
 import android.os.Build
+import io.github.proify.lyricon.subscriber.EmptyLyriconSubscriber
+import io.github.proify.lyricon.subscriber.internal.LyriconSubscriberImpl
+import io.github.proify.lyricon.subscriber.internal.registration.CentralBootReceiver
 
 /** 创建 [LyriconSubscriber] 的工厂。 */
 object LyriconFactory {
@@ -27,7 +30,7 @@ object LyriconFactory {
     fun createSubscriber(
         context: Context
     ): LyriconSubscriber {
-        CentralServiceReceiver.initialize(context)
+        CentralBootReceiver.initialize(context)
 
         val subscriberInfo = SubscriberInfo(
             context.packageName,
@@ -41,6 +44,7 @@ object LyriconFactory {
         }
     }
 
+    /** 读取当前进程名；Android 9 以下回退到 ActivityManager 遍历。 */
     private fun getCurrentProcessName(context: Context): String? {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             Application.getProcessName()
