@@ -37,16 +37,6 @@ configure<ApplicationExtension> {
         versionName = rootProject.extra["appVersionName"] as String
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
-//        androidResources {
-//            @Suppress("UnstableApiUsage")
-//            localeFilters += listOf(
-//                "en",
-//                "zh-rCN",
-//                "zh-rTW",
-//                "zh-rHK"
-//            )
-//        }
     }
 
     signingConfigs {

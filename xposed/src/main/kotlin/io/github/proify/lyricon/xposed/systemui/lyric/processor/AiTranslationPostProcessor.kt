@@ -7,6 +7,7 @@
 package io.github.proify.lyricon.xposed.systemui.lyric.processor
 
 import android.util.Log
+import io.github.proify.lyricon.lyric.ai.core.AiConfigProvider
 import io.github.proify.lyricon.lyric.model.Song
 import io.github.proify.lyricon.lyric.model.extensions.deepCopy
 import io.github.proify.lyricon.lyric.style.LyricStyle
@@ -24,11 +25,18 @@ import kotlinx.coroutines.withContext
  *
  * 处理流程：
  * 1. 检查总开关及配置可用性。
- * 2. 检查是否满足“自动跳过中文歌”条件。
+ * 2. 检查是否满足"自动跳过中文歌"条件。
  * 3. 检查歌词是否已经包含完整翻译（避免重复翻译）。
  * 4. 调用 [AiTranslator] 进行同步翻译并返回新对象。
+ *
+ * @param configProvider AI 配置提供者，用于获取当前激活的配置
+ *
+ * @author Tomakino
+ * @since 2026
  */
-class AiTranslationPostProcessor : PostProcessor {
+class AiTranslationPostProcessor(
+    private val configProvider: AiConfigProvider,
+) : PostProcessor {
 
     companion object {
         private const val TAG = "AiTranslationPostProcessor"
@@ -48,8 +56,9 @@ class AiTranslationPostProcessor : PostProcessor {
      */
     override fun isEnabled(style: LyricStyle): Boolean {
         val targetStyle = style.basicStyle
+        val config = configProvider.getActiveConfig()
         val enabled = targetStyle.isAiTranslationEnable
-                && targetStyle.aiConfigs?.isUsable == true
+                && config?.isUsable == true
         if (!enabled) {
             Log.v(TAG, "Processor disabled: Config unusable or switch turned off.")
         }
@@ -87,10 +96,11 @@ class AiTranslationPostProcessor : PostProcessor {
             return song
         }
 
-        val translationConfig = style.basicStyle.aiConfigs ?: run {
-            Log.w(TAG, "Abort process: aiConfigs is null.")
+        val translationConfig = configProvider.getActiveConfig() ?: run {
+            Log.w(TAG, "Abort process: No active AI config available.")
             return song
         }
+
         // 翻译业务参数：目标语言 / 风格要求（来自样式配置，与连接配置分离）
         val translationOptions = AiTranslationOptions(
             targetLanguage = style.basicStyle.aiTranslationTargetLanguage,

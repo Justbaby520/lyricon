@@ -7,8 +7,9 @@
 package io.github.proify.lyricon.app.activity.lyric
 
 import android.app.Activity
+import android.content.ClipData
 import android.graphics.Color
-import android.os.SystemClock
+
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -22,16 +23,17 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableLongStateOf
+
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -39,10 +41,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.Clipboard
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.TextStyle
@@ -50,6 +53,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.LottieConstants
+import com.airbnb.lottie.compose.rememberLottieComposition
 import com.mikepenz.markdown.compose.Markdown
 import com.mikepenz.markdown.model.DefaultMarkdownColors
 import com.mikepenz.markdown.model.DefaultMarkdownTypography
@@ -60,21 +67,23 @@ import io.github.proify.lyricon.app.R
 import io.github.proify.lyricon.app.ai.explain.AiExplainCache
 import io.github.proify.lyricon.app.ai.explain.AiExplainCached
 import io.github.proify.lyricon.app.ai.explain.AiExplainClient
+import io.github.proify.lyricon.app.ai.explain.AiExplainPrompt
 import io.github.proify.lyricon.app.compose.IconActions
 import io.github.proify.lyricon.app.compose.theme.AppTheme
+import io.github.proify.lyricon.app.util.AnimationEmoji
 import io.github.proify.lyricon.app.util.LyricPrefs
 import io.github.proify.lyricon.app.util.toast
 import io.github.proify.lyricon.lyric.ai.core.AiConfig
+import io.github.proify.lyricon.lyric.ai.core.AiConfigProviderImpl
 import io.github.proify.lyricon.lyric.ai.explain.AiExplainContract
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.Icon
@@ -86,7 +95,7 @@ import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.window.WindowBottomSheet
 import top.yukonga.miuix.kmp.window.WindowCascadingListPopup
-import io.github.proify.lyricon.lyric.style.TextStyle as LyricTextStyle
+import java.util.Locale
 
 /**
  * AI 音乐解读（透明 Activity）
@@ -107,14 +116,11 @@ class AiExplainActivity : AbstractLyricActivity() {
 
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         super.onCreate(savedInstanceState)
-        // 强制系统栏透明 + 浅色图标：底部弹层覆盖在当前应用之上，
-        // 状态栏不再显示黑色条，图标叠加在弹层 scrim 上清晰可见。
+
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT)
         )
-        // 关闭系统对比度 scrim，避免状态栏出现半透明黑条
-        window.isStatusBarContrastEnforced = false
         window.isNavigationBarContrastEnforced = false
         setContent {
             AppTheme {
@@ -136,39 +142,68 @@ class AiExplainActivity : AbstractLyricActivity() {
     }
 }
 
-@Composable
-private fun AiExplainSheet(title: String, artist: String, album: String, lyrics: String) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val clipboard = LocalClipboardManager.current
-    val scrollState = rememberScrollState()
+/**
+ * AI 解读状态持有者：集中管理所有可变状态，与 Composable 生命周期解耦。
+ *
+ * @param title 歌曲名
+ * @param artist 歌手名
+ * @param album 专辑名
+ * @param lyrics 歌词内容
+ */
+@Stable
+private class AiExplainState(
+    private val title: String,
+    private val artist: String,
+    private val album: String,
+    private val lyrics: String,
+) {
+    var reasoningText by mutableStateOf("")
+    var contentText by mutableStateOf("")
+    var reasoningVisible by mutableStateOf(false)
+        private set
+    var contentVisible by mutableStateOf(false)
+        private set
+    var isLoading by mutableStateOf(true)
+        private set
+    var showMenu by mutableStateOf(false)
+    var thinkingExpanded by mutableStateOf(false)
 
-    var reasoningText by remember { mutableStateOf("") }
-    var contentText by remember { mutableStateOf("") }
-    var reasoningVisible by remember { mutableStateOf(false) }
-    var contentVisible by remember { mutableStateOf(false) }
-    var contentEpoch by remember { mutableIntStateOf(0) }
-    var isLoading by remember { mutableStateOf(true) }
-    var job by remember { mutableStateOf<Job?>(null) }
-    var showMenu by remember { mutableStateOf(false) }
-    var thinkingExpanded by remember { mutableStateOf(false) }
+    // 用户手动滑动标志：一旦用户手动滑动，停止自动滚动
+    var userHasScrolled by mutableStateOf(false)
+        private set
 
     // 增量经 Channel 单消费者串行消费（渲染树内消费，按窗口聚合后 append 到
     // streaming state）：不丢块、不重复、不重建整树——流式期间树稳定不闪烁。
-    var reasoningChannel by remember { mutableStateOf(Channel<String>(Channel.UNLIMITED)) }
-    var contentChannel by remember { mutableStateOf(Channel<String>(Channel.UNLIMITED)) }
+    val reasoningChannel = Channel<String>(Channel.UNLIMITED)
+    val contentChannel = Channel<String>(Channel.UNLIMITED)
 
-    fun startRequest(forceRefresh: Boolean = false) {
+    // 用于标识当前请求批次：重试时递增，使 key(epoch) 内的 LaunchedEffect 重建
+    var contentEpoch by mutableIntStateOf(0)
+        private set
+
+    private var job: Job? = null
+
+    /**
+     * 标记用户已手动滑动，停止自动滚动。
+     */
+    fun markUserScrolled() {
+        userHasScrolled = true
+    }
+
+    fun startRequest(
+        scope: CoroutineScope,
+        context: android.content.Context,
+        forceRefresh: Boolean = false
+    ) {
         job?.cancel()
-        // 新请求换新 Channel：旧请求回调的迟到增量写入旧通道，不会与新请求内容混合
-        reasoningChannel = Channel(Channel.UNLIMITED)
-        contentChannel = Channel(Channel.UNLIMITED)
         reasoningText = ""
         contentText = ""
         reasoningVisible = false
         contentVisible = false
         contentEpoch++
         isLoading = true
+        // 重试时重置滚动标志，允许重新自动滚动
+        userHasScrolled = false
 
         job = scope.launch {
             if (lyrics.isBlank()) {
@@ -187,9 +222,7 @@ private fun AiExplainSheet(title: String, artist: String, album: String, lyrics:
             }
 
             // 缓存 key 纳入模型与服务信息：更换模型/服务商后不命中旧解读
-            val cacheKey =
-                "${title}|${artist}|$lyrics|${configs.provider}|${configs.baseUrl}|${configs.model}"
-                    .md5()
+            val cacheKey = "${title}|${artist}|${lyrics}".md5()
 
             // 仅在首次加载读缓存；手动重试 = 强制重新调用 AI（成功后覆盖旧缓存）
             if (!forceRefresh) {
@@ -209,15 +242,15 @@ private fun AiExplainSheet(title: String, artist: String, album: String, lyrics:
                 }
             }
 
+            // 读取自定义系统提示词
+            val customSystemPrompt = withContext(Dispatchers.IO) {
+                LyricPrefs.basicStylePrefs.getString(AiExplainPrompt.KEY_CUSTOM_SYSTEM_PROMPT, null)
+            }
+
             val result = AiExplainClient.stream(
                 configs = configs,
-                // 输出语言（业务参数，来自翻译目标语言设置）
-                targetLanguage = runCatching {
-                    LyricPrefs.basicStylePrefs.getString(
-                        LyricTextStyle.Companion.KEY_AI_TRANSLATION_TARGET_LANGUAGE,
-                        LyricTextStyle.Defaults.AI_TRANSLATION_TARGET_LANGUAGE_DISPLAY_NAME
-                    )
-                }.getOrNull(),
+                targetLanguage = Locale.getDefault().toLanguageTag(),
+                customSystemPrompt = customSystemPrompt,
                 title = title,
                 artist = artist,
                 album = album,
@@ -241,14 +274,13 @@ private fun AiExplainSheet(title: String, artist: String, album: String, lyrics:
                 contentVisible = true
                 contentChannel.trySend("AI 解释失败，请检查网络与配置")
             } else {
-                val snapshot = result
                 scope.launch(Dispatchers.IO) {
                     AiExplainCache.put(
                         context,
                         cacheKey,
                         AiExplainCached(
-                            reasoning = snapshot.reasoning,
-                            content = snapshot.content,
+                            reasoning = result.reasoning,
+                            content = result.content,
                             time = System.currentTimeMillis()
                         )
                     )
@@ -257,89 +289,87 @@ private fun AiExplainSheet(title: String, artist: String, album: String, lyrics:
         }
     }
 
-    LaunchedEffect(Unit) { startRequest() }
+    /**
+     * 读取统一 AI 配置。
+     *
+     * 通过 [AiConfigProviderImpl] 从 [AiConfigStore] 获取当前激活的配置。
+     * 如果配置不可用（未配置 API Key），直接返回 null 避免白转加载圈。
+     */
+    private fun resolveConfig(): AiConfig? {
+        val prefs = LyricPrefs.basicStylePrefs
+        val provider = AiConfigProviderImpl(prefs)
+        val config = provider.getActiveConfig()
 
-    // 流式滚动节流：token 高频到达时用 scrollTo 而非逐 token 动画（≥100ms 一次）
-    var lastAutoScrollAt by remember { mutableLongStateOf(0L) }
-    LaunchedEffect(contentText) {
-        if (isLoading && contentText.isNotEmpty()) {
-            val now = SystemClock.elapsedRealtime()
-            if (now - lastAutoScrollAt >= 100L) {
-                lastAutoScrollAt = now
-                scrollState.scrollTo(scrollState.maxValue)
-            }
+        if (config == null || !config.isUsable) {
+            return null
+        }
+        return config
+    }
+}
+
+@Composable
+private fun AiExplainSheet(title: String, artist: String, album: String, lyrics: String) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val clipboard: Clipboard = LocalClipboard.current
+    val scrollState = rememberScrollState()
+
+    val state = remember { AiExplainState(title, artist, album, lyrics) }
+
+    LaunchedEffect(Unit) { state.startRequest(scope, context) }
+
+    // 检测用户手动滑动：一旦用户手动滑动，标记状态并停止自动滚动
+    LaunchedEffect(scrollState.isScrollInProgress) {
+        if (scrollState.isScrollInProgress) {
+            state.markUserScrolled()
         }
     }
-    // 结束加载时平滑滚到底
-    LaunchedEffect(isLoading) {
-        if (!isLoading) scrollState.animateScrollTo(scrollState.maxValue)
+
+    // 流式滚动：token 到达时立即滚动，避免尾部内容被遮挡（仅在用户未手动滑动时）
+    LaunchedEffect(state.contentText) {
+        if (state.isLoading && state.contentText.isNotEmpty() && !state.userHasScrolled) {
+            scrollState.scrollTo(scrollState.maxValue)
+        }
+    }
+    // 结束加载时平滑滚到底（仅在用户未手动滑动时）
+    LaunchedEffect(state.isLoading) {
+        if (!state.isLoading && !state.userHasScrolled) scrollState.animateScrollTo(scrollState.maxValue)
     }
 
     // 右上角"更多"菜单：复制 / 重试
-    val menuEntries = remember(isLoading, contentText.isNotEmpty()) {
-        listOf(
-            DropdownEntry(
-                items = listOf(
-                    DropdownItem(
-                        text = "复制解读",
-//                        icon = {
-//                            Icon(
-//                                painter = painterResource(R.drawable.ic_copy),
-//                                contentDescription = null,
-//                                modifier = Modifier
-//                                    .width(20.dp)
-//                                    .height(20.dp),
-//                            )
-//                        },
-                        onClick = {
-                            showMenu = false
-                            if (contentText.isNotEmpty()) {
-                                clipboard.setText(AnnotatedString(contentText))
-                                toast("已复制到剪贴板")
-                            } else {
-                                toast("暂无可复制的内容")
-                            }
-                        },
-                    ),
-                    DropdownItem(
-                        text = if (isLoading) "重试生成" else "重试",
-//                        icon = {
-//                            Icon(
-//                                painter = painterResource(R.drawable.ic_refresh),
-//                                contentDescription = null,
-//                                modifier = Modifier
-//                                    .width(20.dp)
-//                                    .height(20.dp),
-//                            )
-//                        },
-                        enabled = !isLoading,
-                        onClick = {
-                            showMenu = false
-                            // 重试 = 跳过缓存，强制重新调用 AI
-                            startRequest(forceRefresh = true)
-                        },
-                    ),
+    val menuEntries = rememberMenuEntries(
+        isLoading = state.isLoading,
+        hasContent = state.contentText.isNotEmpty(),
+        onCopy = {
+            state.showMenu = false
+            scope.launch {
+                clipboard.setClipEntry(
+                    ClipEntry(ClipData.newPlainText("explain", state.contentText))
                 )
-            )
-        )
-    }
+            }
+            toast("已复制到剪贴板")
+        },
+        onRetry = {
+            state.showMenu = false
+            state.startRequest(scope, context, forceRefresh = true)
+        }
+    )
 
     WindowBottomSheet(
         show = true,
         title = "音乐解读",
         endAction = {
             Box {
-                IconButton(onClick = { showMenu = true }) {
+                IconButton(onClick = { state.showMenu = true }) {
                     Icon(
                         imageVector = MiuixIcons.More,
                         contentDescription = "更多操作",
-                        // tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                     )
                 }
                 WindowCascadingListPopup(
-                    show = showMenu,
+                    show = state.showMenu,
                     entries = menuEntries,
-                    onDismissRequest = { showMenu = false },
+                    onDismissRequest = { state.showMenu = false },
                     alignment = PopupPositionProvider.Align.End,
                 )
             }
@@ -354,118 +384,171 @@ private fun AiExplainSheet(title: String, artist: String, album: String, lyrics:
                 .fillMaxWidth()
                 .animateContentSize()
                 .verticalScroll(scrollState)
-                .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
-
+            // 顶部间距
+            Spacer(Modifier.height(10.dp))
 
             // ---- 思考过程（可折叠，默认折叠；state 与消费循环常驻，折叠不丢内容） ----
-            if (reasoningVisible) {
-                key(contentEpoch) {
-                    val reasoningStream = rememberStreamingMarkdownState()
-                    LaunchedEffect(Unit) {
-                        val channel = reasoningChannel
-                        while (true) {
-                            val first = withTimeoutOrNull(120L) { channel.receive() } ?: continue
-                            val batch = StringBuilder()
-                            batch.append(first)
-                            while (true) {
-                                val extra = withTimeoutOrNull(50L) { channel.receive() } ?: break
-                                batch.append(extra)
-                            }
-                            val text = batch.toString()
-                            reasoningStream.append(text)
-                            reasoningText += text
-                        }
-                    }
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        insideMargin = PaddingValues(0.dp),
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { thinkingExpanded = !thinkingExpanded }
-                                .padding(14.dp)
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                IconActions(painterResource(R.drawable.psychology_24px))
-                                Text(
-                                    text = "思考过程",
-                                    color = MiuixTheme.colorScheme.onSurface,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    modifier = Modifier
-                                        .padding(start = 8.dp)
-                                        .weight(1f)
-                                )
-                                Icon(
-                                    painter = painterResource(R.drawable.keyboard_arrow_right_24px),
-                                    contentDescription = if (thinkingExpanded) "收起思考" else "展开思考",
-                                    modifier = Modifier.rotate(if (thinkingExpanded) 90f else 0f),
-                                    tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                )
-                            }
-                            // 仅控制 Markdown 显隐：streaming state 在 key(epoch) 内常驻，
-                            // 关闭折叠不会销毁消费循环与已渲染内容
-                            if (thinkingExpanded) {
-                                Spacer(Modifier.height(6.dp))
-                                Markdown(
-                                    streamingMarkdownState = reasoningStream,
-                                    modifier = Modifier.fillMaxWidth(),
-                                    colors = rememberAiMarkdownColors(),
-                                    typography = rememberAiMarkdownTypography(),
-                                    padding = markdownPadding(
-                                        block = 16.dp,
-                                        list = 12.dp,
-                                        listItemTop = 6.dp,
-                                        listItemBottom = 10.dp,
-                                        indentList = 12.dp,
-                                        listIndent = 12.dp
-                                    )
-                                )
-                            }
-                        }
-                    }
-                    Spacer(Modifier.height(14.dp))
-                }
+            if (state.reasoningVisible) {
+                ReasoningSection(
+                    channel = state.reasoningChannel,
+                    epoch = state.contentEpoch,
+                    expanded = state.thinkingExpanded,
+                    onExpandedChange = { state.thinkingExpanded = it },
+                    onDelta = { state.reasoningText += it },
+                )
+                Spacer(Modifier.height(16.dp))
             }
 
             // ---- 等待 AI 响应：加载指示，避免页面空白 ----
-            if (isLoading && !contentVisible) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 48.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    CircularProgressIndicator(
-                        modifier = Modifier
-                            .width(28.dp)
-                            .height(28.dp)
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    Text(
-                        text = "AI 正在解读音乐…",
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                        fontSize = 13.sp
-                    )
-                }
+            if (state.isLoading && !state.contentVisible) {
+                LoadingIndicator()
             }
 
             // ---- 解读正文（增量 append 渲染：树稳定，段间距 16dp） ----
-            if (contentVisible) {
+            if (state.contentVisible) {
                 SelectionContainer {
                     AiStreamingMarkdownText(
-                        flow = contentChannel,
-                        epoch = contentEpoch,
-                        onDelta = { contentText += it },
-                        modifier = Modifier.fillMaxWidth(),
+                        flow = state.contentChannel,
+                        epoch = state.contentEpoch,
+                        onDelta = { state.contentText += it },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
                     )
                 }
             }
 
-            Spacer(Modifier.height(12.dp))
+            // 底部间距
+            Spacer(Modifier.height(16.dp))
         }
+    }
+}
+
+/**
+ * 构建菜单条目列表：复制解读 / 重试。
+ */
+@Composable
+private fun rememberMenuEntries(
+    isLoading: Boolean,
+    hasContent: Boolean,
+    onCopy: () -> Unit,
+    onRetry: () -> Unit,
+): List<DropdownEntry> {
+    return remember(isLoading, hasContent) {
+        listOf(
+            DropdownEntry(
+                items = listOf(
+                    DropdownItem(
+                        enabled = hasContent,
+                        text = "复制解读",
+                        onClick = onCopy,
+                    ),
+                    DropdownItem(
+                        text =  "重试生成",
+                        enabled = !isLoading,
+                        onClick = onRetry,
+                    ),
+                )
+            )
+        )
+    }
+}
+
+/**
+ * 思考过程卡片：可折叠，默认折叠；streaming state 常驻，折叠不丢内容。
+ */
+@Composable
+private fun ReasoningSection(
+    channel: Channel<String>,
+    epoch: Int,
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
+    onDelta: (String) -> Unit,
+) {
+    key(epoch) {
+        val reasoningStream = rememberStreamingMarkdownState()
+        // 消费 Channel 增量
+        LaunchedEffect(Unit) {
+            consumeStreamingChannel(channel) { text ->
+                reasoningStream.append(text)
+                onDelta(text)
+            }
+        }
+
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            insideMargin = PaddingValues(0.dp),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onExpandedChange(!expanded) }
+                    .padding(14.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconActions(painterResource(R.drawable.psychology_24px))
+                    Text(
+                        text = "思考过程",
+                        color = MiuixTheme.colorScheme.onSurface,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier
+                            .padding(start = 8.dp)
+                            .weight(1f)
+                    )
+                    Icon(
+                        painter = painterResource(R.drawable.keyboard_arrow_right_24px),
+                        contentDescription = if (expanded) "收起思考" else "展开思考",
+                        modifier = Modifier.rotate(if (expanded) 90f else 0f),
+                        tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    )
+                }
+                // 仅控制 Markdown 显隐：streaming state 在 key(epoch) 内常驻，
+                // 关闭折叠不会销毁消费循环与已渲染内容
+                if (expanded) {
+                    Spacer(Modifier.height(6.dp))
+                    Markdown(
+                        streamingMarkdownState = reasoningStream,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = rememberAiMarkdownColors(),
+                        typography = rememberAiMarkdownTypography(),
+                        padding = markdownPadding(
+                            block = 16.dp,
+                            list = 12.dp,
+                            listItemTop = 6.dp,
+                            listItemBottom = 10.dp,
+                            indentList = 12.dp,
+                            listIndent = 12.dp
+                        )
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 加载指示器：Lottie 动画，避免页面空白。
+ */
+@Composable
+private fun LoadingIndicator() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 48.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        val composition by rememberLottieComposition(
+            LottieCompositionSpec.Asset(AnimationEmoji.getAssetsFile("Light-bulb"))
+        )
+        LottieAnimation(
+            composition = composition,
+            iterations = LottieConstants.IterateForever,
+            modifier = Modifier.size(96.dp),
+        )
     }
 }
 
@@ -485,17 +568,9 @@ private fun AiStreamingMarkdownText(
 ) {
     key(epoch) {
         val streamingState = rememberStreamingMarkdownState()
+        // 消费 Channel 增量
         LaunchedEffect(Unit) {
-            val channel = flow
-            while (true) {
-                val first = withTimeoutOrNull(120L) { channel.receive() } ?: continue
-                val batch = StringBuilder()
-                batch.append(first)
-                while (true) {
-                    val extra = withTimeoutOrNull(50L) { channel.receive() } ?: break
-                    batch.append(extra)
-                }
-                val text = batch.toString()
+            consumeStreamingChannel(flow) { text ->
                 streamingState.append(text)
                 onDelta(text)
             }
@@ -505,15 +580,29 @@ private fun AiStreamingMarkdownText(
             modifier = modifier,
             colors = rememberAiMarkdownColors(),
             typography = rememberAiMarkdownTypography(),
-            padding = markdownPadding(
-                block = 5.dp,
-//                list = 12.dp,
-//                listItemTop = 6.dp,
-//                listItemBottom = 10.dp,
-//                indentList = 12.dp,
-//                listIndent = 12.dp
-            )
+            padding = markdownPadding(block = 5.dp)
         )
+    }
+}
+
+/**
+ * 从 Channel 串行消费增量：120ms 窗口聚合，减少 UI 更新频率。
+ *
+ * @param channel 数据源 Channel
+ * @param onBatch 收到一批增量时的回调（已聚合），支持 suspend 调用
+ */
+private suspend fun consumeStreamingChannel(
+    channel: Channel<String>,
+    onBatch: suspend (String) -> Unit,
+) {
+    while (true) {
+        val first = withTimeoutOrNull(120L) { channel.receive() } ?: continue
+        val batch = StringBuilder(first)
+        while (true) {
+            val extra = withTimeoutOrNull(50L) { channel.receive() } ?: break
+            batch.append(extra)
+        }
+        onBatch(batch.toString())
     }
 }
 
@@ -564,23 +653,4 @@ private fun rememberAiMarkdownTypography(): DefaultMarkdownTypography {
             alertTitle = TextStyle(fontSize = 15.sp, fontWeight = FontWeight.Bold),
         )
     }
-}
-
-/**
- * 读取统一 AI 配置；冷启动时 XposedService 可能尚未绑定，
- * 短暂重试以确保读到模块写入的配置。
- *
- * 未配置 API Key 时无需等待——配置明显不可用，直接返回避免白转 3 秒加载圈。
- */
-private suspend fun resolveConfig(): AiConfig? {
-    val preferences = LyricPrefs.basicStylePrefs
-    if (preferences.getString(AiConfig.KEY_AI_CONFIG_API_KEY, null).isNullOrBlank()) {
-        return runCatching { AiConfig.fromPreferences(preferences) }.getOrNull()
-    }
-    repeat(10) {
-        val config = runCatching { AiConfig.fromPreferences(preferences) }.getOrNull()
-        if (config != null && config.isUsable) return config
-        delay(300)
-    }
-    return runCatching { AiConfig.fromPreferences(preferences) }.getOrNull()
 }

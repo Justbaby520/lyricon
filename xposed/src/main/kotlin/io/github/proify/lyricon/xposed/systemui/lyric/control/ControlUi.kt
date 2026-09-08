@@ -6,6 +6,7 @@
 
 package io.github.proify.lyricon.xposed.systemui.lyric.control
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.res.Resources
 import android.graphics.drawable.GradientDrawable
@@ -21,11 +22,6 @@ import io.github.proify.lyricon.xposed.BuildConfig
  * @since 2026
  */
 internal object ControlUi {
-
-    /** 按压时缩放到的比例。 */
-    private const val PRESS_DOWN_SCALE = 0.86f
-    private const val PRESS_DOWN_DURATION_MS = 90L
-    private const val PRESS_UP_DURATION_MS = 140L
 
     /** 构造纯色圆角矩形 Drawable，可选描边。 */
     fun roundedDrawable(
@@ -43,25 +39,45 @@ internal object ControlUi {
 
     /**
      * 轻微按压缩放反馈。不消费触摸事件（返回 false），不影响点击派发。
+     *
+     * 手指移出 View 边界时自动取消按压效果，避免滑动手势误触发按压视觉反馈。
+     * 使用 DecelerateInterpolator：快速按下，柔和弹回。
      */
+    @SuppressLint("ClickableViewAccessibility")
     fun pressFeedbackListener(): View.OnTouchListener {
-        return object : View.OnTouchListener {
-            override fun onTouch(v: View, event: MotionEvent): Boolean {
-                when (event.action) {
-                    MotionEvent.ACTION_DOWN -> {
-                        v.animate().scaleX(PRESS_DOWN_SCALE).scaleY(PRESS_DOWN_SCALE)
-                            .setDuration(PRESS_DOWN_DURATION_MS)
-                            .start()
-                    }
+        return View.OnTouchListener { v, event ->
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    v.animate().cancel()
+                    v.animate().scaleX(ControlAnimations.PRESS_DOWN_SCALE)
+                        .scaleY(ControlAnimations.PRESS_DOWN_SCALE)
+                        .setDuration(ControlAnimations.PRESS_DOWN_DURATION_MS)
+                        .setInterpolator(ControlAnimations.PRESS_DOWN_INTERPOLATOR)
+                        .start()
+                }
 
-                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                MotionEvent.ACTION_MOVE -> {
+                    // 手指移出 View 边界 → 取消按压效果
+                    if (event.x < 0f || event.y < 0f
+                        || event.x > v.width || event.y > v.height
+                    ) {
+                        v.animate().cancel()
                         v.animate().scaleX(1f).scaleY(1f)
-                            .setDuration(PRESS_UP_DURATION_MS)
+                            .setDuration(ControlAnimations.PRESS_UP_DURATION_MS)
+                            .setInterpolator(ControlAnimations.PRESS_UP_INTERPOLATOR)
                             .start()
                     }
                 }
-                return false
+
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    v.animate().cancel()
+                    v.animate().scaleX(1f).scaleY(1f)
+                        .setDuration(ControlAnimations.PRESS_UP_DURATION_MS)
+                        .setInterpolator(ControlAnimations.PRESS_UP_INTERPOLATOR)
+                        .start()
+                }
             }
+            false
         }
     }
 

@@ -82,7 +82,7 @@ internal object CoverBackdrop {
                 (g / n).toInt().coerceIn(0, 255),
                 (b / n).toInt().coerceIn(0, 255)
             )
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             YLog.warning(TAG, "dominantColor failed")
             DEFAULT_COLOR
         }

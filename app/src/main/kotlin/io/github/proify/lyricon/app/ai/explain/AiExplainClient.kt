@@ -23,6 +23,7 @@ object AiExplainClient {
      *
      * @param configs 统一 AI 连接配置
      * @param targetLanguage 输出语言（null 时回退简体中文），来自翻译目标语言设置
+     * @param customSystemPrompt 自定义系统提示词（null 时使用默认提示词）
      * @param title 歌曲名
      * @param artist 歌手名
      * @param album 专辑名（可能为空）
@@ -34,6 +35,7 @@ object AiExplainClient {
     suspend fun stream(
         configs: AiConfig,
         targetLanguage: String?,
+        customSystemPrompt: String? = null,
         title: String,
         artist: String,
         album: String,
@@ -44,7 +46,7 @@ object AiExplainClient {
         return AiChatClient.stream(
             configs = configs,
             systemPrompt = AiExplainPrompt.explainSystemPrompt(
-                targetLanguage = targetLanguage,
+                customPrompt = customSystemPrompt,
             ),
             userPrompt = AiExplainPrompt.buildExplainUserPrompt(
                 targetLanguage,

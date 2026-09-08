@@ -9,26 +9,51 @@ package io.github.proify.lyricon.xposed.systemui.lyric.control
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.view.View
-import android.view.animation.DecelerateInterpolator
 import android.view.animation.OvershootInterpolator
+import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import io.github.proify.android.extensions.dp
 
 /**
- * 控制窗口进出场动画（原始版：从顶部滑落弹开 + 过冲回弹；关闭时收缩回顶部）。
+ * 控制窗口进出场动画 + 按压反馈动画。
+ *
+ * iOS 灵动岛风格：
+ * - 进场：弹簧感溢出，从状态栏"流"出来，有液态/果冻质感
+ * - 退场：流畅大方退出，让用户专注其它
+ * - 按压：轻微 squish 效果，弹性回弹
  *
  * @author Tomakino
  * @since 2026
  */
 object ControlAnimations {
 
-    private const val ENTER_DURATION_MS = 420L
-    private const val EXIT_DURATION_MS = 220L
-    private const val ENTER_OFFSET_DP = 36
-    private const val EXIT_OFFSET_DP = 40
-    private const val ENTER_SCALE = 0.9f
-    private const val OVERSHOOT_TENSION = 0.75f
+    // ---- 进场：弹簧溢出，液态流动感 ----
+    private const val ENTER_DURATION_MS = 450L
+    private const val ENTER_OFFSET_DP = 32
+    private const val ENTER_SCALE = 0.85f
 
-    /** 从状态栏下沿弹出：略高、略小、透明起步，同时带回弹过冲。 */
+    // 高 tension 的 OvershootInterpolator 模拟 spring 弹性
+    private val ENTER_INTERPOLATOR = OvershootInterpolator(1.2f)
+
+    // ---- 退场：流畅大方退出 ----
+    private const val EXIT_DURATION_MS = 250L
+    private const val EXIT_OFFSET_DP = 36
+    private const val EXIT_SCALE = 0.9f
+
+    // Material FastOutSlowIn：快速启动，平滑减速收尾
+    private val EXIT_INTERPOLATOR = FastOutSlowInInterpolator()
+
+    // ---- 按压反馈：squish 弹性效果 ----
+    internal const val PRESS_DOWN_SCALE = 0.92f
+    internal const val PRESS_DOWN_DURATION_MS = 200L
+    internal const val PRESS_UP_DURATION_MS = 200L
+
+    // 按下：快速减速到位
+    internal val PRESS_DOWN_INTERPOLATOR = FastOutSlowInInterpolator()
+
+    // 弹回：弹性过冲回弹
+    internal val PRESS_UP_INTERPOLATOR = OvershootInterpolator(2.5f)
+
+    /** 从状态栏下沿弹出：液态流动 + 弹簧过冲。 */
     fun playEnter(view: View) {
         view.translationY = -ENTER_OFFSET_DP.dp.toFloat()
         view.scaleX = ENTER_SCALE
@@ -41,19 +66,19 @@ object ControlAnimations {
             .scaleY(1f)
             .alpha(1f)
             .setDuration(ENTER_DURATION_MS)
-            .setInterpolator(OvershootInterpolator(OVERSHOOT_TENSION))
+            .setInterpolator(ENTER_INTERPOLATOR)
             .start()
     }
 
-    /** 关闭：向上收缩 + 淡出，结束后回调 [onEnd]。 */
+    /** 关闭：向上收缩吸入 + 淡出，结束后回调 [onEnd]。 */
     fun playExit(view: View, onEnd: () -> Unit) {
         view.animate()
             .translationY(-EXIT_OFFSET_DP.dp.toFloat())
-            .scaleX(ENTER_SCALE)
-            .scaleY(ENTER_SCALE)
+            .scaleX(EXIT_SCALE)
+            .scaleY(EXIT_SCALE)
             .alpha(0f)
             .setDuration(EXIT_DURATION_MS)
-            .setInterpolator(DecelerateInterpolator())
+            .setInterpolator(EXIT_INTERPOLATOR)
             .setListener(object : AnimatorListenerAdapter() {
                 override fun onAnimationEnd(animation: Animator) = onEnd()
             })

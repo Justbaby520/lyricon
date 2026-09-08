@@ -6,6 +6,7 @@
 
 package io.github.proify.lyricon.xposed.systemui.lyric.control
 
+import android.animation.ValueAnimator
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.res.Resources
@@ -19,8 +20,10 @@ import android.graphics.drawable.LayerDrawable
 import android.os.SystemClock
 import android.text.TextUtils
 import android.view.Gravity
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.OvershootInterpolator
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -30,7 +33,7 @@ import androidx.core.view.setPadding
 import io.github.proify.android.extensions.dp
 import io.github.proify.android.extensions.sp
 import io.github.proify.lyricon.lyric.model.Song
-import io.github.proify.lyricon.xposed.R
+import io.github.proify.lyricon.xposed.BuildConfig
 import io.github.proify.lyricon.xposed.systemui.lyric.control.LyricControlPanel.Companion.NO_SEEK_TARGET
 import io.github.proify.lyricon.xposed.systemui.util.MediaTrackMeta
 import kotlin.math.abs
@@ -48,6 +51,7 @@ import kotlin.math.abs
  * @author Tomakino
  * @since 2026
  */
+@Suppress("JoinDeclarationAndAssignment")
 @SuppressLint("ClickableViewAccessibility")
 class LyricControlPanel(context: Context) : FrameLayout(context) {
 
@@ -85,6 +89,22 @@ class LyricControlPanel(context: Context) : FrameLayout(context) {
     /** 模块（宿主 App）Resources，用于加载自带图标。 */
     private val moduleRes: Resources = ControlUi.moduleResources(context)
 
+    /** 通过名称缓存的 drawable 资源 ID，避免重复反射查找。 */
+    private val drawableIdCache = mutableMapOf<String, Int>()
+
+    /**
+     * 根据 drawable 资源名称获取资源 ID，结果会缓存以避免重复查找。
+     *
+     * @param name drawable 资源名称（不含扩展名）
+     * @return 资源 ID，找不到时返回 0
+     */
+    @SuppressLint("DiscouragedApi")
+    private fun drawableId(name: String): Int {
+        return drawableIdCache.getOrPut(name) {
+            moduleRes.getIdentifier(name, "drawable", BuildConfig.APP_PACKAGE_NAME)
+        }
+    }
+
     /** 当前歌曲时长（毫秒），进度换算的数据源。 */
     private var songDurationMs: Long = 0
 
@@ -108,7 +128,6 @@ class LyricControlPanel(context: Context) : FrameLayout(context) {
             setPadding(CARD_PADDING_DP.dp)
             clipToOutline = true
             outlineProvider = G2RoundedCorner.outlineProvider(CARD_RADIUS_DP.dp.toFloat())
-            // 参考图卡片底色：深靛蓝黑，略带半透明（保留一点点透出但不明显）
             background = ControlUi.roundedDrawable(CARD_COLOR, CARD_RADIUS_DP.dp.toFloat())
         }
 
@@ -125,7 +144,7 @@ class LyricControlPanel(context: Context) : FrameLayout(context) {
         titleView = MarqueeTitleView(context).apply {
             textSize = TITLE_TEXT_SIZE_SP.sp
             textColor = TEXT_COLOR_PRIMARY
-            textTypeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            textTypeface = Typeface.create(Typeface.DEFAULT,500,false)
             // 单行、滚动与渐隐参数均由 MarqueeTitleView 内部管理
         }
 
@@ -186,7 +205,7 @@ class LyricControlPanel(context: Context) : FrameLayout(context) {
         previousButton = ImageView(context).apply {
             setImageDrawable(
                 moduleRes.getDrawable(
-                    R.drawable.skip_previous_fill1_24px,
+                    drawableId("sui_control_skip_previous_fill1_24px"),
                     context.theme
                 )
             )
@@ -201,24 +220,39 @@ class LyricControlPanel(context: Context) : FrameLayout(context) {
         }
 
         nextButton = ImageView(context).apply {
-            setImageDrawable(moduleRes.getDrawable(R.drawable.skip_next_fill1_24px, context.theme))
+            setImageDrawable(
+                moduleRes.getDrawable(
+                    drawableId("sui_control_skip_next_fill1_24px"),
+                    context.theme
+                )
+            )
             setOnTouchListener(ControlUi.pressFeedbackListener())
             setOnClickListener { actionListener?.onNext() }
         }
 
         aiButton = ImageView(context).apply {
-            setImageDrawable(moduleRes.getDrawable(R.drawable.gemini_ai, context.theme))
+            setImageDrawable(
+                moduleRes.getDrawable(
+                    drawableId("sui_control_gemini_ai"),
+                    context.theme
+                )
+            )
             setOnTouchListener(ControlUi.pressFeedbackListener())
             setOnClickListener { v -> actionListener?.onAiExplain(v) }
         }
 
         buildInfoRow()
         buildActionRow()
+
+        // 允许卡片平移时不被父容器裁剪（overscroll 效果需要）
+        clipChildren = false
+        clipToPadding = false
+
         addView(
             card,
-            FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
+            LayoutParams(
+                LayoutParams.MATCH_PARENT,
+                LayoutParams.WRAP_CONTENT
             )
         )
 
@@ -232,6 +266,157 @@ class LyricControlPanel(context: Context) : FrameLayout(context) {
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
 
+    }
+
+    /**
+     * 消费未被子视图处理的触摸事件，确保事件链不断（UP/CANCEL 一定能到达）。
+     * 仅在没有子视图消费 DOWN 时被调用（即点击空白区域），不影响子视图正常工作。
+     */
+    override fun onTouchEvent(ev: MotionEvent): Boolean = true
+
+    // -------------------------------------------------------------------------
+    // 触摸效果：按压缩放 + 垂直 Overscroll 越界回弹
+    // -------------------------------------------------------------------------
+
+    private var touchDownX = 0f
+    private var touchDownY = 0f
+    private var touchMode = TOUCH_MODE_UNDECIDED
+    private var touchOverscroll = false
+
+    /** DOWN 时是否在子控件上（按钮、SeekBar），用于跳过卡片按压。 */
+    private var touchOnChild = false
+
+    /** 正在进行的弹簧回弹动画，用于快速触摸时取消。 */
+    private var springAnimator: ValueAnimator? = null
+
+    /**
+     * 标准 ViewGroup 事件分发，在子视图分发前处理卡片触摸效果。
+     *
+     * 规则：
+     * - 点在子控件上：不做 card 按压，子控件自己的 pressFeedback 正常工作
+     * - 点在空白区域：card 按压缩放，松手回弹
+     * - 垂直拖动（任何位置）：overscroll，松手弹簧回弹
+     * - 水平拖动：不拦截，SeekBar 正常工作
+     */
+    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+        when (ev.action) {
+            MotionEvent.ACTION_DOWN -> {
+                touchDownX = ev.rawX
+                touchDownY = ev.rawY
+                touchMode = TOUCH_MODE_UNDECIDED
+                touchOverscroll = false
+                touchOnChild = isTouchOnChild(ev)
+                // 取消可能正在进行的弹簧回弹动画，重置位移
+                springAnimator?.cancel()
+                springAnimator = null
+                card.translationY = 0f
+                // 只在空白区域做按压缩放
+                if (!touchOnChild) {
+                    card.animate().cancel()
+                    card.animate().scaleX(TOUCH_PRESS_SCALE).scaleY(TOUCH_PRESS_SCALE)
+                        .setDuration(TOUCH_PRESS_DOWN_MS)
+                        .setInterpolator(ControlAnimations.PRESS_DOWN_INTERPOLATOR)
+                        .start()
+                }
+            }
+
+            MotionEvent.ACTION_MOVE -> {
+                val dx = ev.rawX - touchDownX
+                val dy = ev.rawY - touchDownY
+                val threshold = TOUCH_DIR_THRESHOLD_DP.dp.toFloat()
+
+                if (touchMode == TOUCH_MODE_UNDECIDED
+                    && (abs(dx) > threshold || abs(dy) > threshold)
+                ) {
+                    touchMode =
+                        if (abs(dy) > abs(dx)) TOUCH_MODE_VERTICAL else TOUCH_MODE_HORIZONTAL
+                    if (touchMode == TOUCH_MODE_HORIZONTAL) {
+                        // 水平：恢复按压（如有），不拦截
+                        if (!touchOnChild) {
+                            animateCardPressUp()
+                        }
+                    }
+                }
+
+                if (touchMode == TOUCH_MODE_VERTICAL) {
+                    if (!touchOverscroll) {
+                        // 首次进入 overscroll：恢复按压（如有）
+                        if (!touchOnChild) {
+                            animateCardPressUp()
+                        }
+                        touchOverscroll = true
+
+                        // 向子 View 发送 CANCEL，清除其 pressed 状态，
+                        // 防止垂直拖动结束后松手仍误触发子 View 的 click 事件
+                        val cancel = MotionEvent.obtain(ev).apply {
+                            action = MotionEvent.ACTION_CANCEL
+                        }
+                        super.dispatchTouchEvent(cancel)
+                        cancel.recycle()
+                    }
+                    // 限制最大移动范围为 TOUCH_MAX_DP，避免超出 PopupWindow 窗口 Surface 被裁剪
+                    val maxPx = TOUCH_MAX_DP.dp.toFloat()
+                    // 统一线性阻尼：全程 dy * DAMPEN，平滑逼近上限
+                    card.translationY = (dy * TOUCH_DAMPEN).coerceIn(-maxPx, maxPx)
+                    return true // 拦截垂直拖动
+                }
+            }
+
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                val wasOverscroll = touchOverscroll
+                if (wasOverscroll && card.translationY != 0f) {
+                    springAnimator = ValueAnimator.ofFloat(card.translationY, 0f).apply {
+                        duration = TOUCH_SPRING_MS
+                        interpolator = OvershootInterpolator(TOUCH_BOUNCE)
+                        addUpdateListener { card.translationY = it.animatedValue as Float }
+                        start()
+                    }
+                } else if (!wasOverscroll && !touchOnChild) {
+                    // 空白区域按压恢复
+                    animateCardPressUp()
+                }
+                touchOverscroll = false
+                touchMode = TOUCH_MODE_UNDECIDED
+                touchOnChild = false
+                // 垂直拦截结束后不再派发 UP 给子 View（已在 CANCEL 时清理状态）
+                if (wasOverscroll) return true
+            }
+        }
+        return super.dispatchTouchEvent(ev)
+    }
+
+    /** 卡片按压缩放恢复动画（仅缩放，无透明度变化）。 */
+    private fun animateCardPressUp() {
+        card.animate().cancel()
+        card.animate().scaleX(1f).scaleY(1f)
+            .setDuration(TOUCH_PRESS_UP_MS)
+            .setInterpolator(ControlAnimations.PRESS_UP_INTERPOLATOR)
+            .start()
+    }
+
+    /**
+     * 判断触摸点是否落在 card 的可交互子控件上（按钮、SeekBar）。
+     * ev.x/y 是相对 Panel 的坐标，减去 card 的 layout 位置即得到 card 本地坐标。
+     */
+    private fun isTouchOnChild(ev: MotionEvent): Boolean {
+        val cx = (ev.x - card.left).toInt()
+        val cy = (ev.y - card.top).toInt()
+        return hasInteractiveDescendant(card, cx, cy)
+    }
+
+    private fun hasInteractiveDescendant(parent: ViewGroup, x: Int, y: Int): Boolean {
+        for (i in 0 until parent.childCount) {
+            val child = parent.getChildAt(i)
+            if (x < child.left || x >= child.right || y < child.top || y >= child.bottom) continue
+            if (child.isClickable || child is SeekBar) return true
+            if (child is ViewGroup && hasInteractiveDescendant(
+                    child,
+                    x - child.left,
+                    y - child.top
+                )
+            ) return true
+        }
+        return false
     }
 
     // -------------------------------------------------------------------------
@@ -356,7 +541,7 @@ class LyricControlPanel(context: Context) : FrameLayout(context) {
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply { weight = 1f }
-           // clipChildren = false
+            // clipChildren = false
             clipToPadding = false
         }
         titleColumn.addView(titleView)
@@ -423,7 +608,7 @@ class LyricControlPanel(context: Context) : FrameLayout(context) {
         val slot = FrameLayout(context).apply {
             addView(
                 button,
-                FrameLayout.LayoutParams(
+                LayoutParams(
                     size, size, Gravity.CENTER
                 )
             )
@@ -445,11 +630,10 @@ class LyricControlPanel(context: Context) : FrameLayout(context) {
     // -------------------------------------------------------------------------
 
     private fun playPauseIcon(playing: Boolean): Drawable {
-        val iconId = if (playing) R.drawable.pause_fill1_24px
-        else R.drawable.play_arrow_fill1_24px
+        val iconId = if (playing) drawableId("sui_control_pause_fill1_24px")
+        else drawableId("sui_control_play_arrow_fill1_24px")
         return moduleRes.getDrawable(iconId, context.theme)
     }
-
 
     private fun positionToProgress(position: Long): Int {
         if (songDurationMs <= 0) return 0
@@ -502,8 +686,21 @@ class LyricControlPanel(context: Context) : FrameLayout(context) {
         const val TITLE_WHEN_NO_SONG = "未在播放"
         val CARD_COLOR = Color.argb(244, 28, 32, 46)
         val COVER_PLACEHOLDER_COLOR = Color.argb(70, 255, 255, 255)
-        val TEXT_COLOR_PRIMARY = Color.WHITE
+        const val TEXT_COLOR_PRIMARY = Color.WHITE
         val TEXT_COLOR_SECONDARY = Color.argb(170, 255, 255, 255)
         val SEEK_TRACK_COLOR = Color.argb(60, 255, 255, 255)
+
+        // ---- 卡片触摸效果 ----
+        const val TOUCH_PRESS_SCALE = 0.97f
+        const val TOUCH_PRESS_DOWN_MS = 60L
+        const val TOUCH_PRESS_UP_MS = 200L
+        const val TOUCH_DIR_THRESHOLD_DP = 8
+        const val TOUCH_MAX_DP = 30
+        const val TOUCH_DAMPEN = 0.25f
+        const val TOUCH_SPRING_MS = 400L
+        const val TOUCH_BOUNCE = 0.35f
+        const val TOUCH_MODE_UNDECIDED = 0
+        const val TOUCH_MODE_HORIZONTAL = 1
+        const val TOUCH_MODE_VERTICAL = 2
     }
 }

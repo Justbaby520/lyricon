@@ -24,6 +24,7 @@ import io.github.proify.lyricon.xposed.logger.YLog
 import io.github.proify.lyricon.xposed.systemui.ai.explain.AiExplainLauncher
 import io.github.proify.lyricon.xposed.systemui.lyric.LyricDataHub
 import io.github.proify.lyricon.xposed.systemui.lyric.LyricViewController
+import io.github.proify.lyricon.xposed.systemui.lyric.PlaybackControl
 import io.github.proify.lyricon.xposed.systemui.util.MediaTrackMeta
 import io.github.proify.lyricon.xposed.systemui.util.NotificationCoverHelper
 import io.github.proify.lyricon.xposed.systemui.util.SystemUIMediaUtils
@@ -84,16 +85,15 @@ object LyricControlPopup : ActivePlayerListener, NotificationCoverHelper.OnCover
      */
     private val actionListener = object : LyricControlPanel.ActionListener {
         override fun onPrevious() {
-            transportControls()?.skipToPrevious()
+            PlaybackControl.previous()
         }
 
         override fun onTogglePlay() {
-            val controls = transportControls() ?: return
-            if (LyricViewController.isPlaying) controls.pause() else controls.play()
+            PlaybackControl.togglePlay()
         }
 
         override fun onNext() {
-            transportControls()?.skipToNext()
+            PlaybackControl.next()
         }
 
         override fun onSeekTo(position: Long) {
@@ -183,6 +183,7 @@ object LyricControlPopup : ActivePlayerListener, NotificationCoverHelper.OnCover
      * 在 [anchorView] 附近显示控制窗口（若已在显示则切换为关闭）。
      * 通常由点击状态栏歌词视图触发。
      */
+    @SuppressLint("ClickableViewAccessibility")
     @JvmStatic
     fun show(anchorView: View) {
         // 正在显示或退场动画中：视为"已显示"，再次点击 = 关闭（toggle），
@@ -195,7 +196,8 @@ object LyricControlPopup : ActivePlayerListener, NotificationCoverHelper.OnCover
         val context = anchorView.context
 
         // iPad 式卡片宽度：贴近屏幕宽度，留少量边距
-        val screenWidth = context.resources.displayMetrics.widthPixels
+        val dm = context.resources.displayMetrics
+        val screenWidth = dm.widthPixels
         val margin = SCREEN_MARGIN_DP.dp
         val popupWidth = (screenWidth - margin * 2).coerceAtLeast(MIN_WIDTH_DP.dp)
 
@@ -207,7 +209,11 @@ object LyricControlPopup : ActivePlayerListener, NotificationCoverHelper.OnCover
         refreshPanel()
         refreshCover()
 
-        val window = PopupWindow(panel, popupWidth, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+        val window = PopupWindow(
+            panel,
+            popupWidth,
+            ViewGroup.LayoutParams.WRAP_CONTENT
+        ).apply {
             // 非焦点、非模态：卡片外的触摸/滑动直达 SystemUI 下层，
             // 不拦截通知栏下拉、边缘手势等系统操作；
             // 同时保留 outsideTouchable：外部触摸的观察事件（坐标在窗口外的 DOWN）
@@ -217,6 +223,8 @@ object LyricControlPopup : ActivePlayerListener, NotificationCoverHelper.OnCover
             isOutsideTouchable = true
             elevation = ELEVATION_DP.dp.toFloat()
             setBackgroundDrawable(null /* 透明，由卡片负责圆角与阴影 */)
+            // 禁用裁剪：允许卡片 overscroll 时 translationY 超出窗口边界
+            isClippingEnabled = false
             // 外部触摸：先播放收走动画再关窗；返回 true 拦截默认的瞬间擦除
             setTouchInterceptor { view, event ->
                 val outside =
@@ -242,6 +250,14 @@ object LyricControlPopup : ActivePlayerListener, NotificationCoverHelper.OnCover
         val y = (anchorView.bottom + SCREEN_VERTICAL_GAP_DP.dp).coerceAtLeast(0)
         try {
             window.showAtLocation(anchorView, Gravity.TOP or Gravity.START, x, y)
+            // 遍历 PopupWindow 的所有祖先视图，逐层禁用裁剪，
+            // 确保卡片 overscroll translationY 不会被任何中间层截断
+            var ancestor: ViewGroup? = window.contentView.parent as? ViewGroup
+            while (ancestor != null) {
+                ancestor.clipChildren = false
+                ancestor.clipToPadding = false
+                ancestor = ancestor.parent as? ViewGroup
+            }
             ControlAnimations.playEnter(panel)
             // 监听歌曲/进度/系统媒体元数据/封面写盘完成，刷新面板
             LyricDataHub.addListener(this)
@@ -274,7 +290,7 @@ object LyricControlPopup : ActivePlayerListener, NotificationCoverHelper.OnCover
         mainHandler.removeCallbacks(positionUpdater)
         if (window.isShowing) {
             if (root != null) {
-                ControlAnimations.playExit(root, { window.dismiss() })
+                ControlAnimations.playExit(root) { window.dismiss() }
             } else {
                 window.dismiss()
             }

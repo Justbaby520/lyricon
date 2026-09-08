@@ -156,7 +156,6 @@ object AiChatClient {
             .addUserMessage(userPrompt)
             .temperature(configs.temperature.toDouble())
             .topP(configs.topP.toDouble())
-            .maxCompletionTokens(configs.maxTokens.takeIf { it > 0 }?.toLong())
             .presencePenalty(configs.presencePenalty.toDouble())
             .frequencyPenalty(configs.frequencyPenalty.toDouble())
     }

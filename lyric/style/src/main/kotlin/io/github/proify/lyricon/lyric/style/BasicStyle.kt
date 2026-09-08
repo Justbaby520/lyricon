@@ -11,7 +11,6 @@ import android.os.Parcelable
 import io.github.proify.android.extensions.json
 import io.github.proify.android.extensions.safeDecode
 import io.github.proify.android.extensions.toJson
-import io.github.proify.lyricon.lyric.ai.core.AiConfig
 import io.github.proify.lyricon.lyric.style.BasicStyle.Companion.STATUS_COLOR_STRATEGY_COMPAT
 import io.github.proify.lyricon.lyric.style.BasicStyle.Companion.STATUS_COLOR_STRATEGY_PRECISE
 import io.github.proify.lyricon.lyric.style.TextStyle.Companion.KEY_AI_TRANSLATION_ENABLED
@@ -58,7 +57,6 @@ data class BasicStyle(
     var chineseConversionMode: Int = Defaults.CHINESE_CONVERSION_MODE,
 
     var isAiTranslationEnable: Boolean = false,
-    var aiConfigs: AiConfig? = null,
     var aiTranslationTargetLanguage: String = TextStyle.Defaults.AI_TRANSLATION_TARGET_LANGUAGE_DISPLAY_NAME,
     var aiTranslationPrompt: String = TextStyle.Defaults.AI_TRANSLATION_PROMPT,
     var isAiTranslationAutoIgnoreChinese: Boolean = false,
@@ -182,7 +180,6 @@ data class BasicStyle(
                 KEY_AI_TRANSLATION_ENABLED,
                 TextStyle.Defaults.AI_TRANSLATION_ENABLED
             )
-        aiConfigs = AiConfig.fromPreferences(preferences)
         aiTranslationTargetLanguage =
             preferences.getString(
                 KEY_AI_TRANSLATION_TARGET_LANGUAGE,
@@ -230,7 +227,6 @@ data class BasicStyle(
         editor.putInt("lyric_style_base_chinese_conversion_mode", chineseConversionMode)
 
         editor.putBoolean(KEY_AI_TRANSLATION_ENABLED, isAiTranslationEnable)
-        aiConfigs?.let { AiConfig.writeTo(editor, it) }
         editor.putString(KEY_AI_TRANSLATION_TARGET_LANGUAGE, aiTranslationTargetLanguage)
         editor.putString(KEY_AI_TRANSLATION_PROMPT, aiTranslationPrompt)
         editor.putBoolean(KEY_AI_TRANSLATION_IGNORE_CHINESE, isAiTranslationAutoIgnoreChinese)

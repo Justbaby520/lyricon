@@ -12,6 +12,7 @@ import android.graphics.Typeface
 import android.os.SystemClock
 import android.text.TextPaint
 import android.view.View
+import androidx.core.graphics.withTranslation
 import io.github.proify.android.extensions.dp
 import io.github.proify.lyricon.xposed.systemui.lyric.control.MarqueeTitleView.Companion.GHOST_SPACING_DP
 import io.github.proify.lyricon.xposed.systemui.lyric.control.MarqueeTitleView.Companion.LOOP_DELAY_MS
@@ -135,26 +136,24 @@ internal class MarqueeTitleView(context: Context) : View(context) {
 
         val fm = textPaint.fontMetrics
         val baseline = (height - (fm.descent - fm.ascent)) / 2f - fm.ascent
-        val unit = textWidth + ghostSpacing
+        //val unit = textWidth + ghostSpacing
         val offset = -unitOffset
         val right = offset + textWidth
 
         // 主副本：向左滚动出视口
         if (offset < vw && right > 0) {
-            canvas.save()
-            canvas.translate(offset, 0f)
-            canvas.drawText(text, 0f, baseline, textPaint)
-            canvas.restore()
+            canvas.withTranslation(offset, 0f) {
+                drawText(text, 0f, baseline, textPaint)
+            }
         }
 
         // 幽灵副本：主副本尾部离开视口后，从右侧以 ghostSpacing 间距进入
         if (textWidth > vw && right < vw) {
             val ghostX = right + ghostSpacing
             if (ghostX < vw) {
-                canvas.save()
-                canvas.translate(ghostX, 0f)
-                canvas.drawText(text, 0f, baseline, textPaint)
-                canvas.restore()
+                canvas.withTranslation(ghostX, 0f) {
+                    drawText(text, 0f, baseline, textPaint)
+                }
             }
         }
     }

@@ -26,7 +26,6 @@ internal object AiTranslationKey {
         lines: List<String>
     ): String {
         return buildString {
-            append("provider=").appendLine(configs.provider.orEmpty())
             append("baseUrl=").appendLine(configs.baseUrl.orEmpty())
             append("model=").appendLine(configs.model.orEmpty())
             append("target=").appendLine(options.targetLanguage.orEmpty())

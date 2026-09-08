@@ -20,6 +20,7 @@ import io.github.proify.android.extensions.dp
 import io.github.proify.android.extensions.isLandScape
 import io.github.proify.android.extensions.setColorAlpha
 import io.github.proify.android.extensions.toBitmap
+import io.github.proify.lyricon.app.bridge.AppBridge.LyricGesturePrefs
 import io.github.proify.lyricon.colorextractor.palette.ColorExtractor
 import io.github.proify.lyricon.colorextractor.palette.ColorPaletteResult
 import io.github.proify.lyricon.common.util.ResourceMapper
@@ -53,6 +54,13 @@ class StatusBarViewController(
     val visibilityController: ViewVisibilityController = ViewVisibilityController(statusBarView)
     val lyricView: StatusBarLyric by lazy { createLyricView(currentLyricStyle) }
 
+    // --- 手势控制状态 (随偏好热更新) ---
+    private var gestureEnabled: Boolean = LyricGesturePrefs.DEFAULT_ENABLED
+    private var swipeLeftAction: Int = LyricGesturePrefs.DEFAULT_SWIPE_LEFT
+    private var swipeRightAction: Int = LyricGesturePrefs.DEFAULT_SWIPE_RIGHT
+    private var tapAction: Int = LyricGesturePrefs.DEFAULT_TAP
+    private var longPressAction: Int = LyricGesturePrefs.DEFAULT_LONG_PRESS
+
     private var lastAnchor = ""
     private var lastInsertionOrder = -1
     private var internalRemoveLyricViewFlag = false
@@ -75,8 +83,8 @@ class StatusBarViewController(
 
     private val onGlobalLayoutListener = ViewTreeObserver.OnGlobalLayoutListener {
         applyVisibilityRulesNow()
-        // 无副作用复核:布局事件也是状态栏颜色可能的变更时机(补救观察点)
-        StatusBarColorMonitor.refresh()
+//        // 无副作用复核:布局事件也是状态栏颜色可能的变更时机(补救观察点)
+//        StatusBarColorMonitor.refresh()
     }
 
     // --- 生命周期与初始化 ---
@@ -87,10 +95,9 @@ class StatusBarViewController(
         ScreenStateMonitor.addListener(this)
         lyricView.onPlayingChanged = { _ -> }
 
-        // 点击状态栏歌词 -> 弹出 iOS 质感控制窗口（含 AI 解释歌词）
-        lyricView.setOnClickListener { v ->
-            LyricControlPopup.show(v)
-        }
+        // 手势控制:读取偏好并绑定回调,手势动作可配置
+        refreshGestureConfig()
+        lyricView.gestureListener = { gesture -> onLyricGesture(gesture) }
 
         StatusBarColorMonitor.bindStatusBar(statusBarView)
         colorMonitorView = getClockView()
@@ -107,6 +114,7 @@ class StatusBarViewController(
         lyricView.removeOnAttachStateChangeListener(lyricAttachListener)
         ScreenStateMonitor.removeListener(this)
         lyricView.onPlayingChanged = null
+        lyricView.gestureListener = null
         lyricView.setOnClickListener(null)
         LyricControlPopup.dismissIfOwnedBy(lyricView)
         StatusBarColorMonitor.removeListener(colorChangeListener)
@@ -185,6 +193,7 @@ class StatusBarViewController(
             updateLocation(basicStyle)
         }
         lyricView.updateStyle(lyricStyle)
+        refreshGestureConfig()
 
         systemStatusBarColor?.let { updateStatusColor(it) }
     }
@@ -196,7 +205,6 @@ class StatusBarViewController(
             ColorExtractor.extractAsync(
                 bitmap = bitmap,
                 cacheKey = {
-                   // coverFile.crc32().toString()
                     coverFile.name
                 }) {
                 coverColorPaletteResult = it
@@ -296,6 +304,68 @@ class StatusBarViewController(
 
     private fun createLyricView(style: LyricStyle) =
         StatusBarLyric(context, style, getClockView() as? TextView)
+
+    // --- 手势控制 ---
+
+    /**
+     * 从偏好刷新手势配置,并同步视图的手势开关与点击行为。
+     *
+     * 手势关闭时保留旧版"单击打开控制面板"的行为(通过点击监听器委托)。
+     */
+    private fun refreshGestureConfig() {
+        gestureEnabled = LyricPrefs.gestureEnabled
+        swipeLeftAction = LyricPrefs.gestureAction(
+            LyricGesturePrefs.KEY_SWIPE_LEFT,
+            LyricGesturePrefs.DEFAULT_SWIPE_LEFT
+        )
+        swipeRightAction = LyricPrefs.gestureAction(
+            LyricGesturePrefs.KEY_SWIPE_RIGHT,
+            LyricGesturePrefs.DEFAULT_SWIPE_RIGHT
+        )
+        tapAction = LyricPrefs.gestureAction(
+            LyricGesturePrefs.KEY_TAP,
+            LyricGesturePrefs.DEFAULT_TAP
+        )
+        longPressAction = LyricPrefs.gestureAction(
+            LyricGesturePrefs.KEY_LONG_PRESS,
+            LyricGesturePrefs.DEFAULT_LONG_PRESS
+        )
+
+        lyricView.gestureEnabled = gestureEnabled
+        lyricView.hapticEnabled = LyricPrefs.gestureHapticEnabled
+        if (gestureEnabled) {
+            lyricView.setOnClickListener(null)
+        } else {
+            lyricView.setOnClickListener { v ->
+                LyricControlPopup.show(v)
+            }
+        }
+        // setOnClickListener(null) 会关闭 clickable,这里恢复以保持手势模式下的点击语义(无障碍)
+        lyricView.isClickable = true
+    }
+
+    /**
+     * 手势回调入口:根据当前配置将手势映射为动作并执行
+     */
+    private fun onLyricGesture(gesture: StatusBarLyric.GestureType) {
+        if (!gestureEnabled) return
+
+        val action = when (gesture) {
+            StatusBarLyric.GestureType.SWIPE_LEFT -> swipeLeftAction
+            StatusBarLyric.GestureType.SWIPE_RIGHT -> swipeRightAction
+            StatusBarLyric.GestureType.TAP -> tapAction
+            StatusBarLyric.GestureType.LONG_PRESS -> longPressAction
+        }
+
+        when (action) {
+            LyricGesturePrefs.ACTION_NONE -> Unit
+            LyricGesturePrefs.ACTION_TOGGLE_PLAY -> PlaybackControl.togglePlay()
+            LyricGesturePrefs.ACTION_PREVIOUS -> PlaybackControl.previous()
+            LyricGesturePrefs.ACTION_NEXT -> PlaybackControl.next()
+            LyricGesturePrefs.ACTION_OPEN_CONTROL -> LyricControlPopup.show(lyricView)
+            else -> YLog.warning(TAG, "Unknown gesture action: $action")
+        }
+    }
 
     fun highlightView(idName: String?) {
         YLog.info(TAG, "Highlighting view id:$idName")

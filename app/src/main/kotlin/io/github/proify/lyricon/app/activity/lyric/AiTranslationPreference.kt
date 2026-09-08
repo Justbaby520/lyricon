@@ -72,19 +72,19 @@ import java.util.Locale
 fun AiTranslationPreference(preferences: SharedPreferences) {
     var isAiTranslationEnabled by rememberBooleanPreference(
         sharedPreferences = preferences,
-        key = TextStyle.Companion.KEY_AI_TRANSLATION_ENABLED,
+        key = TextStyle.KEY_AI_TRANSLATION_ENABLED,
         defaultValue = TextStyle.Defaults.AI_TRANSLATION_ENABLED
     )
     SwitchPreference(
         checked = isAiTranslationEnabled,
         onCheckedChange = { isAiTranslationEnabled = it },
-        title = stringResource(R.string.item_translation_openai),
+        title = stringResource(R.string.item_translation_ai_enable),
         startAction = { IconActions(painterResource(R.drawable.translate_24px)) },
     )
 
     var isAiTranslationAutoIgnoreChinese by rememberBooleanPreference(
         sharedPreferences = preferences,
-        key = TextStyle.Companion.KEY_AI_TRANSLATION_IGNORE_CHINESE,
+        key = TextStyle.KEY_AI_TRANSLATION_IGNORE_CHINESE,
         defaultValue = TextStyle.Defaults.AI_TRANSLATION_IGNORE_CHINESE
     )
     SwitchPreference(
@@ -99,7 +99,7 @@ fun AiTranslationPreference(preferences: SharedPreferences) {
 
     StringInputPreference(
         preferences = preferences,
-        key = TextStyle.Companion.KEY_AI_TRANSLATION_PROMPT,
+        key = TextStyle.KEY_AI_TRANSLATION_PROMPT,
         title = stringResource(R.string.item_translation_custom_prompt),
         dialogSummary = stringResource(R.string.dialog_summary_translation_custom_prompt),
         defaultValue = TextStyle.Defaults.AI_TRANSLATION_PROMPT,
@@ -171,18 +171,18 @@ private fun TranslationTargetLanguagePreference(preferences: SharedPreferences) 
     var showLanguageSheet by remember { mutableStateOf(false) }
     @Suppress("VariableNeverRead") var targetLanguage by rememberStringPreference(
         preferences,
-        TextStyle.Companion.KEY_AI_TRANSLATION_TARGET_LANGUAGE,
+        TextStyle.KEY_AI_TRANSLATION_TARGET_LANGUAGE,
         targetLanguageName
     )
     var targetLanguageCode by rememberStringPreference(
         preferences,
-        TextStyle.Companion.KEY_AI_TRANSLATION_TARGET_LANGUAGE_CODE,
+        TextStyle.KEY_AI_TRANSLATION_TARGET_LANGUAGE_CODE,
         ""
     )
 
     StringInputPreference(
         preferences = preferences,
-        key = TextStyle.Companion.KEY_AI_TRANSLATION_TARGET_LANGUAGE,
+        key = TextStyle.KEY_AI_TRANSLATION_TARGET_LANGUAGE,
         defaultValue = targetLanguageName,
         title = stringResource(R.string.item_translation_target_language),
         dialogSummary = stringResource(R.string.dialog_summary_translation_target_language),

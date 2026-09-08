@@ -7,26 +7,42 @@
 package io.github.proify.lyricon.app.activity.lyric
 
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.proify.lyricon.app.R
 import io.github.proify.lyricon.app.compose.AppToolBarListContainer
+import io.github.proify.lyricon.app.compose.custom.miuix.preference.CheckboxPreference
 import io.github.proify.lyricon.app.util.LyricPrefs
+import io.github.proify.lyricon.lyric.ai.core.AiConfig
+import io.github.proify.lyricon.lyric.ai.core.AiConfigCollection
+import io.github.proify.lyricon.lyric.ai.core.AiConfigStore
+import io.github.proify.lyricon.lyric.ai.core.AiProfile
 import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.SmallTitle
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Edit
+import top.yukonga.miuix.kmp.preference.ArrowPreference
+import java.util.UUID
 
 /**
  * AI 实验室 (AI Laboratory)
  *
  * 集中管理所有 AI 功能：
- * - 统一 AI 基础配置（所有 AI 功能共用：API Key / Base URL / 模型 / 高级参数）
+ * - AI 提供商配置：列表单选激活（CheckboxPreference 高亮当前激活项），行尾「编辑」IconButton
+ *   启动二级 [AiConfigEditActivity]；支持模板化新建、重命名、删除、测试连接
  * - AI 音乐解读（状态栏控制窗口内触发）
  * - AI 歌词翻译（整首歌级联翻译流水线）
  *
@@ -36,110 +52,103 @@ import top.yukonga.miuix.kmp.basic.SmallTitle
 class AiLaboratoryActivity : AbstractLyricActivity() {
 
     private val preferences by lazy { LyricPrefs.basicStylePrefs }
+    private var collection by mutableStateOf(AiConfigCollection())
+
+    override fun onResume() {
+        super.onResume()
+        reloadCollection()
+    }
 
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         super.onCreate(savedInstanceState)
+        reloadCollection()
         setContent { Content() }
+    }
+
+    /**
+     * 重新读取配置集合：
+     * - 冷启动（onCreate）在 [setContent] 前调用，保证首次组合即拿到最新配置、避免首帧空白闪现；
+     * - 从 [AiConfigEditActivity] 返回（onResume）调用，保证编辑结果即时刷新。
+     */
+    private fun reloadCollection() {
+        collection = AiConfigStore.load(preferences)
     }
 
     @Composable
     private fun Content() {
+        val prefs = preferences
+        val defaultName = stringResource(R.string.item_ai_config_default_name)
+
+        fun activate(id: String) {
+            if (id == collection.activeId) return
+            AiConfigStore.activate(prefs, id)
+            collection = AiConfigStore.load(prefs)
+        }
+
+        fun startEdit(profile: AiProfile) {
+            startActivity(AiConfigEditActivity.createIntent(this, profile))
+        }
+
+        // ---- 配置列表（单选激活 + 行尾编辑入口） ----
         AppToolBarListContainer(
             title = stringResource(R.string.activity_ai_laboratory),
             canBack = true
         ) {
-//            item(key = "intro") {
-//                Card(
-//                    modifier = Modifier
-//                        .padding(horizontal = 16.dp)
-//                        .fillMaxWidth(),
-//                    insideMargin = PaddingValues(0.dp)
-//                ) {
-//                    Column(
-//                        modifier = Modifier.padding(16.dp)
-//                    ) {
-//                        Text(
-//                            text = stringResource(R.string.section_ai_laboratory),
-//                            color = MiuixTheme.colorScheme.onSurface
-//                        )
-//                        Spacer(Modifier.height(6.dp))
-//                        Text(
-//                            text = stringResource(R.string.item_ai_laboratory_summary),
-//                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-//                            fontSize = 13.sp
-//                        )
-//                    }
-//                }
-//            }
-
-            // ==== 统一 AI 基础配置（所有 AI 功能共用）====
-            item(key = "ai_basic_config") {
+            item(key = "ai_config_profiles") {
                 SmallTitle(
-                    text = stringResource(R.string.section_ai_basic),
-                    insideMargin = PaddingValues(
-                        start = 26.dp,
-                        top = 16.dp,
-                        end = 26.dp,
-                        bottom = 10.dp
-                    )
+                    text = stringResource(R.string.section_ai_provider),
+                    insideMargin = SectionTitlePadding,
                 )
                 Card(
                     modifier = Modifier
                         .padding(start = 16.dp, top = 0.dp, end = 16.dp, bottom = 0.dp)
                         .fillMaxWidth(),
                 ) {
-                    AiConfigPreference(preferences)
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        collection.profiles.forEach { profile ->
+                            AiConfigListItem(
+                                profile = profile,
+                                active = collection.activeId == profile.id,
+                                onActivate = { activate(profile.id) },
+                                onEdit = { startEdit(profile) },
+                            )
+                        }
+
+                        ArrowPreference(
+                            title = stringResource(R.string.item_ai_config_new),
+                            summary = stringResource(R.string.item_ai_config_new_summary),
+                            onClick = {
+                                startEdit(
+                                    AiProfile(
+                                        id = UUID.randomUUID().toString(),
+                                        name = defaultName,
+                                        config = AiConfig(),
+                                    )
+                                )
+                            },
+                        )
+                    }
                 }
             }
 
-//            item(key = "ai_explain") {
-//                SmallTitle(
-//                    text = stringResource(R.string.section_ai_explain),
-//                    insideMargin = PaddingValues(
-//                        start = 26.dp,
-//                        top = 16.dp,
-//                        end = 26.dp,
-//                        bottom = 10.dp
-//                    )
-//                )
-//                Card(
-//                    modifier = Modifier
-//                        .padding(horizontal = 16.dp)
-//                        .fillMaxWidth(),
-//                    insideMargin = PaddingValues(0.dp)
-//                ) {
-//                    Column(
-//                        modifier = Modifier.padding(16.dp)
-//                    ) {
-//                        Row(
-//                            verticalAlignment = Alignment.CenterVertically
-//                        ) {
-//                            IconActions(painterResource(R.drawable.psychology_24px))
-//                            Text(
-//                                text = stringResource(R.string.item_ai_explain),
-//                                color = MiuixTheme.colorScheme.onSurface,
-//                                modifier = Modifier.padding(start = 12.dp)
-//                            )
-//                        }
-//                        Spacer(Modifier.height(6.dp))
-//                        Text(
-//                            text = stringResource(R.string.item_ai_explain_summary),
-//                            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-//                            fontSize = 13.sp
-//                        )
-//                    }
-//                }
-//            }
+            item(key = "ai_explain") {
+                SmallTitle(
+                    text = stringResource(R.string.section_ai_explain),
+                    insideMargin = SectionTitlePadding,
+                )
+                Card(
+                    modifier = Modifier
+                        .padding(start = 16.dp, top = 0.dp, end = 16.dp, bottom = 0.dp)
+                        .fillMaxWidth(),
+                ) {
+                    AiExplainPreference(preferences)
+                }
+            }
 
             item(key = "ai_translation") {
                 SmallTitle(
                     text = stringResource(R.string.section_translation),
-                    insideMargin = PaddingValues(
-                        start = 26.dp,
-                        top = 16.dp,
-                        end = 26.dp,
-                        bottom = 10.dp
-                    )
+                    insideMargin = SectionTitlePadding,
                 )
                 Card(
                     modifier = Modifier
@@ -155,4 +164,36 @@ class AiLaboratoryActivity : AbstractLyricActivity() {
             }
         }
     }
+}
+
+/** 「AI 实验室」各小节标题的统一内边距（与 [AiConfigEditPage] 的小节标题一致）。 */
+private val SectionTitlePadding = PaddingValues(
+    start = 26.dp,
+    top = 16.dp,
+    end = 26.dp,
+    bottom = 10.dp,
+)
+
+/** 单条配置行：整行点击 = 设为激活（单选）；行尾「编辑」IconButton = 进入编辑页。 */
+@Composable
+private fun AiConfigListItem(
+    profile: AiProfile,
+    active: Boolean,
+    onActivate: () -> Unit,
+    onEdit: () -> Unit,
+) {
+    CheckboxPreference(
+        title = profile.name,
+        summary = profile.description?.takeIf { it.isNotBlank() },
+        checked = active,
+        onCheckedChange = { checked -> if (checked) onActivate() },
+        endActions = {
+            IconButton(onClick = onEdit) {
+                Icon(
+                    imageVector = MiuixIcons.Edit,
+                    contentDescription = stringResource(R.string.item_ai_config_edit),
+                )
+            }
+        },
+    )
 }
