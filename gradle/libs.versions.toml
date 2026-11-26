@@ -1,61 +1,72 @@
 [versions]
 # Gradle / Kotlin / KSP
-agp = "9.1.1"
-jetbrainsKotlinJvm = "2.4.10"
-kotlin = "2.4.10"
+agp = "9.4.0"
+jetbrainsKotlinJvm = "2.4.21"
+kotlin = "2.4.21"
 
 # AndroidX Base
 activity = "1.13.0"
 appcompat = "1.8.0"
 browser = "1.10.0"
 constraintlayout = "2.2.2"
-coreKtx = "1.19.0"
+coreKtx = "1.19.1"
 interpolator = "1.0.0"
 lifecycle = "2.11.0"
 
 # AndroidX Compose
 activityCompose = "1.13.0"
-composeBom = "2026.08.00"
+composeBom = "2026.09.00"
 opencc4j = "1.14.0"
 
 # Material
 material = "1.14.0"
-material3 = "1.5.0-alpha27"
+material3 = "1.5.0-rc01"
 
 # Network / Logic / Serialization
-kotlinxSerializationJson = "1.11.0"
-kotlinxCoroutines = "1.9.0"
+kotlinxSerializationJson = "1.13.0"
+kotlinxCoroutines = "1.11.0"
 
 # UI Extensions / Third Party
-aboutlibrariesCore = "15.2.0"
+aboutlibrariesCore = "15.3.0"
 accompanistDrawablePainter = "0.37.3"
 androidsvg = "1.4"
 bonsai = "1.2.0"
 capsuleAndroid = "2.1.1-patch2"
-haze = "1.7.3"
+haze = "2.1.0"
 lottieCompose = "6.7.1"
-miuixUI = "0.9.3"
-miuixIcons = "0.9.3"
-miuixPreference = "0.9.3"
-miuixBlur = "0.9.3"
-markdownRenderer = "0.45.0"
-okhttp = "5.5.0"
-openaiJava = "4.54.0"
+miuixUI = "0.9.4"
+miuixIcons = "0.9.4"
+miuixPreference = "0.9.4"
+miuixBlur = "0.9.4"
+markdownRenderer = "0.46.0"
+okhttp = "5.5.1"
+openaiJava = "4.105.0"
 
 # Testing
 androidxJunit = "1.3.0"
 espresso = "3.7.0"
 junit4 = "4.13.2"
 xposed-api = "102.0.0"
-xposed-service = "101.0.0"
+xposed-service = "102.0.0"
+
+lyricon-subscriber = "0.1.85"
+lyricon-provider = "0.1.85"
+lyricon-model = "0.1.85"
+lyricon-central = "0.1.85"
 
 [libraries]
+lyricon-provider = { module = "io.github.proify.lyricon:provider", version.ref = "lyricon-subscriber" }
+lyricon-subscriber = { module = "io.github.proify.lyricon:subscriber", version.ref = "lyricon-provider" }
+lyricon-lyric-model = { module = "io.github.proify.lyricon.lyric:model", version.ref = "lyricon-model" }
+lyricon-central = { module = "io.github.proify.lyricon:central", version.ref = "lyricon-central" }
+
 # ===== AndroidX Base =====
 androidx-activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 androidx-appcompat-resources = { module = "androidx.appcompat:appcompat-resources", version.ref = "appcompat" }
 androidx-browser = { module = "androidx.browser:browser", version.ref = "browser" }
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
+androidx-core = { module = "androidx.core:core", version.ref = "coreKtx" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-interpolator = { group = "androidx.interpolator", name = "interpolator", version.ref = "interpolator" }
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycle" }
@@ -87,6 +98,7 @@ androidsvg = { module = "com.caverock:androidsvg-aar", version.ref = "androidsvg
 bonsai-core = { module = "cafe.adriel.bonsai:bonsai-core", version.ref = "bonsai" }
 capsule-android = { module = "com.mocharealm.gaze:capsule-android", version.ref = "capsuleAndroid" }
 chrisbanes-haze = { module = "dev.chrisbanes.haze:haze", version.ref = "haze" }
+chrisbanes-haze-blur = { module = "dev.chrisbanes.haze:haze-blur", version.ref = "haze" }
 lottie-compose = { module = "com.airbnb.android:lottie-compose", version.ref = "lottieCompose" }
 miuix-android = { module = "top.yukonga.miuix.kmp:miuix-ui-android", version.ref = "miuixUI" }
 miuix-preference = { module = "top.yukonga.miuix.kmp:miuix-preference-android", version.ref = "miuixPreference" }
